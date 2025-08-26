@@ -16,10 +16,11 @@ build/
 .env.production.local
 
 # Database
-*.db
+# *.db  # Commented out to allow dev.db
 *.sqlite
 *.sqlite3
-backend/prisma/dev.db
+# Allow test database to be committed
+!backend/prisma/dev.db
 
 # Logs
 logs
