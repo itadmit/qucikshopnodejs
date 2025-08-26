@@ -61,31 +61,45 @@ npm run dev
 
 האפליקציה תפעל על פורט זמין (בדרך כלל 5173+): http://localhost:5173
 
-#### 3. הפעלת תבנית Jupiter
+#### 3. גישה לחנות עם תבנית Jupiter
+
+תבנית Jupiter משולבת בפרונטאנד הראשי. לאחר הפעלת הפרונטאנד, תוכל לגשת לחנות דרך:
+
+- **דשבורד ניהול**: http://localhost:5173
+- **חנות לדוגמה**: http://yogevstore.localhost:5173
+
+> **הערה**: Jupiter היא תבנית עיצוב המשולבת בחנות, לא שירות נפרד.
+
+**הגדרת דומיין מקומי (אופציונלי):**
+כדי שהדומיין `yogevstore.localhost` יעבוד, הוסף לקובץ `/etc/hosts`:
+```
+127.0.0.1 yogevstore.localhost
+```
+
+### 3. מסד נתונים
+
+הפרויקט מגיע עם מסד נתונים SQLite מוכן עם נתוני דוגמה:
+
+- **מיקום**: `backend/prisma/dev.db`
+- **כולל**: חנות לדוגמה (yogevstore), קטגוריות ומוצרים
+- **מוכן לשימוש**: לא נדרשת הגדרה נוספת
+
+#### יצירת נתונים נוספים (אופציונלי)
 
 ```bash
-cd store-templates/jupiter
-npm install
-npm run dev
+cd backend
+node scripts/seed-stores.js
 ```
 
-תבנית Jupiter תפעל על פורט 5174: http://localhost:5174
+#### מעבר ל-PostgreSQL (לסביבת production)
 
-### 3. הגדרת בסיס נתונים
-
-יש ליצור בסיס נתונים PostgreSQL:
-
-```sql
-CREATE DATABASE quickshop;
-```
-
-ולעדכן את ה-DATABASE_URL בקובץ `.env`:
+הגדר את `DATABASE_URL` בקובץ `.env`:
 
 ```bash
 DATABASE_URL="postgresql://username:password@localhost:5432/quickshop?schema=public"
 ```
 
-ולהריץ את Prisma:
+והרץ:
 
 ```bash
 cd backend
