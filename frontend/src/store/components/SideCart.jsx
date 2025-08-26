@@ -68,8 +68,20 @@ const SideCart = ({ isOpen, onClose, storeData }) => {
     }).format(price)
   }
 
+  // Load shipping settings
+  const getShippingSettings = () => {
+    const savedSettings = localStorage.getItem('shippingSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      return settings.general || { freeShippingThreshold: 200, defaultShippingRate: 15 };
+    }
+    return { freeShippingThreshold: 200, defaultShippingRate: 15 };
+  };
+
   // Free shipping calculation
-  const FREE_SHIPPING_THRESHOLD = 200 // ₪200 for free shipping
+  const shippingSettings = getShippingSettings();
+  const FREE_SHIPPING_THRESHOLD = shippingSettings.freeShippingThreshold;
+  const SHIPPING_RATE = shippingSettings.defaultShippingRate;
   const currentTotal = getTotalPrice()
   const amountForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - currentTotal)
   const freeShippingProgress = Math.min(100, (currentTotal / FREE_SHIPPING_THRESHOLD) * 100)
@@ -265,7 +277,7 @@ const SideCart = ({ isOpen, onClose, storeData }) => {
                     {hasEarnedFreeShipping ? (
                       <span className="font-medium">משלוח חינם כלול!</span>
                     ) : (
-                      <span>משלוח: ₪15 (חינם מעל {formatPrice(FREE_SHIPPING_THRESHOLD)})</span>
+                      <span>משלוח: {formatPrice(SHIPPING_RATE)} (חינם מעל {formatPrice(FREE_SHIPPING_THRESHOLD)})</span>
                     )}
                   </div>
                 </div>

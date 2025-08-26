@@ -113,6 +113,7 @@ const resources = {
       "dashboard.design": "עיצוב האתר",
       "dashboard.builder": "עורך האתר",
       "dashboard.menus": "תפריטים",
+      "dashboard.shipping": "הגדרות משלוחים",
       "dashboard.settings": "הגדרות",
       "dashboard.store": "החנות שלי",
       

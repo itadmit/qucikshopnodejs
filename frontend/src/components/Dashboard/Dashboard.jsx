@@ -10,7 +10,8 @@ import {
   Settings,
   Palette,
   Menu,
-  Layout
+  Layout,
+  Truck
 } from 'lucide-react';
 
 // Import components
@@ -27,6 +28,7 @@ import AnalyticsPage from './pages/AnalyticsPage.jsx';
 import DesignPage from './pages/DesignPage.jsx';
 import MenusPage from './pages/MenusPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import ShippingPage from './pages/ShippingPage.jsx';
 import SiteBuilderPage from '../SiteBuilder/pages/SiteBuilderPage.jsx';
 
 const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
@@ -173,6 +175,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
     { id: 'design', icon: Palette, label: t('dashboard.design') || 'עיצוב האתר' },
     { id: 'builder', icon: Layout, label: t('dashboard.builder') || 'עורך האתר' },
     { id: 'menus', icon: Menu, label: t('dashboard.menus') || 'תפריטים' },
+    { id: 'shipping', icon: Truck, label: t('dashboard.shipping') || 'הגדרות משלוחים' },
     { id: 'settings', icon: Settings, label: t('dashboard.settings') || 'הגדרות' }
   ];
 
@@ -210,6 +213,8 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
         return <OverviewPage stats={stats} recentOrders={recentOrders} popularProducts={popularProducts} userStore={userStore} />;
       case 'menus':
         return <MenusPage />;
+      case 'shipping':
+        return <ShippingPage />;
       case 'settings':
         return <SettingsPage />;
       default:
