@@ -349,4 +349,141 @@ router.get('/:storeSlug/products/:productSlug', async (req, res) => {
   }
 })
 
+// Get store product page design
+router.get('/:storeSlug/design/product-page', async (req, res) => {
+  try {
+    const { storeSlug } = req.params;
+    
+    const store = await prisma.store.findUnique({
+      where: { slug: storeSlug }
+    });
+
+    if (!store) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+
+    // For now, return default product page structure
+    // In the future, this could be stored in database
+    const defaultProductPageStructure = {
+      sections: [
+        {
+          id: 'product-images-1',
+          type: 'product_images',
+          settings: {
+            layout: 'gallery',
+            main_image_ratio: 'square',
+            show_thumbnails: true,
+            thumbnail_position: 'bottom',
+            show_zoom: true,
+            show_navigation: true,
+            border_radius: 'rounded-lg',
+            spacing: 'gap-4'
+          }
+        },
+        {
+          id: 'product-title-1',
+          type: 'product_title',
+          settings: {
+            show_vendor: true,
+            title_size: 'text-3xl',
+            title_weight: 'font-bold',
+            title_color: '#000000',
+            vendor_size: 'text-sm',
+            vendor_color: '#666666',
+            alignment: 'text-right'
+          }
+        },
+        {
+          id: 'product-price-1',
+          type: 'product_price',
+          settings: {
+            show_compare_price: true,
+            show_currency: true,
+            price_size: 'text-2xl',
+            price_weight: 'font-bold',
+            price_color: '#000000',
+            compare_price_size: 'text-lg',
+            compare_price_color: '#999999',
+            currency_position: 'after',
+            alignment: 'text-right',
+            show_sale_badge: true,
+            sale_badge_text: 'מבצע',
+            sale_badge_color: '#ef4444'
+          }
+        },
+        {
+          id: 'product-options-1',
+          type: 'product_options',
+          settings: {
+            show_labels: true,
+            label_size: 'text-sm',
+            label_weight: 'font-medium',
+            label_color: '#374151',
+            option_style: 'buttons',
+            button_style: 'rounded',
+            show_selected_value: true,
+            spacing: 'space-y-4'
+          }
+        },
+        {
+          id: 'add-to-cart-1',
+          type: 'add_to_cart',
+          settings: {
+            button_text: 'הוסף לסל',
+            button_size: 'large',
+            button_style: 'primary',
+            button_width: 'full',
+            show_quantity: true,
+            show_icon: true,
+            icon_position: 'right',
+            quantity_style: 'buttons',
+            max_quantity: 10,
+            button_color: '#3b82f6',
+            button_text_color: '#ffffff',
+            border_radius: 'rounded-md',
+            show_stock_info: true,
+            stock_text: 'במלאי - {count} יחידות',
+            out_of_stock_text: 'אזל מהמלאי'
+          }
+        }
+      ],
+      settings: {}
+    };
+
+    res.json(defaultProductPageStructure);
+  } catch (error) {
+    console.error('Error fetching product page design:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Save store product page design
+router.post('/:storeSlug/design/product-page', async (req, res) => {
+  try {
+    const { storeSlug } = req.params;
+    const { pageStructure } = req.body;
+    
+    const store = await prisma.store.findUnique({
+      where: { slug: storeSlug }
+    });
+
+    if (!store) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+
+    // For now, we'll just return success
+    // In the future, save to database
+    console.log(`Saving product page design for store ${storeSlug}:`, pageStructure);
+    
+    res.json({ 
+      success: true, 
+      message: 'Product page design saved successfully',
+      pageStructure 
+    });
+  } catch (error) {
+    console.error('Error saving product page design:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router

@@ -65,6 +65,7 @@ model Store {
   categories   Category[]
   products     Product[]
   productOptions ProductOption[]
+  customFields CustomField[]
   media        Media[]
   coupons      Coupon[]
   automaticDiscounts AutomaticDiscount[]
@@ -148,6 +149,7 @@ model Product {
   seoTitle            String?       @map("seo_title")
   seoDescription      String?       @map("seo_description")
   tags                Json?
+  customFields        Json?         @map("custom_fields")
   sortOrder           Int           @default(0) @map("sort_order")
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @updatedAt @map("updated_at")
@@ -194,6 +196,30 @@ model ProductOptionValue {
   productMedia ProductMedia[]
 
   @@map("product_option_values")
+}
+
+model CustomField {
+  id           Int                 @id @default(autoincrement())
+  storeId      Int                 @map("store_id")
+  name         String
+  label        String
+  type         CustomFieldType     @default(TEXT)
+  isRequired   Boolean             @default(false) @map("is_required")
+  placeholder  String?
+  helpText     String?             @map("help_text")
+  defaultValue String?             @map("default_value")
+  options      Json?               // For dropdown/radio options
+  validation   Json?               // Validation rules
+  sortOrder    Int                 @default(0) @map("sort_order")
+  isActive     Boolean             @default(true) @map("is_active")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  store        Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, name])
+  @@map("custom_fields")
 }
 
 model ProductVariant {
@@ -655,4 +681,18 @@ enum StoreRole {
   MANAGER      // מנהל - מוצרים, הזמנות, לקוחות
   STAFF        // עובד - רק צפייה ועדכון הזמנות
   VIEWER       // צופה - רק צפייה
+}
+
+enum CustomFieldType {
+  TEXT         // טקסט רגיל
+  TEXTAREA     // טקסט ארוך
+  NUMBER       // מספר
+  EMAIL        // אימייל
+  URL          // כתובת אתר
+  PHONE        // טלפון
+  DATE         // תאריך
+  CHECKBOX     // תיבת סימון
+  DROPDOWN     // רשימה נפתחת
+  RADIO        // בחירה יחידה
+  FILE         // קובץ
 }

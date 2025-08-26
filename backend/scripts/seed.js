@@ -6,36 +6,38 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding...');
 
-  // Create a demo user
+  // Create your user
   const hashedPassword = await bcrypt.hash('demo123', 10);
   
   const user = await prisma.user.upsert({
-    where: { email: 'demo@quickshop.co.il' },
+    where: { email: 'itadmit@gmail.com' },
     update: {},
     create: {
-      email: 'demo@quickshop.co.il',
+      email: 'itadmit@gmail.com',
       passwordHash: hashedPassword,
       firstName: 'יוגב',
       lastName: 'אביטן',
       phone: '050-1234567',
       planType: 'PRO',
-      subscriptionStatus: 'TRIAL',
-      trialEndsAt: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000), // 12 days from now
+      subscriptionStatus: 'ACTIVE',
+      trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     },
   });
 
   console.log('✅ Created demo user:', user.email);
 
-  // Create a demo store
+  // Create your store
   const store = await prisma.store.upsert({
-    where: { userId: user.id },
+    where: { slug: 'yogevstore' },
     update: {},
     create: {
       userId: user.id,
-      name: 'החנות של יוגב',
-      slug: 'yogev-store',
+      name: 'yogevstore',
+      slug: 'yogevstore',
       description: 'חנות אופנה מודרנית עם מגוון רחב של מוצרים איכותיים',
       templateName: 'jupiter',
+      planType: 'BASIC',
+      subscriptionStatus: 'ACTIVE',
     },
   });
 
@@ -295,6 +297,40 @@ async function main() {
   console.log('✅ Created orders');
 
   console.log('🎉 Database seeding completed successfully!');
+  // Create custom fields for products
+  const customFields = await Promise.all([
+    prisma.customField.upsert({
+      where: { storeId_name: { storeId: store.id, name: 'size_guide' } },
+      update: {},
+      create: {
+        storeId: store.id,
+        name: 'size_guide',
+        label: 'מידות והדרכות',
+        type: 'TEXTAREA',
+        isRequired: false,
+        placeholder: 'הוסף מידע על מידות והדרכות למוצר...',
+        helpText: 'מידע זה יוצג ללקוחות בעמוד המוצר',
+        sortOrder: 1,
+      },
+    }),
+    prisma.customField.upsert({
+      where: { storeId_name: { storeId: store.id, name: 'washing_instructions' } },
+      update: {},
+      create: {
+        storeId: store.id,
+        name: 'washing_instructions',
+        label: 'הוראות כביסה',
+        type: 'TEXTAREA',
+        isRequired: false,
+        placeholder: 'הוסף הוראות כביסה למוצר...',
+        helpText: 'הוראות כביסה וטיפוח למוצר',
+        sortOrder: 2,
+      },
+    }),
+  ]);
+
+  console.log('✅ Created custom fields:', customFields.map(cf => cf.label));
+
   console.log(`
 📊 Summary:
 - User: ${user.email}
@@ -303,6 +339,7 @@ async function main() {
 - Products: ${products.length}
 - Customers: ${customers.length}
 - Orders: ${orders.length}
+- Custom Fields: ${customFields.length}
   `);
 }
 

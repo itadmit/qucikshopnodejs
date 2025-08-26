@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import apiService from '../../../services/api.js';
 
-const StoreSetupTodos = ({ storeId }) => {
+const StoreSetupTodos = ({ storeId, compact = false }) => {
   const [todos, setTodos] = useState([]);
   const [completedCount, setCompletedCount] = useState(0);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -151,6 +151,83 @@ const StoreSetupTodos = ({ storeId }) => {
     ));
     setCompletedCount(prev => prev + 1);
   };
+
+  if (compact) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">הגדרת החנות שלך</h3>
+          <Settings className="w-5 h-5 text-gray-400" />
+        </div>
+        
+        {/* Compact Progress */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">התקדמות</span>
+            <span className="text-sm font-medium text-gray-900">{completedCount}/{setupTasks.length}</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full transition-all duration-700 ease-out"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Compact Tasks List - Grid Layout for wider space */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {todos.slice(0, 6).map((task) => {
+            const Icon = task.icon;
+            return (
+              <div
+                key={task.id}
+                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                  task.completed 
+                    ? 'bg-green-50 text-green-800 border border-green-200' 
+                    : 'hover:bg-gray-50 cursor-pointer border border-gray-200'
+                }`}
+                onClick={() => handleTaskClick(task)}
+              >
+                <div className="flex-shrink-0">
+                  {task.completed ? (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-gray-400" />
+                  )}
+                </div>
+                <Icon className="w-5 h-5" style={{ color: task.color }} />
+                <span className={`text-sm font-medium flex-1 ${task.completed ? 'line-through' : ''}`}>
+                  {task.title}
+                </span>
+              </div>
+            );
+          })}
+          
+          {todos.length > 6 && (
+            <div className="md:col-span-2">
+              <button 
+                className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium py-2 text-center border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                onClick={() => {
+                  // Navigate to full setup page or expand
+                  setIsExpanded(true);
+                }}
+              >
+                עוד {todos.length - 6} משימות ←
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Completion Message */}
+        {completedCount === setupTasks.length && (
+          <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg text-center">
+            <Sparkles className="w-6 h-6 text-green-500 mx-auto mb-2" />
+            <p className="text-sm font-medium text-green-800">החנות מוכנה להשקה! 🎉</p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">

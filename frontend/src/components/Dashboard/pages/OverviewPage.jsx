@@ -70,7 +70,13 @@ const OverviewPage = ({ stats, recentOrders, popularProducts, userStore }) => {
           <select 
             value={dateRange} 
             onChange={(e) => setDateRange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 pl-8 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+              backgroundPosition: 'left 0.5rem center',
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: '1.5em 1.5em'
+            }}
           >
             <option value="7d">7 ימים אחרונים</option>
             <option value="30d">30 ימים אחרונים</option>
@@ -91,9 +97,6 @@ const OverviewPage = ({ stats, recentOrders, popularProducts, userStore }) => {
         </div>
       </div>
 
-      {/* Store Setup Todos */}
-      <StoreSetupTodos storeId={userStore?.id} />
-      
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
@@ -134,9 +137,61 @@ const OverviewPage = ({ stats, recentOrders, popularProducts, userStore }) => {
         />
       </div>
 
-      {/* Recent Activity & Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Orders */}
+      {/* Store Setup & Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Store Setup Todos - 2/3 width */}
+        <div className="lg:col-span-2 bg-white rounded-lg border border-gray-100 p-6">
+          <StoreSetupTodos storeId={userStore?.id} compact={true} />
+        </div>
+
+        {/* Quick Actions - 1/3 width */}
+        <div className="bg-white rounded-lg border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">פעולות מהירות</h3>
+            <Plus className="w-5 h-5 text-gray-400" />
+          </div>
+          <div className="space-y-3">
+            <button 
+              onClick={() => {
+                window.history.pushState({}, '', '/dashboard/products/new');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="w-full p-3 text-right border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between"
+            >
+              <div className="flex items-center">
+                <Package className="w-5 h-5 text-blue-600 ml-3" />
+                <span className="font-medium text-gray-900">הוסף מוצר חדש</span>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-gray-400" />
+            </button>
+            <button className="w-full p-3 text-right border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between">
+              <div className="flex items-center">
+                <ShoppingCart className="w-5 h-5 text-green-600 ml-3" />
+                <span className="font-medium text-gray-900">צור הזמנה ידנית</span>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-gray-400" />
+            </button>
+            <button className="w-full p-3 text-right border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between">
+              <div className="flex items-center">
+                <Users className="w-5 h-5 text-purple-600 ml-3" />
+                <span className="font-medium text-gray-900">הוסף לקוח</span>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-gray-400" />
+            </button>
+            <button className="w-full p-3 text-right border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between">
+              <div className="flex items-center">
+                <TrendingUp className="w-5 h-5 text-orange-600 ml-3" />
+                <span className="font-medium text-gray-900">צפה בדוחות</span>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Orders & Top Products */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Orders - 6/12 width */}
         <div className="bg-white rounded-lg border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">הזמנות אחרונות</h3>
@@ -218,44 +273,6 @@ const OverviewPage = ({ stats, recentOrders, popularProducts, userStore }) => {
           <button className="w-full mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium py-2 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
             צפה בכל המוצרים ←
           </button>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-lg border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">פעולות מהירות</h3>
-            <Plus className="w-5 h-5 text-gray-400" />
-          </div>
-          <div className="space-y-3">
-            <button className="w-full p-3 text-right border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between">
-              <div className="flex items-center">
-                <Package className="w-5 h-5 text-blue-600 ml-3" />
-                <span className="font-medium text-gray-900">הוסף מוצר חדש</span>
-              </div>
-              <ArrowUpRight className="w-4 h-4 text-gray-400" />
-            </button>
-            <button className="w-full p-3 text-right border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between">
-              <div className="flex items-center">
-                <ShoppingCart className="w-5 h-5 text-green-600 ml-3" />
-                <span className="font-medium text-gray-900">צור הזמנה ידנית</span>
-              </div>
-              <ArrowUpRight className="w-4 h-4 text-gray-400" />
-            </button>
-            <button className="w-full p-3 text-right border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between">
-              <div className="flex items-center">
-                <Users className="w-5 h-5 text-purple-600 ml-3" />
-                <span className="font-medium text-gray-900">הוסף לקוח</span>
-              </div>
-              <ArrowUpRight className="w-4 h-4 text-gray-400" />
-            </button>
-            <button className="w-full p-3 text-right border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between">
-              <div className="flex items-center">
-                <TrendingUp className="w-5 h-5 text-orange-600 ml-3" />
-                <span className="font-medium text-gray-900">צפה בדוחות</span>
-              </div>
-              <ArrowUpRight className="w-4 h-4 text-gray-400" />
-            </button>
-          </div>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import ProductRenderer from '../components/ProductRenderer'
 
 const ProductPage = ({ storeData }) => {
   const { t } = useTranslation()
@@ -10,12 +11,28 @@ const ProductPage = ({ storeData }) => {
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [selectedOptions, setSelectedOptions] = useState({})
+  const [pageStructure, setPageStructure] = useState(null)
+  const [useCustomDesign, setUseCustomDesign] = useState(true)
 
   useEffect(() => {
     if (storeData && slug) {
       fetchProductData()
+      fetchPageDesign()
     }
   }, [storeData, slug])
+
+  const fetchPageDesign = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/stores/${storeData.slug}/design/product-page`)
+      if (response.ok) {
+        const designData = await response.json()
+        setPageStructure(designData)
+      }
+    } catch (error) {
+      console.error('Error fetching page design:', error)
+      setUseCustomDesign(false) // Fallback to original design
+    }
+  }
 
   const fetchProductData = async () => {
     try {
@@ -76,6 +93,25 @@ const ProductPage = ({ storeData }) => {
     }
   }
 
+  const handleOptionChange = (optionName, value) => {
+    setSelectedOptions(prev => ({
+      ...prev,
+      [optionName]: value
+    }))
+  }
+
+  const handleQuantityChange = (newQuantity) => {
+    setQuantity(newQuantity)
+  }
+
+  const handleAddToCart = async (qty) => {
+    // Use the existing addToCart function
+    const originalQuantity = quantity
+    setQuantity(qty)
+    addToCart()
+    setQuantity(originalQuantity)
+  }
+
   const formatPrice = (price) => {
     return new Intl.NumberFormat('he-IL', {
       style: 'currency',
@@ -131,7 +167,20 @@ const ProductPage = ({ storeData }) => {
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {useCustomDesign && pageStructure ? (
+          // Use custom design from site builder
+          <ProductRenderer 
+            pageStructure={pageStructure}
+            product={product}
+            selectedOptions={selectedOptions}
+            onOptionChange={handleOptionChange}
+            quantity={quantity}
+            onQuantityChange={handleQuantityChange}
+            onAddToCart={handleAddToCart}
+          />
+        ) : (
+          // Fallback to original design
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
           <div className="space-y-4">
             {/* Main Image */}
@@ -290,6 +339,7 @@ const ProductPage = ({ storeData }) => {
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   )

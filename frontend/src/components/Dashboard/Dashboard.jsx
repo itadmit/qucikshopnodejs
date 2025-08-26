@@ -7,7 +7,10 @@ import {
   ShoppingCart,
   Users,
   BarChart3,
-  Settings
+  Settings,
+  Palette,
+  Menu,
+  Layout
 } from 'lucide-react';
 
 // Import components
@@ -17,16 +20,21 @@ import DashboardSidebar from './components/DashboardSidebar.jsx';
 // Import pages
 import OverviewPage from './pages/OverviewPage.jsx';
 import ProductsPage from './pages/ProductsPage.jsx';
+import ProductFormPage from './pages/ProductFormPage.jsx';
 import OrdersPage from './pages/OrdersPage.jsx';
 import CustomersPage from './pages/CustomersPage.jsx';
 import AnalyticsPage from './pages/AnalyticsPage.jsx';
+import DesignPage from './pages/DesignPage.jsx';
+import MenusPage from './pages/MenusPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import SiteBuilderPage from '../SiteBuilder/pages/SiteBuilderPage.jsx';
 
-const Dashboard = ({ user, onLogout }) => {
+const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userStore, setUserStore] = useState(null);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
   // Fetch user store data
   const fetchUserStore = async () => {
@@ -110,6 +118,49 @@ const Dashboard = ({ user, onLogout }) => {
   useEffect(() => {
     fetchDashboardData();
     fetchUserStore();
+    
+    // Listen for URL changes
+    const handlePopState = () => {
+      // Force re-render when URL changes by updating a state
+      const newPath = window.location.pathname;
+      setCurrentPath(newPath);
+      
+      if (newPath.includes('/products')) {
+        setActiveTab('products');
+      } else if (newPath.includes('/orders')) {
+        setActiveTab('orders');
+      } else if (newPath.includes('/customers')) {
+        setActiveTab('customers');
+      } else if (newPath.includes('/analytics')) {
+        setActiveTab('analytics');
+      } else if (newPath.includes('/design')) {
+        setActiveTab('design');
+      } else if (newPath.includes('/builder')) {
+        setActiveTab('builder');
+      } else if (newPath.includes('/menus')) {
+        setActiveTab('menus');
+      } else if (newPath.includes('/settings')) {
+        setActiveTab('settings');
+      } else {
+        setActiveTab('overview');
+      }
+    };
+    
+    // Call once on mount to set initial state
+    handlePopState();
+    
+    // Listen for both popstate and custom urlchange events
+    const handleUrlChange = (event) => {
+      handlePopState();
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('urlchange', handleUrlChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('urlchange', handleUrlChange);
+    };
   }, []);
 
   // Menu items for sidebar navigation
@@ -119,10 +170,28 @@ const Dashboard = ({ user, onLogout }) => {
     { id: 'orders', icon: ShoppingCart, label: t('dashboard.orders') || 'הזמנות' },
     { id: 'customers', icon: Users, label: t('dashboard.customers') || 'לקוחות' },
     { id: 'analytics', icon: BarChart3, label: t('dashboard.analytics') || 'אנליטיקס' },
+    { id: 'design', icon: Palette, label: t('dashboard.design') || 'עיצוב האתר' },
+    { id: 'builder', icon: Layout, label: t('dashboard.builder') || 'עורך האתר' },
+    { id: 'menus', icon: Menu, label: t('dashboard.menus') || 'תפריטים' },
     { id: 'settings', icon: Settings, label: t('dashboard.settings') || 'הגדרות' }
   ];
 
+  // Handle builder navigation
+  useEffect(() => {
+    if (activeTab === 'builder' && onNavigateToBuilder) {
+      onNavigateToBuilder();
+    }
+  }, [activeTab, onNavigateToBuilder]);
+
   const renderTabContent = () => {
+    // Check if we're on the product creation page
+    if (currentPath === '/dashboard/products/new' || currentPath.includes('/products/new')) {
+      return <ProductFormPage />;
+    }
+    if (currentPath === '/dashboard/products' || currentPath.includes('/products')) {
+      return <ProductsPage />;
+    }
+    
     switch (activeTab) {
       case 'overview':
         return <OverviewPage stats={stats} recentOrders={recentOrders} popularProducts={popularProducts} userStore={userStore} />;
@@ -134,6 +203,13 @@ const Dashboard = ({ user, onLogout }) => {
         return <CustomersPage />;
       case 'analytics':
         return <AnalyticsPage />;
+      case 'design':
+        return <DesignPage />;
+      case 'builder':
+        // Builder navigation is handled by useEffect above
+        return <OverviewPage stats={stats} recentOrders={recentOrders} popularProducts={popularProducts} userStore={userStore} />;
+      case 'menus':
+        return <MenusPage />;
       case 'settings':
         return <SettingsPage />;
       default:
@@ -173,7 +249,7 @@ const Dashboard = ({ user, onLogout }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex" dir="rtl">
+    <div className="h-screen bg-gray-50 flex overflow-hidden" dir="rtl">
       {/* Sidebar */}
       <DashboardSidebar 
         sidebarOpen={sidebarOpen}
@@ -186,7 +262,7 @@ const Dashboard = ({ user, onLogout }) => {
       />
 
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader 
           user={user}
           userStore={userStore}
@@ -197,9 +273,11 @@ const Dashboard = ({ user, onLogout }) => {
           setSidebarOpen={setSidebarOpen}
         />
 
-        {/* Page Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {renderTabContent()}
+                {/* Page Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {renderTabContent()}
+          </div>
         </main>
       </div>
 

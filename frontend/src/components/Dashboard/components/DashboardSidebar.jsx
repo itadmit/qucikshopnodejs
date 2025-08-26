@@ -14,7 +14,7 @@ const DashboardSidebar = ({
   return (
     <div className={`fixed inset-y-0 right-0 z-50 w-64 bg-white shadow-lg transform ${
       sidebarOpen ? 'translate-x-0' : 'translate-x-full'
-    } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:flex-shrink-0 border-l border-gray-100`}>
+    } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:flex-shrink-0 border-l border-gray-100 h-full flex flex-col overflow-hidden`}>
       
       {/* Sidebar Header */}
       <div className="p-2 border-b border-gray-100">
@@ -35,21 +35,8 @@ const DashboardSidebar = ({
         </div>
       </div>
 
-      {/* User Info */}
-      <div className="px-6 py-4">
-        <div className="flex items-center p-3 rounded-xl" style={{background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'}}>
-          <div className="bg-blue-600 rounded-full w-12 h-12 flex items-center justify-center text-white font-bold text-lg ml-3">
-            {user?.firstName?.charAt(0) || 'י'}
-          </div>
-          <div>
-            <p className="font-bold text-gray-900 text-sm">{user?.firstName || 'יוגב'} {user?.lastName || 'אביטן'}</p>
-            <p className="text-xs text-gray-600 font-medium">מנהל חנות</p>
-          </div>
-        </div>
-      </div>
-
       {/* Navigation */}
-      <nav className="px-4 pb-4">
+      <nav className="flex-1 px-4 pt-6 pb-4 overflow-y-auto">
         <div className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -60,6 +47,17 @@ const DashboardSidebar = ({
                 onClick={() => {
                   setActiveTab(item.id);
                   setSidebarOpen(false);
+                  // Update URL based on tab
+                  let newPath;
+                  if (item.id === 'products') {
+                    newPath = '/dashboard/products';
+                  } else if (item.id === 'overview') {
+                    newPath = '/dashboard';
+                  } else {
+                    newPath = `/dashboard/${item.id}`;
+                  }
+                  window.history.pushState({}, '', newPath);
+                  window.dispatchEvent(new CustomEvent('urlchange', { detail: { path: newPath } }));
                 }}
                 className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
@@ -77,7 +75,7 @@ const DashboardSidebar = ({
       </nav>
 
       {/* Sidebar Footer */}
-      <div className="absolute bottom-6 left-4 right-4">
+      <div className="flex-shrink-0 p-4">
         {/* Trial Plan Notice */}
         <div className="rounded-xl p-4 mb-4" style={{background: 'linear-gradient(180deg, #fbece3 0%, #eaceff 100%)'}}>
           <h3 className="font-semibold text-gray-900 mb-1">שדרג את התוכנית שלך</h3>

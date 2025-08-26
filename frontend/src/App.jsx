@@ -15,6 +15,7 @@ import AuthModal from './components/AuthModal'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import Dashboard from './components/Dashboard/Dashboard'
 import StoreApp from './store/StoreApp'
+import SiteBuilderPage from './components/SiteBuilder/pages/SiteBuilderPage'
 
 function App() {
   const { t } = useTranslation()
@@ -23,17 +24,23 @@ function App() {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showDashboard, setShowDashboard] = useState(false)
+  const [showBuilder, setShowBuilder] = useState(false)
   const [storeSlug, setStoreSlug] = useState(null)
 
   // Check if this is a store subdomain or main app
   useEffect(() => {
     const hostname = window.location.hostname
     const pathname = window.location.pathname
+    const urlParams = new URLSearchParams(window.location.search)
     
     let detectedStoreSlug = null
     
+    // Check if preview=store parameter is present (for design preview)
+    if (urlParams.get('preview') === 'store') {
+      detectedStoreSlug = 'yogevstore' // Default store for preview
+    }
     // Check if it's a subdomain (e.g., mystore.quickshop.com or mystore.localhost)
-    if (hostname.includes('.') && !hostname.startsWith('www')) {
+    else if (hostname.includes('.') && !hostname.startsWith('www')) {
       const subdomain = hostname.split('.')[0]
       // Don't treat 'admin', 'api', 'www' as store slugs
       if (!['admin', 'api', 'www', 'localhost'].includes(subdomain)) {
@@ -55,11 +62,23 @@ function App() {
       if (token && userData) {
         try {
           setUser(JSON.parse(userData))
+          
+          // Check if URL is dashboard or builder and redirect accordingly
+          if (window.location.pathname.startsWith('/dashboard')) {
+            setShowDashboard(true)
+          } else if (window.location.pathname.startsWith('/builder')) {
+            setShowBuilder(true)
+          }
         } catch (error) {
           console.error('Error parsing user data:', error)
           localStorage.removeItem('token')
           localStorage.removeItem('authToken')
           localStorage.removeItem('user')
+        }
+      } else {
+        // If no token but URL is dashboard or builder, redirect to home
+        if (window.location.pathname.startsWith('/dashboard') || window.location.pathname.startsWith('/builder')) {
+          window.history.pushState({}, '', '/')
         }
       }
     }
@@ -67,12 +86,49 @@ function App() {
     setIsLoading(false)
   }, [])
 
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const currentPath = window.location.pathname
+      if (currentPath.startsWith('/dashboard')) {
+        if (user) {
+          setShowDashboard(true)
+          setShowBuilder(false)
+        } else {
+          window.history.pushState({}, '', '/')
+        }
+      } else if (currentPath.startsWith('/builder')) {
+        if (user) {
+          setShowBuilder(true)
+          setShowDashboard(false)
+        } else {
+          window.history.pushState({}, '', '/')
+        }
+      } else {
+        setShowDashboard(false)
+        setShowBuilder(false)
+      }
+    }
+
+    const handleUrlChange = () => {
+      handlePopState()
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    window.addEventListener('urlchange', handleUrlChange)
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('urlchange', handleUrlChange)
+    }
+  }, [user])
+
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('authToken')
     localStorage.removeItem('user')
     setUser(null)
     setShowDashboard(false)
+    window.history.pushState({}, '', '/')
   }
 
   const handleAuthSuccess = (userData, token) => {
@@ -85,6 +141,7 @@ function App() {
     // Auto redirect to dashboard
     setTimeout(() => {
       setShowDashboard(true)
+      window.history.pushState({}, '', '/dashboard')
     }, 500)
   }
 
@@ -135,9 +192,30 @@ function App() {
     return <StoreApp storeSlug={storeSlug} />
   }
 
+  // Show builder if user is logged in and builder is requested
+  if (user && showBuilder) {
+    return <SiteBuilderPage user={user} onBack={() => {
+      setShowBuilder(false)
+      setShowDashboard(true)
+      window.history.pushState({}, '', '/dashboard')
+    }} />
+  }
+
   // Show dashboard if user is logged in and dashboard is requested
   if (user && showDashboard) {
-    return <Dashboard user={user} onLogout={handleLogout} onBack={() => setShowDashboard(false)} />
+    return <Dashboard 
+      user={user} 
+      onLogout={handleLogout} 
+      onBack={() => {
+        setShowDashboard(false)
+        window.history.pushState({}, '', '/')
+      }}
+      onNavigateToBuilder={() => {
+        setShowDashboard(false)
+        setShowBuilder(true)
+        window.history.pushState({}, '', '/builder')
+      }}
+    />
   }
 
   return (
@@ -168,7 +246,10 @@ function App() {
                     <span className="text-sm font-medium">שלום, {user.firstName}</span>
                   </div>
                   <button 
-                    onClick={() => setShowDashboard(true)}
+                    onClick={() => {
+                      setShowDashboard(true)
+                      window.history.pushState({}, '', '/dashboard')
+                    }}
                     className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     {t('nav.dashboard')}

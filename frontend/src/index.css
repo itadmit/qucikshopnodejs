@@ -18,6 +18,21 @@
   .btn-primary {
     @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
   }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -20px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
   
   .btn-secondary {
     @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors;
@@ -25,5 +40,36 @@
   
   .card {
     @apply bg-white rounded-lg shadow-md p-6;
+  }
+
+  .animate-celebration {
+    animation: celebration 0.6s ease-in-out;
+  }
+
+  @keyframes celebration {
+    0%, 100% {
+      transform: scale(1);
+    }
+    25% {
+      transform: scale(1.05) rotate(-2deg);
+    }
+    75% {
+      transform: scale(1.05) rotate(2deg);
+    }
+  }
+
+  .animate-progress-fill {
+    animation: progressFill 0.8s ease-out;
+  }
+
+  @keyframes progressFill {
+    from {
+      transform: scaleX(0);
+      transform-origin: right;
+    }
+    to {
+      transform: scaleX(1);
+      transform-origin: right;
+    }
   }
 }

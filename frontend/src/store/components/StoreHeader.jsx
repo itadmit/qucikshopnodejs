@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Phone, Mail, LayoutDashboard, Facebook, Instagram, MessageCircle, Search, Heart, User, Menu, X } from 'lucide-react'
 import LanguageSwitcher from '../../components/LanguageSwitcher'
 import CartIcon from './CartIcon'
+import SideCart from './SideCart'
+import Toast from './Toast'
 
 const StoreHeader = ({ storeData, isOwner }) => {
   const { t } = useTranslation()
@@ -11,6 +14,9 @@ const StoreHeader = ({ storeData, isOwner }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [cartItemsCount, setCartItemsCount] = useState(0)
+  const [isCartOpen, setIsCartOpen] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
 
   useEffect(() => {
     // Load cart items count from localStorage
@@ -25,7 +31,19 @@ const StoreHeader = ({ storeData, isOwner }) => {
     // Listen for cart updates
     const handleCartUpdate = () => updateCartCount()
     window.addEventListener('cartUpdated', handleCartUpdate)
-    return () => window.removeEventListener('cartUpdated', handleCartUpdate)
+    
+    // Listen for open side cart events
+    const handleOpenSideCart = () => {
+      setIsCartOpen(true)
+      setToastMessage('המוצר נוסף לעגלה בהצלחה!')
+      setShowToast(true)
+    }
+    window.addEventListener('openSideCart', handleOpenSideCart)
+    
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate)
+      window.removeEventListener('openSideCart', handleOpenSideCart)
+    }
   }, [storeData?.slug])
 
   const handleSearch = (e) => {
@@ -52,24 +70,22 @@ const StoreHeader = ({ storeData, isOwner }) => {
 
   if (!storeData) return null
 
-  console.log('🔍 StoreHeader rendering with cartItemsCount:', cartItemsCount)
-
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       {/* Top Bar */}
-      <div className="bg-primary-600 text-white py-2">
+      <div className="bg-black text-white py-2">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center text-sm">
             <div className="flex items-center space-x-4 rtl:space-x-reverse">
               {storeData.phone && (
                 <span className="flex items-center">
-                  <i className="ri-phone-line ml-2 rtl:ml-0 rtl:mr-2"></i>
+                  <Phone className="w-4 h-4 ml-2 rtl:ml-0 rtl:mr-2" />
                   {storeData.phone}
                 </span>
               )}
               {storeData.email && (
                 <span className="flex items-center">
-                  <i className="ri-mail-line ml-2 rtl:ml-0 rtl:mr-2"></i>
+                  <Mail className="w-4 h-4 ml-2 rtl:ml-0 rtl:mr-2" />
                   {storeData.email}
                 </span>
               )}
@@ -80,23 +96,23 @@ const StoreHeader = ({ storeData, isOwner }) => {
                   href="http://localhost:5173" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center"
+                  className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center border border-white/20"
                 >
-                  <i className="ri-dashboard-line ml-1 rtl:ml-0 rtl:mr-1"></i>
+                  <LayoutDashboard className="w-4 h-4 ml-1 rtl:ml-0 rtl:mr-1" />
                   נהל חנות
                 </a>
               )}
               <div className="flex items-center space-x-3 rtl:space-x-reverse">
                 <LanguageSwitcher />
-                <div className="w-px h-4 bg-white/30"></div>
-                <a href="#" className="hover:text-primary-200 transition-colors">
-                  <i className="ri-facebook-fill"></i>
+                <div className="w-px h-4 bg-white/20"></div>
+                <a href="#" className="hover:text-gray-300 transition-colors">
+                  <Facebook className="w-4 h-4" />
                 </a>
-                <a href="#" className="hover:text-primary-200 transition-colors">
-                  <i className="ri-instagram-line"></i>
+                <a href="#" className="hover:text-gray-300 transition-colors">
+                  <Instagram className="w-4 h-4" />
                 </a>
-                <a href="#" className="hover:text-primary-200 transition-colors">
-                  <i className="ri-whatsapp-line"></i>
+                <a href="#" className="hover:text-gray-300 transition-colors">
+                  <MessageCircle className="w-4 h-4" />
                 </a>
               </div>
             </div>
@@ -170,7 +186,7 @@ const StoreHeader = ({ storeData, isOwner }) => {
                 className="p-2 text-gray-600 hover:text-primary-600 transition-colors"
                 aria-label={t('nav.search')}
               >
-                <i className="ri-search-line text-xl"></i>
+                <Search className="w-5 h-5" />
               </button>
               
               {isSearchOpen && (
@@ -185,7 +201,7 @@ const StoreHeader = ({ storeData, isOwner }) => {
                         placeholder={t('nav.search')}
                         className="w-full pl-10 rtl:pl-4 rtl:pr-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
-                      <i className="ri-search-line absolute left-3 rtl:left-auto rtl:right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                      <Search className="w-4 h-4 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     </div>
                   </form>
                 </div>
@@ -198,7 +214,7 @@ const StoreHeader = ({ storeData, isOwner }) => {
               className="p-2 text-gray-600 hover:text-primary-600 transition-colors relative"
               aria-label="רשימת משאלות"
             >
-              <i className="ri-heart-line text-xl"></i>
+              <Heart className="w-5 h-5" />
               {/* Wishlist count badge - you can add this later */}
             </Link>
 
@@ -208,11 +224,14 @@ const StoreHeader = ({ storeData, isOwner }) => {
               className="p-2 text-gray-600 hover:text-primary-600 transition-colors"
               aria-label={t('nav.account')}
             >
-              <i className="ri-user-line text-xl"></i>
+              <User className="w-5 h-5" />
             </Link>
 
             {/* Cart */}
-            <CartIcon itemsCount={cartItemsCount} />
+            <CartIcon 
+              itemsCount={cartItemsCount} 
+              onClick={() => setIsCartOpen(true)}
+            />
 
             {/* Mobile Menu Button */}
             <button
@@ -220,7 +239,7 @@ const StoreHeader = ({ storeData, isOwner }) => {
               className="lg:hidden p-2 text-gray-600 hover:text-primary-600 transition-colors"
               aria-label="תפריט"
             >
-              <i className={`ri-${isMenuOpen ? 'close' : 'menu'}-line text-xl`}></i>
+              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -237,7 +256,7 @@ const StoreHeader = ({ storeData, isOwner }) => {
                   className="bg-primary-50 text-primary-600 px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center border border-primary-200"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <i className="ri-dashboard-line ml-2 rtl:ml-0 rtl:mr-2"></i>
+                  <LayoutDashboard className="w-4 h-4 ml-2 rtl:ml-0 rtl:mr-2" />
                   נהל חנות
                 </a>
               )}
@@ -283,7 +302,7 @@ const StoreHeader = ({ storeData, isOwner }) => {
                     className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <i className="ri-heart-line ml-2 rtl:ml-0 rtl:mr-2"></i>
+                    <Heart className="w-4 h-4 ml-2 rtl:ml-0 rtl:mr-2" />
                     רשימת משאלות
                   </Link>
                   <Link 
@@ -291,7 +310,7 @@ const StoreHeader = ({ storeData, isOwner }) => {
                     className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <i className="ri-user-line ml-2 rtl:ml-0 rtl:mr-2"></i>
+                    <User className="w-4 h-4 ml-2 rtl:ml-0 rtl:mr-2" />
                     {t('nav.account')}
                   </Link>
                 </div>
@@ -308,6 +327,21 @@ const StoreHeader = ({ storeData, isOwner }) => {
           onClick={() => setIsSearchOpen(false)}
         />
       )}
+
+      {/* Side Cart */}
+      <SideCart 
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        storeData={storeData}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        message={toastMessage}
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+        type="success"
+      />
     </header>
   )
 }

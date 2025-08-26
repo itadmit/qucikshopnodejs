@@ -222,7 +222,13 @@ const ProductsPage = () => {
             <Download className="w-4 h-4" />
             ייצא
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <button 
+            onClick={() => {
+              window.history.pushState({}, '', '/dashboard/products/new');
+              window.dispatchEvent(new CustomEvent('urlchange', { detail: { path: '/dashboard/products/new' } }));
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
             <Plus className="w-4 h-4" />
             הוסף מוצר
           </button>
@@ -247,7 +253,13 @@ const ProductsPage = () => {
             <select 
               value={filterStatus} 
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'left 0.5rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em'
+              }}
             >
               <option value="all">כל הסטטוסים</option>
               <option value="ACTIVE">פעיל</option>
@@ -258,7 +270,13 @@ const ProductsPage = () => {
             <select 
               value={sortBy} 
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'left 0.5rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em'
+              }}
             >
               <option value="name">מיין לפי שם</option>
               <option value="price">מיין לפי מחיר</option>
@@ -373,7 +391,13 @@ const ProductsPage = () => {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">אין מוצרים עדיין</h3>
             <p className="text-gray-500 mb-6">התחל בהוספת המוצר הראשון שלך</p>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto">
+            <button 
+              onClick={() => {
+                window.history.pushState({}, '', '/dashboard/products/new');
+                window.dispatchEvent(new CustomEvent('urlchange', { detail: { path: '/dashboard/products/new' } }));
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto"
+            >
               <Plus className="w-4 h-4" />
               הוסף מוצר ראשון
             </button>

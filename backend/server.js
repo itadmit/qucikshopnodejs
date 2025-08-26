@@ -11,6 +11,9 @@ import dashboardRoutes from './routes/dashboard.js';
 import storeRoutes from './routes/stores.js';
 import notificationRoutes from './routes/notifications.js';
 import storeUsersRoutes from './routes/store-users.js';
+import mediaRoutes from './routes/media.js';
+import productRoutes from './routes/products.js';
+import customFieldsRoutes from './routes/custom-fields.js';
 
 // Load environment variables
 dotenv.config();
@@ -48,6 +51,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/store-users', storeUsersRoutes);
+app.use('/api/media', mediaRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/custom-fields', customFieldsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -19,10 +19,10 @@ import {
   AlertCircle,
   CheckCircle2
 } from 'lucide-react';
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import MediaUploader from '../components/MediaUploader.jsx';
 
 const ProductFormPage = ({ productId = null }) => {
-  const [activeTab, setActiveTab] = useState('basic');
   const [productType, setProductType] = useState('SIMPLE'); // 'SIMPLE' or 'VARIABLE'
   const [isDraft, setIsDraft] = useState(true);
   const fileInputRef = useRef(null);
@@ -45,8 +45,44 @@ const ProductFormPage = ({ productId = null }) => {
     tags: [],
     category: '',
     seoTitle: '',
-    seoDescription: ''
+    seoDescription: '',
+    publishedAt: ''
   });
+
+  // Custom fields
+  const [customFields, setCustomFields] = useState([]);
+  const [customFieldValues, setCustomFieldValues] = useState({});
+
+  // Load custom fields
+  React.useEffect(() => {
+    const loadCustomFields = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/custom-fields', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const fields = await response.json();
+          setCustomFields(fields);
+          
+          // Initialize custom field values
+          const initialValues = {};
+          fields.forEach(field => {
+            initialValues[field.name] = field.defaultValue || '';
+          });
+          setCustomFieldValues(initialValues);
+        }
+      } catch (error) {
+        console.error('Error loading custom fields:', error);
+      }
+    };
+
+    loadCustomFields();
+  }, []);
 
   // Media management
   const [media, setMedia] = useState([]);
@@ -64,13 +100,7 @@ const ProductFormPage = ({ productId = null }) => {
     { value: 'BUTTON', label: 'כפתור', icon: Package, description: 'כפתורי בחירה' }
   ];
 
-  const tabs = [
-    { id: 'basic', label: 'מידע בסיסי', icon: Info },
-    { id: 'media', label: 'מדיה', icon: ImageIcon },
-    { id: 'variants', label: 'וריאציות', icon: Settings },
-    { id: 'inventory', label: 'מלאי', icon: BarChart3 },
-    { id: 'seo', label: 'SEO', icon: Eye }
-  ];
+
 
   const handleAddOption = () => {
     const newOption = {
@@ -78,14 +108,14 @@ const ProductFormPage = ({ productId = null }) => {
       name: '',
       type: 'TEXT',
       displayType: 'DROPDOWN',
-      values: []
+      values: [{ id: Date.now(), value: '', colorCode: '', imageUrl: '', sortOrder: 0 }] // Start with one empty value
     };
     setProductOptions([...productOptions, newOption]);
   };
 
   const handleAddOptionValue = (optionId) => {
     const newValue = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       value: '',
       colorCode: '',
       imageUrl: '',
@@ -99,11 +129,58 @@ const ProductFormPage = ({ productId = null }) => {
     ));
   };
 
+  const handleOptionValueChange = (optionId, valueId, newValue) => {
+    setProductOptions(prev => prev.map(option => 
+      option.id === optionId 
+        ? { 
+            ...option, 
+            values: option.values.map(val => 
+              val.id === valueId ? { ...val, value: newValue } : val
+            )
+          }
+        : option
+    ));
+
+    // Auto-add new empty input when user types in the last input
+    const option = productOptions.find(opt => opt.id === optionId);
+    if (option) {
+      const valueIndex = option.values.findIndex(val => val.id === valueId);
+      const isLastValue = valueIndex === option.values.length - 1;
+      const isNotEmpty = newValue.trim() !== '';
+      
+      if (isLastValue && isNotEmpty) {
+        handleAddOptionValue(optionId);
+      }
+    }
+  };
+
+  const handleRemoveOptionValue = (optionId, valueId) => {
+    setProductOptions(prev => prev.map(option => 
+      option.id === optionId 
+        ? { 
+            ...option, 
+            values: option.values.filter(val => val.id !== valueId)
+          }
+        : option
+    ));
+  };
+
   const generateVariants = () => {
     if (productOptions.length === 0) return;
     
+    // Filter out empty values
+    const validOptions = productOptions.map(option => ({
+      ...option,
+      values: option.values.filter(val => val.value.trim() !== '')
+    })).filter(option => option.values.length > 0);
+
+    if (validOptions.length === 0) {
+      setVariants([]);
+      return;
+    }
+    
     // Generate all possible combinations
-    const combinations = productOptions.reduce((acc, option) => {
+    const combinations = validOptions.reduce((acc, option) => {
       if (acc.length === 0) {
         return option.values.map(value => [{ optionId: option.id, valueId: value.id, value: value.value }]);
       }
@@ -119,12 +196,12 @@ const ProductFormPage = ({ productId = null }) => {
 
     const newVariants = combinations.map((combination, index) => ({
       id: Date.now() + index,
-      sku: `${productData.sku}-${index + 1}`,
-      price: productData.price,
-      comparePrice: productData.comparePrice,
-      costPrice: productData.costPrice,
+      sku: `${productData.sku || 'PRODUCT'}-${index + 1}`,
+      price: productData.price || '',
+      comparePrice: productData.comparePrice || '',
+      costPrice: productData.costPrice || '',
       inventoryQuantity: 0,
-      weight: productData.weight,
+      weight: productData.weight || '',
       optionValues: combination,
       isActive: true
     }));
@@ -132,23 +209,109 @@ const ProductFormPage = ({ productId = null }) => {
     setVariants(newVariants);
   };
 
-  const handleMediaUpload = (files) => {
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const newMedia = {
-          id: Date.now() + Math.random(),
-          file,
-          url: e.target.result,
-          type: file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
-          isPrimary: media.length === 0,
-          altText: '',
-          colorOptionValueId: null
-        };
-        setMedia(prev => [...prev, newMedia]);
+  // Auto-generate variants when options change
+  React.useEffect(() => {
+    if (productType === 'VARIABLE' && productOptions.length > 0) {
+      generateVariants();
+    }
+  }, [productOptions, productType, productData.sku, productData.price]);
+
+  const handleSaveProduct = async () => {
+    try {
+      const saveData = {
+        storeId: 1, // TODO: Get from context
+        name: productData.name,
+        description: productData.description,
+        shortDescription: productData.shortDescription,
+        sku: productData.sku,
+        price: productData.price,
+        comparePrice: productData.comparePrice,
+        costPrice: productData.costPrice,
+        categoryId: productData.category,
+        trackInventory: productData.trackInventory,
+        inventoryQuantity: productData.inventoryQuantity,
+        allowBackorder: productData.allowBackorder,
+        weight: productData.weight,
+        requiresShipping: productData.requiresShipping,
+        isDigital: productData.isDigital,
+        seoTitle: productData.seoTitle,
+        seoDescription: productData.seoDescription,
+        tags: JSON.stringify(productData.tags),
+        customFields: customFieldValues,
+        media: media.map(item => ({
+          url: item.url,
+          type: item.type,
+          altText: item.altText,
+          isPrimary: item.isPrimary,
+          sortOrder: 0
+        })),
+        variants: variants,
+        productOptions: productOptions
       };
-      reader.readAsDataURL(file);
-    });
+
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(saveData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save product');
+      }
+
+      const result = await response.json();
+      alert('המוצר נשמר בהצלחה!');
+      
+      // Redirect to products list or edit page
+      // window.location.href = `/dashboard/products/${result.data.id}`;
+    } catch (error) {
+      console.error('Save product error:', error);
+      alert('שגיאה בשמירת המוצר');
+    }
+  };
+
+  const handleMediaUpload = async (files) => {
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach(file => {
+        formData.append('files', file);
+      });
+      formData.append('folder', 'products');
+
+      const response = await fetch('/api/media/upload-multiple', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      
+      const newMediaItems = result.data.map(uploadResult => ({
+        id: Date.now() + Math.random(),
+        url: uploadResult.url,
+        key: uploadResult.key,
+        type: uploadResult.mimeType.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+        isPrimary: media.length === 0,
+        altText: '',
+        colorOptionValueId: null,
+        originalName: uploadResult.originalName,
+        size: uploadResult.size
+      }));
+
+      setMedia(prev => [...prev, ...newMediaItems]);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('שגיאה בהעלאת הקבצים');
+    }
   };
 
   const ColorPicker = ({ value, onChange }) => {
@@ -306,7 +469,13 @@ const ProductFormPage = ({ productId = null }) => {
             <select
               value={productData.category}
               onChange={(e) => setProductData({ ...productData, category: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'left 0.5rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em'
+              }}
             >
               <option value="">בחר קטגוריה</option>
               <option value="בגדים">בגדים</option>
@@ -390,91 +559,16 @@ const ProductFormPage = ({ productId = null }) => {
 
   const renderMediaTab = () => (
     <div className="space-y-6">
-      {/* Media Upload */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium text-gray-900">תמונות ווידאו</h3>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <Upload className="w-4 h-4" />
-            העלה קבצים
-          </button>
-        </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,video/*"
-          onChange={(e) => handleMediaUpload(e.target.files)}
-          className="hidden"
-        />
-
-        {/* Media Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {media.map((item, index) => (
-            <div key={item.id} className="relative group">
-              <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                {item.type === 'IMAGE' ? (
-                  <img src={item.url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <video src={item.url} className="w-full h-full object-cover" />
-                )}
-              </div>
-              
-              <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                <div className="flex gap-2">
-                  {!item.isPrimary && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMedia(prev => prev.map((m, i) => ({ ...m, isPrimary: i === index })));
-                      }}
-                      className="p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100"
-                      title="הגדר כתמונה ראשית"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setMedia(prev => prev.filter(m => m.id !== item.id))}
-                    className="p-2 bg-red-600 rounded-lg text-white hover:bg-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              
-              {item.isPrimary && (
-                <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                  ראשית
-                </div>
-              )}
-              
-              {item.type === 'VIDEO' && (
-                <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-                  <Video className="w-3 h-3" />
-                  וידאו
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Upload placeholder */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <Upload className="w-8 h-8 mb-2" />
-            <span className="text-sm">העלה</span>
-          </button>
-        </div>
-      </div>
+      <MediaUploader
+        media={media}
+        onUpload={(newMediaItems) => {
+          setMedia(prev => [...prev, ...newMediaItems]);
+        }}
+        onDelete={(mediaId) => {
+          setMedia(prev => prev.filter(m => m.id !== mediaId));
+        }}
+        maxFiles={10}
+      />
 
       {/* Video as Primary */}
       {media.some(m => m.type === 'VIDEO') && (
@@ -590,7 +684,13 @@ const ProductFormPage = ({ productId = null }) => {
                               o.id === option.id ? { ...o, type: e.target.value } : o
                             ));
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                            backgroundPosition: 'left 0.5rem center',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundSize: '1.5em 1.5em'
+                          }}
                         >
                           {optionTypes.map(type => (
                             <option key={type.value} value={type.value}>{type.label}</option>
@@ -614,43 +714,54 @@ const ProductFormPage = ({ productId = null }) => {
                       </div>
 
                       <div className="space-y-3">
-                        {option.values.map((value) => (
-                          <OptionValueEditor
-                            key={value.id}
-                            option={option}
-                            value={value}
-                            onChange={(updatedValue) => {
-                              setProductOptions(prev => prev.map(o => 
-                                o.id === option.id 
-                                  ? { ...o, values: o.values.map(v => v.id === value.id ? updatedValue : v) }
-                                  : o
-                              ));
-                            }}
-                            onDelete={() => {
-                              setProductOptions(prev => prev.map(o => 
-                                o.id === option.id 
-                                  ? { ...o, values: o.values.filter(v => v.id !== value.id) }
-                                  : o
-                              ));
-                            }}
-                          />
+                        {option.values.map((value, valueIndex) => (
+                          <div key={value.id} className="flex items-center gap-3">
+                            <input
+                              type="text"
+                              value={value.value}
+                              onChange={(e) => handleOptionValueChange(option.id, value.id, e.target.value)}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder={`ערך ${valueIndex + 1}`}
+                            />
+                            {option.type === 'COLOR' && (
+                              <input
+                                type="color"
+                                value={value.colorCode || '#000000'}
+                                onChange={(e) => {
+                                  setProductOptions(prev => prev.map(o => 
+                                    o.id === option.id 
+                                      ? { ...o, values: o.values.map(v => v.id === value.id ? { ...v, colorCode: e.target.value } : v) }
+                                      : o
+                                  ));
+                                }}
+                                className="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer"
+                              />
+                            )}
+                            {option.values.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveOptionValue(option.id, value.id)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>
                   </div>
                 ))}
 
-                {/* Generate Variants Button */}
-                {productOptions.every(option => option.values.length > 0) && (
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      onClick={generateVariants}
-                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 mx-auto"
-                    >
-                      <CheckCircle2 className="w-5 h-5" />
-                      צור וריאציות ({productOptions.reduce((acc, option) => acc * option.values.length, 1)} וריאציות)
-                    </button>
+                {/* Auto-generated variants info */}
+                {variants.length > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <CheckCircle2 className="w-5 h-5 text-green-600 ml-2" />
+                      <span className="text-green-800 font-medium">
+                        נוצרו {variants.length} וריאציות אוטומטית
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -750,143 +861,221 @@ const ProductFormPage = ({ productId = null }) => {
   );
 
   const renderInventoryTab = () => (
-    <div className="space-y-6">
-      <div className="bg-gray-50 rounded-lg p-6">
-        <h3 className="font-medium text-gray-900 mb-4 flex items-center">
-          <BarChart3 className="w-5 h-5 ml-2" />
-          ניהול מלאי
-        </h3>
-        
-        <div className="space-y-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={productData.trackInventory}
-              onChange={(e) => setProductData({ ...productData, trackInventory: e.target.checked })}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 ml-2"
-            />
-            <span className="text-sm text-gray-700">עקוב אחר כמות במלאי</span>
-          </label>
-
-          {productData.trackInventory && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">כמות במלאי</label>
-                <input
-                  type="number"
-                  value={productData.inventoryQuantity}
-                  onChange={(e) => setProductData({ ...productData, inventoryQuantity: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              
-              <div className="flex items-end">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={productData.allowBackorder}
-                    onChange={(e) => setProductData({ ...productData, allowBackorder: e.target.checked })}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 ml-2"
-                  />
-                  <span className="text-sm text-gray-700">אפשר הזמנה כשאין במלאי</span>
-                </label>
-              </div>
-            </div>
-          )}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="font-medium text-gray-900">מעקב מלאי</h4>
+          <p className="text-sm text-gray-500">עקוב אחר כמות המוצרים במלאי</p>
         </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={productData.trackInventory}
+            onChange={(e) => setProductData({ ...productData, trackInventory: e.target.checked })}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-6">
-        <h3 className="font-medium text-gray-900 mb-4">משלוח</h3>
-        
-        <div className="space-y-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={productData.requiresShipping}
-              onChange={(e) => setProductData({ ...productData, requiresShipping: e.target.checked })}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 ml-2"
-            />
-            <span className="text-sm text-gray-700">מוצר פיזי הדורש משלוח</span>
-          </label>
-
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={productData.isDigital}
-              onChange={(e) => setProductData({ ...productData, isDigital: e.target.checked })}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 ml-2"
-            />
-            <span className="text-sm text-gray-700">מוצר דיגיטלי</span>
-          </label>
-
-          {productData.requiresShipping && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">משקל (גרם)</label>
-              <input
-                type="number"
-                value={productData.weight}
-                onChange={(e) => setProductData({ ...productData, weight: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="0"
-              />
-            </div>
-          )}
+      {productData.trackInventory && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">כמות במלאי</label>
+          <input
+            type="number"
+            value={productData.inventoryQuantity}
+            onChange={(e) => setProductData({ ...productData, inventoryQuantity: parseInt(e.target.value) || 0 })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="0"
+          />
         </div>
+      )}
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">משקל (ק"ג)</label>
+        <input
+          type="number"
+          step="0.01"
+          value={productData.weight}
+          onChange={(e) => setProductData({ ...productData, weight: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="0.00"
+        />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="font-medium text-gray-900">אפשר הזמנות ללא מלאי</h4>
+          <p className="text-sm text-gray-500">אפשר ללקוחות להזמין גם כשאין במלאי</p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={productData.allowBackorder}
+            onChange={(e) => setProductData({ ...productData, allowBackorder: e.target.checked })}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="font-medium text-gray-900">דורש משלוח</h4>
+          <p className="text-sm text-gray-500">המוצר דורש משלוח פיזי</p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={productData.requiresShipping}
+            onChange={(e) => setProductData({ ...productData, requiresShipping: e.target.checked })}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="font-medium text-gray-900">מוצר דיגיטלי</h4>
+          <p className="text-sm text-gray-500">המוצר הוא קובץ דיגיטלי</p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={productData.isDigital}
+            onChange={(e) => setProductData({ ...productData, isDigital: e.target.checked })}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
       </div>
     </div>
   );
 
   const renderSeoTab = () => (
-    <div className="space-y-6">
-      <div className="bg-gray-50 rounded-lg p-6">
-        <h3 className="font-medium text-gray-900 mb-4 flex items-center">
-          <Eye className="w-5 h-5 ml-2" />
-          אופטימיזציה למנועי חיפוש
-        </h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">כותרת SEO</label>
-            <input
-              type="text"
-              value={productData.seoTitle}
-              onChange={(e) => setProductData({ ...productData, seoTitle: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="כותרת למנועי חיפוש"
-            />
-            <p className="text-xs text-gray-500 mt-1">מומלץ עד 60 תווים</p>
-          </div>
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">כותרת SEO</label>
+        <input
+          type="text"
+          value={productData.seoTitle}
+          onChange={(e) => setProductData({ ...productData, seoTitle: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="כותרת למנועי חיפוש"
+        />
+        <p className="text-xs text-gray-500 mt-1">מומלץ עד 60 תווים</p>
+      </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">תיאור SEO</label>
-            <textarea
-              value={productData.seoDescription}
-              onChange={(e) => setProductData({ ...productData, seoDescription: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="תיאור למנועי חיפוש"
-            />
-            <p className="text-xs text-gray-500 mt-1">מומלץ עד 160 תווים</p>
-          </div>
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">תיאור SEO</label>
+        <textarea
+          value={productData.seoDescription}
+          onChange={(e) => setProductData({ ...productData, seoDescription: e.target.value })}
+          rows={3}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="תיאור למנועי חיפוש"
+        />
+        <p className="text-xs text-gray-500 mt-1">מומלץ עד 160 תווים</p>
       </div>
 
       {/* Preview */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h4 className="font-medium text-gray-900 mb-4">תצוגה מקדימה בגוגל</h4>
-        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-          <div className="text-blue-600 text-lg hover:underline cursor-pointer">
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <h4 className="font-medium text-gray-900 mb-3 text-sm">תצוגה מקדימה בגוגל</h4>
+        <div className="space-y-1">
+          <div className="text-blue-600 text-sm hover:underline cursor-pointer">
             {productData.seoTitle || productData.name || 'כותרת המוצר'}
           </div>
-          <div className="text-green-700 text-sm">
+          <div className="text-green-700 text-xs">
             yourstore.com/products/{productData.name?.toLowerCase().replace(/\s+/g, '-') || 'product-name'}
           </div>
-          <div className="text-gray-600 text-sm mt-1">
+          <div className="text-gray-600 text-xs">
             {productData.seoDescription || productData.shortDescription || 'תיאור המוצר יופיע כאן...'}
           </div>
         </div>
       </div>
+    </div>
+  );
+
+  const renderCustomFieldsTab = () => (
+    <div className="space-y-6">
+      {customFields.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <Info className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+          <p>אין שדות מותאמים אישית מוגדרים</p>
+          <p className="text-sm mt-2">ניתן להוסיף שדות מותאמים אישית בהגדרות החנות</p>
+        </div>
+      ) : (
+        customFields.map((field) => (
+          <div key={field.id}>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {field.label}
+              {field.isRequired && <span className="text-red-500 mr-1">*</span>}
+            </label>
+            
+            {field.type === 'TEXT' && (
+              <input
+                type="text"
+                value={customFieldValues[field.name] || ''}
+                onChange={(e) => setCustomFieldValues({
+                  ...customFieldValues,
+                  [field.name]: e.target.value
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder={field.placeholder}
+                required={field.isRequired}
+              />
+            )}
+            
+            {field.type === 'TEXTAREA' && (
+              <textarea
+                value={customFieldValues[field.name] || ''}
+                onChange={(e) => setCustomFieldValues({
+                  ...customFieldValues,
+                  [field.name]: e.target.value
+                })}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder={field.placeholder}
+                required={field.isRequired}
+              />
+            )}
+            
+            {field.type === 'NUMBER' && (
+              <input
+                type="number"
+                value={customFieldValues[field.name] || ''}
+                onChange={(e) => setCustomFieldValues({
+                  ...customFieldValues,
+                  [field.name]: e.target.value
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder={field.placeholder}
+                required={field.isRequired}
+              />
+            )}
+            
+            {field.type === 'CHECKBOX' && (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={customFieldValues[field.name] === 'true'}
+                  onChange={(e) => setCustomFieldValues({
+                    ...customFieldValues,
+                    [field.name]: e.target.checked ? 'true' : 'false'
+                  })}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="mr-2 text-sm text-gray-700">{field.placeholder}</span>
+              </div>
+            )}
+            
+            {field.helpText && (
+              <p className="text-xs text-gray-500 mt-1">{field.helpText}</p>
+            )}
+          </div>
+        ))
+      )}
     </div>
   );
 
@@ -895,7 +1084,13 @@ const ProductFormPage = ({ productId = null }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <button className="p-2 hover:bg-gray-100 rounded-lg ml-3">
+          <button 
+            onClick={() => {
+              window.history.pushState({}, '', '/dashboard/products');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="p-2 hover:bg-gray-100 rounded-lg ml-3"
+          >
             <ArrowRight className="w-5 h-5" />
           </button>
           <div>
@@ -923,40 +1118,141 @@ const ProductFormPage = ({ productId = null }) => {
           >
             {isDraft ? 'שמור כטיוטה' : 'פרסם'}
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+          <button 
+            onClick={handleSaveProduct}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
             <Save className="w-4 h-4" />
             שמור מוצר
           </button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="flex space-x-8 rtl:space-x-reverse">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-full">
+        {/* Left Column - Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Basic Information */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Info className="w-5 h-5 ml-2" />
+              מידע בסיסי
+            </h2>
+            {renderBasicTab()}
+          </div>
 
-      {/* Tab Content */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        {activeTab === 'basic' && renderBasicTab()}
-        {activeTab === 'media' && renderMediaTab()}
-        {activeTab === 'variants' && renderVariantsTab()}
-        {activeTab === 'inventory' && renderInventoryTab()}
-        {activeTab === 'seo' && renderSeoTab()}
+          {/* Media */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <ImageIcon className="w-5 h-5 ml-2" />
+              תמונות ווידאו
+            </h2>
+            {renderMediaTab()}
+          </div>
+
+          {/* Variants */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Settings className="w-5 h-5 ml-2" />
+              וריאציות
+            </h2>
+            {renderVariantsTab()}
+          </div>
+        </div>
+
+        {/* Right Column - Sidebar */}
+        <div className="space-y-6 pb-8">
+          {/* Status */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">סטטוס</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">סטטוס מוצר</label>
+                <select 
+                  value={isDraft ? 'draft' : 'active'}
+                  onChange={(e) => setIsDraft(e.target.value === 'draft')}
+                  className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                    backgroundPosition: 'left 0.5rem center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '1.5em 1.5em'
+                  }}
+                >
+                  <option value="draft">טיוטה</option>
+                  <option value="active">פעיל</option>
+                  <option value="inactive">לא פעיל</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">תאריך פרסום</label>
+                <input
+                  type="datetime-local"
+                  value={productData.publishedAt || ''}
+                  onChange={(e) => setProductData({ ...productData, publishedAt: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Organization */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">ארגון</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">קטגוריה</label>
+                <select 
+                  value={productData.category}
+                  onChange={(e) => setProductData({ ...productData, category: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">בחר קטגוריה</option>
+                  <option value="בגדים">בגדים</option>
+                  <option value="נעליים">נעליים</option>
+                  <option value="אביזרים">אביזרים</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">תגיות</label>
+                <input
+                  type="text"
+                  value={productData.tags ? productData.tags.join(', ') : ''}
+                  onChange={(e) => {
+                    const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                    setProductData({ ...productData, tags });
+                  }}
+                  placeholder="הוסף תגיות מופרדות בפסיקים"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Inventory */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">מלאי</h3>
+            {renderInventoryTab()}
+          </div>
+
+          {/* SEO */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Eye className="w-4 h-4 ml-2" />
+              SEO
+            </h3>
+            {renderSeoTab()}
+          </div>
+
+          {/* Custom Fields */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Settings className="w-4 h-4 ml-2" />
+              שדות מותאמים אישית
+            </h3>
+            {renderCustomFieldsTab()}
+          </div>
+        </div>
       </div>
     </div>
   );

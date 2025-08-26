@@ -49,6 +49,18 @@ CREATE TYPE "public"."NotificationType" AS ENUM ('ORDER_RECEIVED', 'ORDER_SHIPPE
 -- CreateEnum
 CREATE TYPE "public"."NotificationPriority" AS ENUM ('LOW', 'NORMAL', 'HIGH', 'URGENT');
 
+-- CreateEnum
+CREATE TYPE "public"."StorePlanType" AS ENUM ('BASIC', 'NO_TRANSACTION');
+
+-- CreateEnum
+CREATE TYPE "public"."StoreSubscriptionStatus" AS ENUM ('TRIAL', 'ACTIVE', 'INACTIVE', 'CANCELLED', 'SUSPENDED');
+
+-- CreateEnum
+CREATE TYPE "public"."StoreRole" AS ENUM ('OWNER', 'ADMIN', 'MANAGER', 'STAFF', 'VIEWER');
+
+-- CreateEnum
+CREATE TYPE "public"."CustomFieldType" AS ENUM ('TEXT', 'TEXTAREA', 'NUMBER', 'EMAIL', 'URL', 'PHONE', 'DATE', 'CHECKBOX', 'DROPDOWN', 'RADIO', 'FILE');
+
 -- CreateTable
 CREATE TABLE "public"."users" (
     "id" SERIAL NOT NULL,
@@ -81,10 +93,33 @@ CREATE TABLE "public"."stores" (
     "template_name" TEXT NOT NULL DEFAULT 'jupiter',
     "settings" JSONB,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "plan_type" "public"."StorePlanType" NOT NULL DEFAULT 'BASIC',
+    "subscription_status" "public"."StoreSubscriptionStatus" NOT NULL DEFAULT 'TRIAL',
+    "trial_ends_at" TIMESTAMP(3),
+    "subscription_ends_at" TIMESTAMP(3),
+    "monthly_revenue" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "transaction_fee_rate" DOUBLE PRECISION NOT NULL DEFAULT 0.005,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "stores_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."store_users" (
+    "id" SERIAL NOT NULL,
+    "store_id" INTEGER NOT NULL,
+    "user_id" INTEGER NOT NULL,
+    "role" "public"."StoreRole" NOT NULL DEFAULT 'STAFF',
+    "permissions" JSONB,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "invited_by" INTEGER,
+    "invited_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "accepted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "store_users_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -131,6 +166,7 @@ CREATE TABLE "public"."products" (
     "seo_title" TEXT,
     "seo_description" TEXT,
     "tags" JSONB,
+    "custom_fields" JSONB,
     "sort_order" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -162,6 +198,27 @@ CREATE TABLE "public"."product_option_values" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "product_option_values_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."custom_fields" (
+    "id" SERIAL NOT NULL,
+    "store_id" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "label" TEXT NOT NULL,
+    "type" "public"."CustomFieldType" NOT NULL DEFAULT 'TEXT',
+    "is_required" BOOLEAN NOT NULL DEFAULT false,
+    "placeholder" TEXT,
+    "help_text" TEXT,
+    "default_value" TEXT,
+    "options" JSONB,
+    "validation" JSONB,
+    "sort_order" INTEGER NOT NULL DEFAULT 0,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "custom_fields_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -442,13 +499,13 @@ CREATE TABLE "public"."notifications" (
 CREATE UNIQUE INDEX "users_email_key" ON "public"."users"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "stores_user_id_key" ON "public"."stores"("user_id");
-
--- CreateIndex
 CREATE UNIQUE INDEX "stores_slug_key" ON "public"."stores"("slug");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "stores_domain_key" ON "public"."stores"("domain");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "store_users_store_id_user_id_key" ON "public"."store_users"("store_id", "user_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "categories_store_id_slug_key" ON "public"."categories"("store_id", "slug");
@@ -458,6 +515,9 @@ CREATE UNIQUE INDEX "products_store_id_slug_key" ON "public"."products"("store_i
 
 -- CreateIndex
 CREATE UNIQUE INDEX "product_options_store_id_name_key" ON "public"."product_options"("store_id", "name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "custom_fields_store_id_name_key" ON "public"."custom_fields"("store_id", "name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "coupons_store_id_code_key" ON "public"."coupons"("store_id", "code");
@@ -473,6 +533,15 @@ CREATE UNIQUE INDEX "pages_store_id_slug_key" ON "public"."pages"("store_id", "s
 
 -- AddForeignKey
 ALTER TABLE "public"."stores" ADD CONSTRAINT "stores_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."store_users" ADD CONSTRAINT "store_users_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."store_users" ADD CONSTRAINT "store_users_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."store_users" ADD CONSTRAINT "store_users_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."categories" ADD CONSTRAINT "categories_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -491,6 +560,9 @@ ALTER TABLE "public"."product_options" ADD CONSTRAINT "product_options_store_id_
 
 -- AddForeignKey
 ALTER TABLE "public"."product_option_values" ADD CONSTRAINT "product_option_values_option_id_fkey" FOREIGN KEY ("option_id") REFERENCES "public"."product_options"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."custom_fields" ADD CONSTRAINT "custom_fields_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."product_variants" ADD CONSTRAINT "product_variants_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
