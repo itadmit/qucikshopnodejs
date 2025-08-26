@@ -1,0 +1,276 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+// Translation resources
+const resources = {
+  he: {
+    translation: {
+      // Navigation
+      "nav.features": "תכונות",
+      "nav.pricing": "מחירים",
+      "nav.login": "התחברות",
+      "nav.getStarted": "התחל עכשיו",
+      "nav.dashboard": "דשבורד",
+      "nav.logout": "התנתק",
+      
+      // Hero Section
+      "hero.title": "החנות הדיגיטלית שלך",
+      "hero.subtitle": "מוכנה תוך דקות",
+      "hero.description": "פלטפורמת SaaS מתקדמת ליצירת חנויות אונליין עם כל מה שצריך - ניהול מוצרים, עגלת קניות, קופונים, סליקה ועוד",
+      "hero.startTrial": "התחל ניסיון חינם",
+      "hero.watchDemo": "צפה בדמו",
+      
+      // Stats
+      "stats.stores": "חנויות פעילות",
+      "stats.uptime": "זמינות שרת",
+      "stats.support": "תמיכה טכנית",
+      
+      // Features
+      "features.title": "כל מה שצריך לחנות מצליחה",
+      "features.subtitle": "פתרון מלא ומתקדם לכל סוחר דיגיטלי",
+      "features.jupiter.title": "תבנית Jupiter",
+      "features.jupiter.desc": "עיצוב מודרני ומותאם נייד עם בילדר דפים מתקדם",
+      "features.cart.title": "עגלת קניות חכמה",
+      "features.cart.desc": "מערכת קוקיז מתקדמת עם בדיקת מלאי בזמן אמת",
+      "features.products.title": "ניהול מוצרים",
+      "features.products.desc": "מוצרים פשוטים ווריאציות עם תמיכה בתמונות ווידאו",
+      "features.coupons.title": "קופונים והנחות",
+      "features.coupons.desc": "מערכת קופונים מתקדמת עם הנחות אוטומטיות ו-BOGO",
+      "features.payment.title": "סליקת אשראי",
+      "features.payment.desc": "חיבור מאובטח לחברות סליקה מובילות",
+      "features.media.title": "מדיה מתקדמת",
+      "features.media.desc": "העלאה ל-S3 עם המרה ל-WebP ומודל מדיה מתקדם",
+      
+      // Pricing
+      "pricing.title": "מחירים שקופים וללא הפתעות",
+      "pricing.subtitle": "בחר את התוכנית המתאימה לך",
+      "pricing.popular": "הכי פופולרי",
+      "pricing.basic.name": "בסיסי",
+      "pricing.basic.desc": "לאתרים ללא סליקה",
+      "pricing.pro.name": "מקצועי",
+      "pricing.pro.desc": "+ 0.5% מעסקה",
+      "pricing.startNow": "התחל עכשיו",
+      
+      // CTA
+      "cta.title": "מוכן להתחיל?",
+      "cta.subtitle": "הצטרף לאלפי סוחרים שכבר בחרו ב-QuickShop",
+      "cta.button": "התחל ניסיון חינם ל-14 יום",
+      
+      // Auth Forms
+      "auth.login.title": "התחברות לחשבון",
+      "auth.login.subtitle": "התחבר כדי לנהל את החנות שלך",
+      "auth.register.title": "הרשמה לשירות",
+      "auth.register.subtitle": "צור חשבון חדש והתחל למכור תוך דקות",
+      "auth.email": "כתובת אימייל",
+      "auth.password": "סיסמה",
+      "auth.confirmPassword": "אישור סיסמה",
+      "auth.firstName": "שם פרטי",
+      "auth.lastName": "שם משפחה",
+      "auth.phone": "טלפון",
+      "auth.storeName": "שם החנות",
+      "auth.loginButton": "התחבר",
+      "auth.registerButton": "הירשם",
+      "auth.forgotPassword": "שכחת סיסמה?",
+      "auth.noAccount": "אין לך חשבון?",
+      "auth.hasAccount": "יש לך כבר חשבון?",
+      "auth.signUp": "הירשם כאן",
+      "auth.signIn": "התחבר כאן",
+      
+      // Navigation
+      "nav.home": "בית",
+      "nav.categories": "קטגוריות",
+      "nav.products": "מוצרים",
+      "nav.about": "אודות",
+      "nav.contact": "צור קשר",
+      "nav.search": "חיפוש",
+      "nav.account": "חשבון",
+      "nav.cart": "עגלת קניות",
+      
+      // Footer
+      "footer.product": "מוצר",
+      "footer.features": "תכונות",
+      "footer.pricing": "מחירים",
+      "footer.demo": "דמו",
+      "footer.support": "תמיכה",
+      "footer.help": "מרכז עזרה",
+      "footer.contact": "צור קשר",
+      "footer.status": "סטטוס מערכת",
+      "footer.company": "חברה",
+      "footer.about": "אודות",
+      "footer.blog": "בלוג",
+      "footer.careers": "קריירה",
+      "footer.rights": "כל הזכויות שמורות",
+      
+      // Dashboard
+      "dashboard.title": "דשבורד ניהול",
+      "dashboard.welcome": "ברוך הבא",
+      "dashboard.overview": "סקירה כללית",
+      "dashboard.products": "מוצרים",
+      "dashboard.orders": "הזמנות",
+      "dashboard.customers": "לקוחות",
+      "dashboard.analytics": "אנליטיקס",
+      "dashboard.settings": "הגדרות",
+      "dashboard.store": "החנות שלי",
+      
+      // Stats
+      "stats.totalProducts": "סה״כ מוצרים",
+      "stats.totalOrders": "סה״כ הזמנות",
+      "stats.totalCustomers": "סה״כ לקוחות",
+      "stats.totalRevenue": "סה״כ הכנסות",
+      "stats.thisMonth": "החודש",
+      "stats.lastMonth": "חודש קודם",
+      "stats.growth": "גידול",
+      
+      // Products
+      "products.title": "ניהול מוצרים",
+      "products.addNew": "הוסף מוצר חדש",
+      "products.search": "חפש מוצרים...",
+      "products.filter": "סנן לפי",
+      "products.status": "סטטוס",
+      "products.category": "קטגוריה",
+      "products.price": "מחיר",
+      "products.stock": "מלאי",
+      "products.actions": "פעולות",
+      "products.edit": "ערוך",
+      "products.delete": "מחק",
+      "products.view": "צפה",
+      
+      // Orders
+      "orders.title": "ניהול הזמנות",
+      "orders.orderNumber": "מספר הזמנה",
+      "orders.customer": "לקוח",
+      "orders.date": "תאריך",
+      "orders.status": "סטטוס",
+      "orders.total": "סכום",
+      "orders.pending": "ממתין",
+      "orders.processing": "בעיבוד",
+      "orders.shipped": "נשלח",
+      "orders.delivered": "נמסר",
+      "orders.cancelled": "בוטל",
+      
+      // Navigation
+      "nav.dashboard": "דשבורד",
+      "nav.logout": "התנתק"
+    }
+  },
+  en: {
+    translation: {
+      // Navigation
+      "nav.features": "Features",
+      "nav.pricing": "Pricing",
+      "nav.login": "Login",
+      "nav.getStarted": "Get Started",
+      "nav.dashboard": "Dashboard",
+      "nav.logout": "Logout",
+      
+      // Hero Section
+      "hero.title": "Your Digital Store",
+      "hero.subtitle": "Ready in Minutes",
+      "hero.description": "Advanced SaaS platform for creating online stores with everything you need - product management, shopping cart, coupons, payments and more",
+      "hero.startTrial": "Start Free Trial",
+      "hero.watchDemo": "Watch Demo",
+      
+      // Stats
+      "stats.stores": "Active Stores",
+      "stats.uptime": "Server Uptime",
+      "stats.support": "Technical Support",
+      
+      // Features
+      "features.title": "Everything You Need for a Successful Store",
+      "features.subtitle": "Complete and advanced solution for every digital merchant",
+      "features.jupiter.title": "Jupiter Template",
+      "features.jupiter.desc": "Modern mobile-responsive design with advanced page builder",
+      "features.cart.title": "Smart Shopping Cart",
+      "features.cart.desc": "Advanced cookie system with real-time inventory checking",
+      "features.products.title": "Product Management",
+      "features.products.desc": "Simple products and variations with image and video support",
+      "features.coupons.title": "Coupons & Discounts",
+      "features.coupons.desc": "Advanced coupon system with automatic discounts and BOGO",
+      "features.payment.title": "Credit Card Processing",
+      "features.payment.desc": "Secure connection to leading payment processors",
+      "features.media.title": "Advanced Media",
+      "features.media.desc": "S3 upload with WebP conversion and advanced media modal",
+      
+      // Pricing
+      "pricing.title": "Transparent Pricing with No Surprises",
+      "pricing.subtitle": "Choose the plan that's right for you",
+      "pricing.popular": "Most Popular",
+      "pricing.basic.name": "Basic",
+      "pricing.basic.desc": "For sites without payment processing",
+      "pricing.pro.name": "Professional",
+      "pricing.pro.desc": "+ 0.5% per transaction",
+      "pricing.startNow": "Start Now",
+      
+      // CTA
+      "cta.title": "Ready to Get Started?",
+      "cta.subtitle": "Join thousands of merchants who already chose QuickShop",
+      "cta.button": "Start 14-Day Free Trial",
+      
+      // Auth Forms
+      "auth.login.title": "Login to Account",
+      "auth.login.subtitle": "Sign in to manage your store",
+      "auth.register.title": "Sign Up for Service",
+      "auth.register.subtitle": "Create a new account and start selling in minutes",
+      "auth.email": "Email Address",
+      "auth.password": "Password",
+      "auth.confirmPassword": "Confirm Password",
+      "auth.firstName": "First Name",
+      "auth.lastName": "Last Name",
+      "auth.phone": "Phone",
+      "auth.storeName": "Store Name",
+      "auth.loginButton": "Sign In",
+      "auth.registerButton": "Sign Up",
+      "auth.forgotPassword": "Forgot Password?",
+      "auth.noAccount": "Don't have an account?",
+      "auth.hasAccount": "Already have an account?",
+      "auth.signUp": "Sign up here",
+      "auth.signIn": "Sign in here",
+      
+      // Navigation
+      "nav.home": "Home",
+      "nav.categories": "Categories",
+      "nav.products": "Products",
+      "nav.about": "About",
+      "nav.contact": "Contact",
+      "nav.search": "Search",
+      "nav.account": "Account",
+      "nav.cart": "Shopping Cart",
+      
+      // Footer
+      "footer.product": "Product",
+      "footer.features": "Features",
+      "footer.pricing": "Pricing",
+      "footer.demo": "Demo",
+      "footer.support": "Support",
+      "footer.help": "Help Center",
+      "footer.contact": "Contact",
+      "footer.status": "System Status",
+      "footer.company": "Company",
+      "footer.about": "About",
+      "footer.blog": "Blog",
+      "footer.careers": "Careers",
+      "footer.rights": "All rights reserved"
+    }
+  }
+};
+
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources,
+    fallbackLng: 'he', // Hebrew as default
+    debug: false,
+    
+    interpolation: {
+      escapeValue: false
+    },
+    
+    detection: {
+      order: ['localStorage', 'navigator', 'htmlTag'],
+      caches: ['localStorage']
+    }
+  });
+
+export default i18n;
