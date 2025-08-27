@@ -30,9 +30,12 @@ function App() {
 
   // Check if this is a store subdomain or main app
   useEffect(() => {
+    console.log('🔄 App initialization started')
     const hostname = window.location.hostname
     const pathname = location.pathname
     const urlParams = new URLSearchParams(window.location.search)
+    
+    console.log('Current pathname:', pathname)
     
     let detectedStoreSlug = null
     
@@ -62,31 +65,25 @@ function App() {
       
       if (token && userData) {
         try {
-          setUser(JSON.parse(userData))
+          const parsedUser = JSON.parse(userData)
+          setUser(parsedUser)
+          console.log('User loaded from localStorage:', parsedUser)
         } catch (error) {
           console.error('Error parsing user data:', error)
           localStorage.removeItem('token')
           localStorage.removeItem('authToken')
           localStorage.removeItem('user')
         }
-      } else {
-        // If no token but URL is dashboard or builder, redirect to home
-        if (pathname.startsWith('/dashboard') || pathname.startsWith('/builder')) {
-          navigate('/')
-        }
+      } else if (token && !userData) {
+        // If we have a token but no user data, try to fetch it
+        console.log('Token found but no user data, this might cause issues')
       }
     }
     
     setIsLoading(false)
   }, [location.pathname, navigate])
 
-  // Handle authentication check for protected routes
-  useEffect(() => {
-    const pathname = location.pathname
-    if ((pathname.startsWith('/dashboard') || pathname.startsWith('/builder')) && !user) {
-      navigate('/')
-    }
-  }, [location.pathname, user, navigate])
+  // No automatic navigation - let Routes handle it
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -156,35 +153,42 @@ function App() {
     return <StoreApp storeSlug={storeSlug} />
   }
 
-  // Protected Route Component
-  const ProtectedRoute = ({ children }) => {
-    if (!user) {
-      navigate('/')
-      return null
-    }
-    return children
+  // Show loading screen
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">טוען...</p>
+        </div>
+      </div>
+    )
   }
 
   // Main App Routes
   return (
     <Routes>
       <Route path="/dashboard/*" element={
-        <ProtectedRoute>
+        user ? (
           <Dashboard 
             user={user} 
             onLogout={handleLogout} 
             onBack={() => navigate('/')}
             onNavigateToBuilder={() => navigate('/builder')}
           />
-        </ProtectedRoute>
+        ) : (
+          <HomePage />
+        )
       } />
       <Route path="/builder" element={
-        <ProtectedRoute>
+        user ? (
           <SiteBuilderPage 
             user={user} 
             onBack={() => navigate('/dashboard')} 
           />
-        </ProtectedRoute>
+        ) : (
+          <HomePage />
+        )
       } />
       <Route path="/stores/:slug" element={<StoreApp />} />
       <Route path="/" element={<HomePage />} />
