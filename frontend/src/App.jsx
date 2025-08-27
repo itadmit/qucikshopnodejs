@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { 
   RiShoppingCartLine, 
@@ -19,18 +20,18 @@ import SiteBuilderPage from './components/SiteBuilder/pages/SiteBuilderPage'
 
 function App() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [selectedPlan, setSelectedPlan] = useState('pro')
   const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'login' })
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [showDashboard, setShowDashboard] = useState(false)
-  const [showBuilder, setShowBuilder] = useState(false)
   const [storeSlug, setStoreSlug] = useState(null)
 
   // Check if this is a store subdomain or main app
   useEffect(() => {
     const hostname = window.location.hostname
-    const pathname = window.location.pathname
+    const pathname = location.pathname
     const urlParams = new URLSearchParams(window.location.search)
     
     let detectedStoreSlug = null
@@ -62,13 +63,6 @@ function App() {
       if (token && userData) {
         try {
           setUser(JSON.parse(userData))
-          
-          // Check if URL is dashboard or builder and redirect accordingly
-          if (window.location.pathname.startsWith('/dashboard')) {
-            setShowDashboard(true)
-          } else if (window.location.pathname.startsWith('/builder')) {
-            setShowBuilder(true)
-          }
         } catch (error) {
           console.error('Error parsing user data:', error)
           localStorage.removeItem('token')
@@ -77,58 +71,29 @@ function App() {
         }
       } else {
         // If no token but URL is dashboard or builder, redirect to home
-        if (window.location.pathname.startsWith('/dashboard') || window.location.pathname.startsWith('/builder')) {
-          window.history.pushState({}, '', '/')
+        if (pathname.startsWith('/dashboard') || pathname.startsWith('/builder')) {
+          navigate('/')
         }
       }
     }
     
     setIsLoading(false)
-  }, [])
+  }, [location.pathname, navigate])
 
-  // Handle browser back/forward buttons
+  // Handle authentication check for protected routes
   useEffect(() => {
-    const handlePopState = () => {
-      const currentPath = window.location.pathname
-      if (currentPath.startsWith('/dashboard')) {
-        if (user) {
-          setShowDashboard(true)
-          setShowBuilder(false)
-        } else {
-          window.history.pushState({}, '', '/')
-        }
-      } else if (currentPath.startsWith('/builder')) {
-        if (user) {
-          setShowBuilder(true)
-          setShowDashboard(false)
-        } else {
-          window.history.pushState({}, '', '/')
-        }
-      } else {
-        setShowDashboard(false)
-        setShowBuilder(false)
-      }
+    const pathname = location.pathname
+    if ((pathname.startsWith('/dashboard') || pathname.startsWith('/builder')) && !user) {
+      navigate('/')
     }
-
-    const handleUrlChange = () => {
-      handlePopState()
-    }
-
-    window.addEventListener('popstate', handlePopState)
-    window.addEventListener('urlchange', handleUrlChange)
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
-      window.removeEventListener('urlchange', handleUrlChange)
-    }
-  }, [user])
+  }, [location.pathname, user, navigate])
 
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('authToken')
     localStorage.removeItem('user')
     setUser(null)
-    setShowDashboard(false)
-    window.history.pushState({}, '', '/')
+    navigate('/')
   }
 
   const handleAuthSuccess = (userData, token) => {
@@ -140,8 +105,7 @@ function App() {
     
     // Auto redirect to dashboard
     setTimeout(() => {
-      setShowDashboard(true)
-      window.history.pushState({}, '', '/dashboard')
+      navigate('/dashboard')
     }, 500)
   }
 
@@ -192,31 +156,42 @@ function App() {
     return <StoreApp storeSlug={storeSlug} />
   }
 
-  // Show builder if user is logged in and builder is requested
-  if (user && showBuilder) {
-    return <SiteBuilderPage user={user} onBack={() => {
-      setShowBuilder(false)
-      setShowDashboard(true)
-      window.history.pushState({}, '', '/dashboard')
-    }} />
+  // Protected Route Component
+  const ProtectedRoute = ({ children }) => {
+    if (!user) {
+      navigate('/')
+      return null
+    }
+    return children
   }
 
-  // Show dashboard if user is logged in and dashboard is requested
-  if (user && showDashboard) {
-    return <Dashboard 
-      user={user} 
-      onLogout={handleLogout} 
-      onBack={() => {
-        setShowDashboard(false)
-        window.history.pushState({}, '', '/')
-      }}
-      onNavigateToBuilder={() => {
-        setShowDashboard(false)
-        setShowBuilder(true)
-        window.history.pushState({}, '', '/builder')
-      }}
-    />
-  }
+  // Main App Routes
+  return (
+    <Routes>
+      <Route path="/dashboard/*" element={
+        <ProtectedRoute>
+          <Dashboard 
+            user={user} 
+            onLogout={handleLogout} 
+            onBack={() => navigate('/')}
+            onNavigateToBuilder={() => navigate('/builder')}
+          />
+        </ProtectedRoute>
+      } />
+      <Route path="/builder" element={
+        <ProtectedRoute>
+          <SiteBuilderPage 
+            user={user} 
+            onBack={() => navigate('/dashboard')} 
+          />
+        </ProtectedRoute>
+      } />
+      <Route path="/stores/:slug" element={<StoreApp />} />
+      <Route path="/" element={<HomePage />} />
+    </Routes>
+  )
+
+  function HomePage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(rgb(251, 236, 227) 0%, rgb(234, 206, 255) 100%)' }}>
@@ -246,10 +221,7 @@ function App() {
                     <span className="text-sm font-medium">שלום, {user.firstName}</span>
                   </div>
                   <button 
-                    onClick={() => {
-                      setShowDashboard(true)
-                      window.history.pushState({}, '', '/dashboard')
-                    }}
+                    onClick={() => navigate('/dashboard')}
                     className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     {t('nav.dashboard')}
@@ -870,6 +842,7 @@ function App() {
       />
     </div>
   )
+  }
 }
 
 export default App
