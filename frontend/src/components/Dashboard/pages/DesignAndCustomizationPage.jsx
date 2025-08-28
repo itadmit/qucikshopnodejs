@@ -177,58 +177,12 @@ const DesignAndCustomizationPage = () => {
           </div>
         </div>
 
-        {/* Template Actions */}
-        <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">פעולות תבנית</h2>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate('/dashboard/settings')}>
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center ml-3">
-                  <Settings className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">הגדרות תבנית</h3>
-                  <p className="text-sm text-gray-600">צבעים, פונטים והגדרות כלליות</p>
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400" />
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={handleAdvancedEdit}>
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center ml-3">
-                  <Layout className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">מעבר לבילדר</h3>
-                  <p className="text-sm text-gray-600">עריכה ויזואלית של דפי החנות</p>
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400" />
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/dashboard/design/editor/${currentTemplate}`)}>
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center ml-3">
-                  <Code className="w-5 h-5 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">מעבר לקוד</h3>
-                  <p className="text-sm text-gray-600">עריכת קוד התבנית (למפתחים מתקדמים)</p>
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400" />
-            </div>
-          </div>
-        </div>
-
         {/* Current Template Display */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">התבנית הנוכחית</h2>
           
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
+            <div className="flex items-center mb-6">
               <div className={`w-16 h-16 rounded-xl bg-gradient-to-r ${availableTemplates.find(t => t.id === currentTemplate)?.color || 'from-blue-500 to-purple-600'} flex items-center justify-center text-2xl shadow-lg`}>
                 {availableTemplates.find(t => t.id === currentTemplate)?.icon || '🪐'}
               </div>
@@ -255,6 +209,52 @@ const DesignAndCustomizationPage = () => {
                   <Eye className="w-4 h-4 ml-2" />
                   תצוגה מקדימה
                 </button>
+              </div>
+            </div>
+
+            {/* Template Actions - Inside the template area */}
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">פעולות תבנית</h3>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate('/dashboard/settings')}>
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center ml-3">
+                      <Settings className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">הגדרות תבנית</h4>
+                      <p className="text-sm text-gray-600">צבעים, פונטים והגדרות כלליות</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400" />
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={handleAdvancedEdit}>
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center ml-3">
+                      <Layout className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">מעבר לבילדר</h4>
+                      <p className="text-sm text-gray-600">עריכה ויזואלית של דפי החנות</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400" />
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/dashboard/design/editor/${currentTemplate}`)}>
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center ml-3">
+                      <Code className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">מעבר לקוד</h4>
+                      <p className="text-sm text-gray-600">עריכת קוד התבנית (למפתחים מתקדמים)</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400" />
+                </div>
               </div>
             </div>
           </div>
