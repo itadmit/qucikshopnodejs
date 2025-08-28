@@ -25,6 +25,14 @@ export class Store {
     return store;
   }
 
+  static async findById(storeId) {
+    return await prisma.store.findUnique({
+      where: { 
+        id: storeId
+      }
+    });
+  }
+
   static async findByUserId(userId) {
     return await prisma.store.findFirst({
       where: { 

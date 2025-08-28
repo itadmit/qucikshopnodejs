@@ -309,7 +309,34 @@ router.get('/:storeSlug/products/:productSlug', async (req, res) => {
             sortOrder: 'asc'
           }
         },
-        variants: true
+        variants: true,
+        bundleItems: {
+          include: {
+            product: {
+              include: {
+                media: {
+                  include: {
+                    media: true
+                  },
+                  where: {
+                    type: 'IMAGE'
+                  },
+                  take: 1
+                }
+              }
+            },
+            variant: {
+              include: {
+                optionValues: {
+                  include: {
+                    option: true,
+                    optionValue: true
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     })
     
@@ -317,6 +344,34 @@ router.get('/:storeSlug/products/:productSlug', async (req, res) => {
       return res.status(404).json({ error: 'Product not found' })
     }
     
+    // Calculate availability for bundle products
+    let inStock = true;
+    let stockQuantity = product.inventoryQuantity;
+    
+    if (product.type === 'BUNDLE') {
+      // Calculate bundle availability
+      let maxAvailableQuantity = Infinity;
+      
+      for (const item of product.bundleItems) {
+        if (item.isOptional) continue;
+        
+        let itemAvailability = 0;
+        if (item.variant) {
+          itemAvailability = item.variant.inventoryQuantity;
+        } else {
+          itemAvailability = item.product.inventoryQuantity;
+        }
+        
+        const bundlesFromThisItem = Math.floor(itemAvailability / item.quantity);
+        maxAvailableQuantity = Math.min(maxAvailableQuantity, bundlesFromThisItem);
+      }
+      
+      stockQuantity = maxAvailableQuantity === Infinity ? 0 : maxAvailableQuantity;
+      inStock = stockQuantity > 0;
+    } else {
+      inStock = product.trackInventory ? product.inventoryQuantity > 0 : true;
+    }
+
     // Transform product data
     const transformedProduct = {
       id: product.id,
@@ -324,17 +379,37 @@ router.get('/:storeSlug/products/:productSlug', async (req, res) => {
       slug: product.slug,
       description: product.description,
       shortDescription: product.shortDescription,
+      type: product.type,
       price: parseFloat(product.price),
       originalPrice: product.comparePrice ? parseFloat(product.comparePrice) : null,
       sku: product.sku,
       category: product.category?.name || 'כללי',
-      inStock: product.trackInventory ? product.inventoryQuantity > 0 : true,
-      stockQuantity: product.inventoryQuantity,
+      inStock,
+      stockQuantity,
       rating: 4.5, // Mock rating for now
       reviewCount: 128, // Mock review count for now
       images: product.media.map(media => media.media.s3Url),
       options: [], // Will be populated from variants if needed
-      specifications: product.tags || {}
+      specifications: product.tags || {},
+      bundleItems: product.type === 'BUNDLE' ? product.bundleItems.map(item => ({
+        id: item.id,
+        quantity: item.quantity,
+        isOptional: item.isOptional,
+        product: {
+          id: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          image: item.product.media[0]?.media?.s3Url || null
+        },
+        variant: item.variant ? {
+          id: item.variant.id,
+          price: item.variant.price,
+          options: item.variant.optionValues.map(ov => ({
+            name: ov.option.name,
+            value: ov.optionValue.value
+          }))
+        } : null
+      })) : []
     }
     
     // If no images, add a default one
@@ -399,7 +474,7 @@ router.get('/:storeSlug/design/product-page', async (req, res) => {
           settings: {
             show_compare_price: true,
             show_currency: true,
-            price_size: 'text-2xl',
+            price_size: 'text-xl',
             price_weight: 'font-bold',
             price_color: '#000000',
             compare_price_size: 'text-lg',

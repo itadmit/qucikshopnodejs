@@ -2,11 +2,17 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { X, Plus, Minus, ShoppingBag, Trash2, Truck } from 'lucide-react'
+import analyticsTracker from '../../utils/analyticsTracker'
+import CouponInput from './CouponInput'
+import discountService from '../../services/discountService'
 
 const SideCart = ({ isOpen, onClose, storeData }) => {
   const { t } = useTranslation()
   const [cartItems, setCartItems] = useState([])
   const [showCelebration, setShowCelebration] = useState(false)
+  const [discountData, setDiscountData] = useState(null)
+  const [appliedCoupon, setAppliedCoupon] = useState(null)
+  const [isCalculatingDiscounts, setIsCalculatingDiscounts] = useState(false)
 
   useEffect(() => {
     if (storeData && isOpen) {
@@ -26,14 +32,43 @@ const SideCart = ({ isOpen, onClose, storeData }) => {
     return () => window.removeEventListener('cartUpdated', handleCartUpdate)
   }, [storeData])
 
-  const loadCartItems = () => {
+  const loadCartItems = async () => {
     if (!storeData) return
     const cartKey = `cart_${storeData.slug}`
     const cart = JSON.parse(localStorage.getItem(cartKey) || '[]')
     setCartItems(cart)
+    
+    // חישוב הנחות אוטומטיות
+    if (cart.length > 0) {
+      await calculateDiscounts(cart)
+    } else {
+      setDiscountData(null)
+      setAppliedCoupon(null)
+    }
   }
 
-  const updateQuantity = (itemId, newQuantity) => {
+  const calculateDiscounts = async (cart, couponCode = appliedCoupon) => {
+    if (!storeData || cart.length === 0) return
+    
+    setIsCalculatingDiscounts(true)
+    try {
+      const result = await discountService.calculateDiscounts(
+        { items: cart },
+        storeData.slug,
+        couponCode
+      )
+      
+      if (result.success) {
+        setDiscountData(result)
+      }
+    } catch (error) {
+      console.error('שגיאה בחישוב הנחות:', error)
+    } finally {
+      setIsCalculatingDiscounts(false)
+    }
+  }
+
+  const updateQuantity = async (itemId, newQuantity) => {
     if (newQuantity <= 0) {
       removeItem(itemId)
       return
@@ -47,18 +82,57 @@ const SideCart = ({ isOpen, onClose, storeData }) => {
     const cartKey = `cart_${storeData.slug}`
     localStorage.setItem(cartKey, JSON.stringify(updatedCart))
     window.dispatchEvent(new Event('cartUpdated'))
+    
+    // חישוב הנחות מחדש
+    await calculateDiscounts(updatedCart)
   }
 
-  const removeItem = (itemId) => {
+  const removeItem = async (itemId) => {
+    // מציאת הפריט שמוסר
+    const itemToRemove = cartItems.find(item => item.id === itemId);
+    
     const updatedCart = cartItems.filter(item => item.id !== itemId)
     setCartItems(updatedCart)
     const cartKey = `cart_${storeData.slug}`
     localStorage.setItem(cartKey, JSON.stringify(updatedCart))
     window.dispatchEvent(new Event('cartUpdated'))
+    
+    // מעקב אחר הסרה מהעגלה
+    if (itemToRemove) {
+      analyticsTracker.trackRemoveFromCart(
+        itemToRemove.id,
+        itemToRemove.name,
+        itemToRemove.quantity,
+        itemToRemove.price,
+        itemToRemove.category
+      );
+    }
+    
+    // חישוב הנחות מחדש
+    if (updatedCart.length > 0) {
+      await calculateDiscounts(updatedCart)
+    } else {
+      setDiscountData(null)
+      setAppliedCoupon(null)
+    }
   }
 
   const getTotalPrice = () => {
+    // אם יש נתוני הנחות, נשתמש בהם
+    if (discountData && discountData.success) {
+      return discountData.total
+    }
+    // אחרת חישוב בסיסי
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
+  }
+
+  const getSubtotal = () => {
+    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
+  }
+
+  const handleDiscountApplied = async (discountResult, couponCode) => {
+    setDiscountData(discountResult)
+    setAppliedCoupon(couponCode)
   }
 
   const formatPrice = (price) => {
@@ -260,10 +334,62 @@ const SideCart = ({ isOpen, onClose, storeData }) => {
 
               {/* Footer */}
               <div className="border-t border-gray-200 p-4 space-y-4">
-                {/* Total */}
-                <div className="flex justify-between items-center text-lg font-semibold">
-                  <span>סה"כ:</span>
-                  <span>{formatPrice(getTotalPrice())}</span>
+                {/* Coupon Input */}
+                <CouponInput
+                  cart={{ items: cartItems }}
+                  storeSlug={storeData.slug}
+                  onDiscountApplied={handleDiscountApplied}
+                  appliedCoupon={appliedCoupon}
+                />
+
+                {/* Price Breakdown */}
+                <div className="space-y-2">
+                  {/* Subtotal */}
+                  <div className="flex justify-between items-center text-sm">
+                    <span>סכום ביניים:</span>
+                    <span>{formatPrice(getSubtotal())}</span>
+                  </div>
+
+                  {/* Discounts */}
+                  {discountData && discountData.appliedDiscounts && discountData.appliedDiscounts.length > 0 && (
+                    <div className="space-y-1">
+                      {discountData.appliedDiscounts.map((discount, index) => (
+                        <div key={index} className="flex justify-between items-center text-sm text-green-600">
+                          <span className="flex items-center">
+                            <i className="ri-discount-percent-line ml-1"></i>
+                            {discount.name || discountService.getDiscountMessage(discount)}
+                          </span>
+                          <span>-{formatPrice(discount.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Shipping */}
+                  <div className="flex justify-between items-center text-sm">
+                    <span>משלוח:</span>
+                    <span className={discountData?.shipping === 0 ? 'text-green-600' : ''}>
+                      {discountData?.shipping === 0 ? 'חינם' : formatPrice(discountData?.shipping || SHIPPING_RATE)}
+                    </span>
+                  </div>
+
+                  {/* Total */}
+                  <div className="flex justify-between items-center text-lg font-semibold border-t pt-2">
+                    <span>סה"כ לתשלום:</span>
+                    <span className="flex items-center">
+                      {isCalculatingDiscounts && (
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin ml-2"></div>
+                      )}
+                      {formatPrice(getTotalPrice())}
+                    </span>
+                  </div>
+
+                  {/* Savings Display */}
+                  {discountData && discountData.savings > 0 && (
+                    <div className="text-center text-sm text-green-600 font-medium bg-green-50 rounded-lg p-2">
+                      🎉 חסכת {formatPrice(discountData.savings)} בהזמנה זו!
+                    </div>
+                  )}
                 </div>
 
                 {/* Shipping Info */}

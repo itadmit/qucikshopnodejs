@@ -38,7 +38,7 @@ const StatCard = ({ title, value, change, icon: Icon, color, trend, subtitle }) 
       )}
     </div>
     <div>
-      <p className="text-2xl font-bold text-gray-900 mb-1">{value?.toLocaleString('he-IL') || '0'}</p>
+      <p className="text-xl font-bold text-gray-900 mb-1">{value?.toLocaleString('he-IL') || '0'}</p>
       {change !== undefined && (
         <p className={`text-sm flex items-center ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
           {change >= 0 ? <ArrowUpRight className="w-3 h-3 ml-1" /> : <ArrowDownRight className="w-3 h-3 ml-1" />}
@@ -63,7 +63,7 @@ const OverviewPage = ({ stats, recentOrders, popularProducts, userStore }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">סקירה כללית</h1>
+          <h1 className="text-xl font-bold text-gray-900">סקירה כללית</h1>
           <p className="text-gray-600">מבט על הביצועים של החנות שלך</p>
         </div>
         <div className="flex items-center gap-3">
@@ -98,7 +98,7 @@ const OverviewPage = ({ stats, recentOrders, popularProducts, userStore }) => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="overview-stats">
         <StatCard
           title="הכנסות כוללות"
           subtitle="30 ימים אחרונים"

@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import analyticsTracker from '../../utils/analyticsTracker'
+import CouponInput from '../components/CouponInput'
+import discountService from '../../services/discountService'
 
 const CheckoutPage = ({ storeData }) => {
   const { t } = useTranslation()
   const [cartItems, setCartItems] = useState([])
   const [loading, setLoading] = useState(false)
+  const [discountData, setDiscountData] = useState(null)
+  const [appliedCoupon, setAppliedCoupon] = useState(null)
+  const [isCalculatingDiscounts, setIsCalculatingDiscounts] = useState(false)
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -19,11 +25,51 @@ const CheckoutPage = ({ storeData }) => {
 
   useEffect(() => {
     if (storeData) {
-      const cartKey = `cart_${storeData.slug}`
-      const cart = JSON.parse(localStorage.getItem(cartKey) || '[]')
-      setCartItems(cart)
+      loadCartAndCalculateDiscounts()
     }
   }, [storeData])
+
+  const loadCartAndCalculateDiscounts = async () => {
+    const cartKey = `cart_${storeData.slug}`
+    const cart = JSON.parse(localStorage.getItem(cartKey) || '[]')
+    setCartItems(cart)
+    
+    // Track begin checkout
+    if (cart.length > 0) {
+      const cartValue = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+      const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+      analyticsTracker.trackBeginCheckout(cartValue, itemCount, cart)
+      
+      // חישוב הנחות אוטומטיות
+      await calculateDiscounts(cart)
+    }
+  }
+
+  const calculateDiscounts = async (cart, couponCode = appliedCoupon) => {
+    if (!storeData || cart.length === 0) return
+    
+    setIsCalculatingDiscounts(true)
+    try {
+      const result = await discountService.calculateDiscounts(
+        { items: cart },
+        storeData.slug,
+        couponCode
+      )
+      
+      if (result.success) {
+        setDiscountData(result)
+      }
+    } catch (error) {
+      console.error('שגיאה בחישוב הנחות:', error)
+    } finally {
+      setIsCalculatingDiscounts(false)
+    }
+  }
+
+  const handleDiscountApplied = async (discountResult, couponCode) => {
+    setDiscountData(discountResult)
+    setAppliedCoupon(couponCode)
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -45,11 +91,17 @@ const CheckoutPage = ({ storeData }) => {
   }
 
   const calculateShipping = () => {
+    if (discountData && discountData.success) {
+      return discountData.shipping
+    }
     const subtotal = calculateSubtotal()
     return subtotal > 200 ? 0 : 25
   }
 
   const calculateTotal = () => {
+    if (discountData && discountData.success) {
+      return discountData.total
+    }
     return calculateSubtotal() + calculateShipping()
   }
 
@@ -86,14 +138,30 @@ const CheckoutPage = ({ storeData }) => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // Clear cart and redirect to success page
+      // Track purchase completion
+      const orderId = `order_${Date.now()}`
+      const revenue = calculateTotal()
+      const items = cartItems.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        price: item.price
+      }))
+      
+      // הכנת נתונים לעמוד תודה
+      const orderParams = new URLSearchParams({
+        total: revenue.toString(),
+        items: encodeURIComponent(JSON.stringify(items)),
+        email: formData.email
+      })
+
+      // Clear cart
       const cartKey = `cart_${storeData.slug}`
       localStorage.removeItem(cartKey)
       window.dispatchEvent(new Event('cartUpdated'))
       
-      alert('ההזמנה בוצעה בהצלחה! תקבלו אישור במייל בקרוב.')
-      
-      window.location.href = '/'
+      // הפניה לעמוד תודה עם נתוני ההזמנה
+      window.location.href = `/thank-you/${orderId}?${orderParams.toString()}`
 
     } catch (error) {
       console.error('Error submitting order:', error)
@@ -107,7 +175,7 @@ const CheckoutPage = ({ storeData }) => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">העגלה ריקה</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-4">העגלה ריקה</h1>
           <p className="text-gray-600 mb-6">אין פריטים בעגלה לביצוע הזמנה</p>
           <a href="/" className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors">חזור לעמוד הבית</a>
         </div>
@@ -292,6 +360,16 @@ const CheckoutPage = ({ storeData }) => {
               <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">סיכום הזמנה</h3>
                 
+                {/* Coupon Input */}
+                <div className="mb-6">
+                  <CouponInput
+                    cart={{ items: cartItems }}
+                    storeSlug={storeData.slug}
+                    onDiscountApplied={handleDiscountApplied}
+                    appliedCoupon={appliedCoupon}
+                  />
+                </div>
+                
                 {/* Order Items */}
                 <div className="space-y-4 mb-6">
                   {cartItems.map((item) => (
@@ -324,15 +402,26 @@ const CheckoutPage = ({ storeData }) => {
                     <span className="text-gray-600">סכום ביניים:</span>
                     <span>{formatPrice(calculateSubtotal())}</span>
                   </div>
+
+                  {/* Discounts */}
+                  {discountData && discountData.appliedDiscounts && discountData.appliedDiscounts.length > 0 && (
+                    <div className="space-y-2">
+                      {discountData.appliedDiscounts.map((discount, index) => (
+                        <div key={index} className="flex justify-between text-sm text-green-600">
+                          <span className="flex items-center">
+                            <i className="ri-discount-percent-line ml-1"></i>
+                            {discount.name || discountService.getDiscountMessage(discount)}
+                          </span>
+                          <span>-{formatPrice(discount.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">משלוח:</span>
-                    <span>
-                      {calculateShipping() === 0 ? (
-                        <span className="text-green-600">חינם</span>
-                      ) : (
-                        formatPrice(calculateShipping())
-                      )}
+                    <span className={calculateShipping() === 0 ? 'text-green-600' : ''}>
+                      {calculateShipping() === 0 ? 'חינם' : formatPrice(calculateShipping())}
                     </span>
                   </div>
                   
@@ -340,8 +429,20 @@ const CheckoutPage = ({ storeData }) => {
                   
                   <div className="flex justify-between text-lg font-semibold">
                     <span>סה״כ לתשלום:</span>
-                    <span>{formatPrice(calculateTotal())}</span>
+                    <span className="flex items-center">
+                      {isCalculatingDiscounts && (
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin ml-2"></div>
+                      )}
+                      {formatPrice(calculateTotal())}
+                    </span>
                   </div>
+
+                  {/* Savings Display */}
+                  {discountData && discountData.savings > 0 && (
+                    <div className="text-center text-sm text-green-600 font-medium bg-green-50 rounded-lg p-3">
+                      🎉 חסכת {formatPrice(discountData.savings)} בהזמנה זו!
+                    </div>
+                  )}
                 </div>
 
                 {/* Submit Button */}

@@ -84,7 +84,7 @@ const SectionRenderer = ({ section, sectionSchema, isPreviewMode, previewMode, o
             </h1>
           )}
           {subtitle && (
-            <p className="text-xl md:text-2xl mb-8 opacity-90">
+            <p className="text-xl md:text-xl mb-8 opacity-90">
               {subtitle}
             </p>
           )}

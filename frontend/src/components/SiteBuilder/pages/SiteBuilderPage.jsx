@@ -82,7 +82,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
         settings: {
           show_compare_price: true,
           show_currency: true,
-          price_size: 'text-2xl',
+          price_size: 'text-xl',
           price_weight: 'font-bold',
           show_sale_badge: true
         }

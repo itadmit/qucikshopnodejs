@@ -240,6 +240,26 @@ router.post('/demo-login', async (req, res) => {
   }
 });
 
+// Complete onboarding
+router.post('/complete-onboarding', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { hasCompletedOnboarding: true }
+    });
+
+    res.json({ message: 'Onboarding completed successfully' });
+
+  } catch (error) {
+    console.error('Complete onboarding error:', error);
+    res.status(500).json({
+      error: 'Failed to complete onboarding'
+    });
+  }
+});
+
 // Logout (client-side token removal, but we can track it)
 router.post('/logout', authenticateToken, (req, res) => {
   // In a more sophisticated setup, you might want to blacklist the token

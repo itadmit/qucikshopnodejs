@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import ProductRenderer from '../components/ProductRenderer'
+import ProductDiscountBadge from '../components/ProductDiscountBadge'
+import analyticsTracker from '../../utils/analyticsTracker'
+import discountService from '../../services/discountService'
 
 const ProductPage = ({ storeData }) => {
   const { t } = useTranslation()
@@ -13,6 +16,8 @@ const ProductPage = ({ storeData }) => {
   const [selectedOptions, setSelectedOptions] = useState({})
   const [pageStructure, setPageStructure] = useState(null)
   const [useCustomDesign, setUseCustomDesign] = useState(true)
+  const [discountData, setDiscountData] = useState(null)
+  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false)
 
   useEffect(() => {
     if (storeData && slug) {
@@ -43,6 +48,16 @@ const ProductPage = ({ storeData }) => {
       if (response.ok) {
         const productData = await response.json()
         setProduct(productData)
+        
+        // Track product view
+        if (productData) {
+          analyticsTracker.trackProductView(
+            productData.id,
+            productData.name,
+            productData.category?.name,
+            productData.price
+          )
+        }
       }
       
     } catch (error) {
@@ -100,9 +115,35 @@ const ProductPage = ({ storeData }) => {
     }))
   }
 
-  const handleQuantityChange = (newQuantity) => {
+  const handleQuantityChange = async (newQuantity) => {
     setQuantity(newQuantity)
+    
+    // חישוב הנחות מחדש עם הכמות החדשה
+    if (product && storeData) {
+      await calculateProductDiscounts(newQuantity)
+    }
   }
+
+  const calculateProductDiscounts = async (qty = quantity) => {
+    if (!product || !storeData) return
+    
+    setIsCalculatingPrice(true)
+    try {
+      const result = await discountService.getProductDiscounts(product, qty, storeData.slug)
+      setDiscountData(result)
+    } catch (error) {
+      console.error('שגיאה בחישוב הנחות מוצר:', error)
+    } finally {
+      setIsCalculatingPrice(false)
+    }
+  }
+
+  // חישוב הנחות כשהמוצר נטען
+  useEffect(() => {
+    if (product && storeData) {
+      calculateProductDiscounts()
+    }
+  }, [product, storeData])
 
   const handleAddToCart = async (qty) => {
     // Use the existing addToCart function
@@ -124,25 +165,72 @@ const ProductPage = ({ storeData }) => {
     
     const cartKey = `cart_${storeData.slug}`
     const existingCart = JSON.parse(localStorage.getItem(cartKey) || '[]')
-    const existingItemIndex = existingCart.findIndex(item => item.id === product.id)
     
-    if (existingItemIndex > -1) {
-      existingCart[existingItemIndex].quantity += quantity
-    } else {
-      existingCart.push({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        imageUrl: product.images[0],
-        quantity: quantity,
-        options: selectedOptions,
-        storeSlug: storeData.slug
+    if (product.type === 'BUNDLE') {
+      // For bundle products, add each item separately but mark them as part of a bundle
+      const bundleId = `bundle_${Date.now()}`
+      
+      product.bundleItems.forEach(bundleItem => {
+        if (bundleItem.isOptional) return // Skip optional items for now
+        
+        const existingItemIndex = existingCart.findIndex(item => 
+          item.id === bundleItem.product.id && 
+          item.variantId === bundleItem.variant?.id
+        )
+        
+        const itemQuantity = bundleItem.quantity * quantity
+        
+        if (existingItemIndex > -1) {
+          existingCart[existingItemIndex].quantity += itemQuantity
+        } else {
+          existingCart.push({
+            id: bundleItem.product.id,
+            name: bundleItem.product.name,
+            price: bundleItem.product.price,
+            imageUrl: bundleItem.product.image,
+            quantity: itemQuantity,
+            variantId: bundleItem.variant?.id || null,
+            variantOptions: bundleItem.variant?.options || null,
+            bundleId: bundleId,
+            bundleName: product.name,
+            storeSlug: storeData.slug
+          })
+        }
       })
+      
+      alert(`${product.name} (בנדל) נוסף לעגלה!`)
+    } else {
+      // Regular product logic
+      const existingItemIndex = existingCart.findIndex(item => item.id === product.id)
+      
+      if (existingItemIndex > -1) {
+        existingCart[existingItemIndex].quantity += quantity
+      } else {
+        existingCart.push({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          imageUrl: product.images[0],
+          quantity: quantity,
+          options: selectedOptions,
+          storeSlug: storeData.slug
+        })
+      }
+      
+      alert(`${product.name} נוסף לעגלה!`)
     }
     
     localStorage.setItem(cartKey, JSON.stringify(existingCart))
     window.dispatchEvent(new Event('cartUpdated'))
-    alert(`${product.name} נוסף לעגלה!`)
+    
+    // Track add to cart event
+    analyticsTracker.trackAddToCart(
+      product.id,
+      product.name,
+      quantity,
+      product.price,
+      product.category?.name
+    )
   }
 
   if (loading) {
@@ -157,7 +245,7 @@ const ProductPage = ({ storeData }) => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">מוצר לא נמצא</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-4">מוצר לא נמצא</h1>
           <p className="text-gray-600">המוצר שחיפשת לא קיים במערכת</p>
         </div>
       </div>
@@ -232,11 +320,43 @@ const ProductPage = ({ storeData }) => {
             </div>
 
             {/* Price */}
-            <div className="space-y-2">
+            <div className="space-y-3">
+              {/* Discount Badges */}
+              <ProductDiscountBadge 
+                product={product}
+                quantity={quantity}
+                storeSlug={storeData.slug}
+              />
+
               <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                <span className="text-3xl font-bold text-gray-900">
-                  {formatPrice(product.price)}
-                </span>
+                {/* Current Price */}
+                <div className="flex flex-col">
+                  <span className={`text-3xl font-bold ${
+                    discountData && discountData.total < discountData.subtotal 
+                      ? 'text-green-600' 
+                      : 'text-gray-900'
+                  }`}>
+                    {isCalculatingPrice ? (
+                      <div className="flex items-center">
+                        <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin ml-2"></div>
+                        מחשב...
+                      </div>
+                    ) : discountData && discountData.success ? (
+                      formatPrice(discountData.total)
+                    ) : (
+                      formatPrice(product.price * quantity)
+                    )}
+                  </span>
+                  
+                  {/* Original Price (if discounted) */}
+                  {discountData && discountData.total < discountData.subtotal && (
+                    <span className="text-lg text-gray-500 line-through">
+                      {formatPrice(discountData.subtotal)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Original Product Discount (if exists) */}
                 {product.originalPrice && product.originalPrice > product.price && (
                   <>
                     <span className="text-lg text-gray-500 line-through">
@@ -248,6 +368,36 @@ const ProductPage = ({ storeData }) => {
                   </>
                 )}
               </div>
+
+              {/* Discount Details */}
+              {discountData && discountData.appliedDiscounts && discountData.appliedDiscounts.length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                  <h4 className="text-sm font-medium text-green-800 flex items-center">
+                    <i className="ri-discount-percent-line ml-1"></i>
+                    הנחות פעילות:
+                  </h4>
+                  {discountData.appliedDiscounts.map((discount, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span className="text-green-700">
+                        {discount.name || discountService.getDiscountMessage(discount)}
+                      </span>
+                      <span className="font-medium text-green-800">
+                        -{formatPrice(discount.amount)}
+                      </span>
+                    </div>
+                  ))}
+                  
+                  {discountData.savings > 0 && (
+                    <div className="border-t border-green-300 pt-2 mt-2">
+                      <div className="flex justify-between items-center font-medium text-green-800">
+                        <span>סה"כ חיסכון:</span>
+                        <span>{formatPrice(discountData.savings)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
               
               {/* Stock Status */}
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -321,6 +471,43 @@ const ProductPage = ({ storeData }) => {
               <p className="text-gray-600 leading-relaxed">{product.description}</p>
             </div>
 
+            {/* Bundle Items */}
+            {product.type === 'BUNDLE' && product.bundleItems && product.bundleItems.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-gray-900">מה כלול בבנדל?</h3>
+                <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+                  {product.bundleItems.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
+                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                        {item.product.image && (
+                          <img 
+                            src={item.product.image} 
+                            alt={item.product.name}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                        )}
+                        <div>
+                          <h4 className="font-medium text-gray-900">{item.product.name}</h4>
+                          {item.variant && (
+                            <p className="text-sm text-gray-500">
+                              {item.variant.options.map(opt => `${opt.name}: ${opt.value}`).join(', ')}
+                            </p>
+                          )}
+                          <p className="text-sm text-blue-600">כמות: {item.quantity}</p>
+                        </div>
+                      </div>
+                      <div className="text-left">
+                        <p className="font-semibold text-gray-900">{formatPrice(item.product.price)}</p>
+                        {item.isOptional && (
+                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">אופציונלי</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Specifications */}
             {product.specifications && (
               <div className="space-y-3">
@@ -338,7 +525,6 @@ const ProductPage = ({ storeData }) => {
               </div>
             )}
           </div>
-        </div>
         )}
       </div>
     </div>

@@ -14,9 +14,23 @@ import storeUsersRoutes from './routes/store-users.js';
 import mediaRoutes from './routes/media.js';
 import productRoutes from './routes/products.js';
 import customFieldsRoutes from './routes/custom-fields.js';
+import orderRoutes from './routes/orders.js';
+import analyticsRoutes from './routes/analytics.js';
+import pixelsRoutes from './routes/pixels.js';
+import couponsRoutes from './routes/coupons.js';
+import influencersRoutes from './routes/influencers.js';
+import automaticDiscountsRoutes from './routes/automatic-discounts.js';
+import influencerAuthRoutes from './routes/influencer-auth.js';
+import influencerDashboardRoutes from './routes/influencer-dashboard.js';
+import partnersRoutes from './routes/partners.js';
 
 // Load environment variables
 dotenv.config();
+
+// Initialize analytics cron jobs in production
+if (process.env.NODE_ENV === 'production') {
+  import('./scripts/analytics-cron.js');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,8 +40,14 @@ app.use(helmet());
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
     'http://yogevstore.localhost:5173',
-    /^http:\/\/.*\.localhost:5173$/
+    'http://yogevstore.localhost:5174',
+    'http://yogevstore.localhost:5175',
+    /^http:\/\/.*\.localhost:5173$/,
+    /^http:\/\/.*\.localhost:5174$/,
+    /^http:\/\/.*\.localhost:5175$/
   ],
   credentials: true
 }));
@@ -54,6 +74,15 @@ app.use('/api/store-users', storeUsersRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/custom-fields', customFieldsRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/pixels', pixelsRoutes);
+app.use('/api/coupons', couponsRoutes);
+app.use('/api/influencers', influencersRoutes);
+app.use('/api/automatic-discounts', automaticDiscountsRoutes);
+app.use('/api/influencer-auth', influencerAuthRoutes);
+app.use('/api/influencer-dashboard', influencerDashboardRoutes);
+app.use('/api/partners', partnersRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

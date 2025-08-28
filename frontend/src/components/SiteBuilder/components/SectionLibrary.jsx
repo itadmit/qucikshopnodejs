@@ -181,7 +181,7 @@ const SectionLibrary = ({ sections, onAddSection, compact = false }) => {
               >
                 {/* Header with preview */}
                 <div className="flex items-center p-4 bg-gradient-to-r from-gray-50 to-white">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${sectionPreview.color} group-hover:scale-110 transition-transform`}>
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${sectionPreview.color} group-hover:scale-110 transition-transform`}>
                     {sectionPreview.preview}
                   </div>
                   <div className="mr-4 flex-1">

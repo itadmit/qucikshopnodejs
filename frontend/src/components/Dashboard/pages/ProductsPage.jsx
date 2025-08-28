@@ -19,7 +19,9 @@ import {
   CheckCircle2,
   Clock
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import DataTable from '../components/DataTable.jsx';
+import apiService from '../../../services/api.js';
 
 const ProductsPage = () => {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
@@ -27,49 +29,139 @@ const ProductsPage = () => {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('name');
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - יוחלף בנתונים אמיתיים מה-API
-  const products = [
+  // Define columns for DataTable
+  const columns = [
     {
-      id: 1,
-      name: 'חולצת כותנה קלאסית',
-      sku: 'SHIRT-001',
-      status: 'ACTIVE',
-      type: 'SIMPLE',
-      price: 89.90,
-      inventory: 25,
-      sales: 12,
-      image: '/api/placeholder/80/80',
-      variants: 0,
-      category: 'בגדים'
+      key: 'image',
+      header: 'תמונה',
+      render: (product) => (
+        <div className="flex items-center">
+          <img 
+            src={product.image} 
+            alt={product.name}
+            className="w-10 h-10 rounded-lg object-cover"
+          />
+        </div>
+      )
     },
     {
-      id: 2,
-      name: 'נעלי ספורט מקצועיות',
-      sku: 'SHOES-002',
-      status: 'ACTIVE',
-      type: 'VARIABLE',
-      price: 299.90,
-      inventory: 15,
-      sales: 8,
-      image: '/api/placeholder/80/80',
-      variants: 6,
-      category: 'נעליים'
+      key: 'name',
+      header: 'מוצר',
+      accessor: 'name',
+      sortable: true,
+      render: (product) => (
+        <div>
+          <div className="text-sm font-medium text-gray-900">{product.name}</div>
+          <div className="text-sm text-gray-500">SKU: {product.sku}</div>
+        </div>
+      )
     },
     {
-      id: 3,
-      name: 'תיק גב עמיד',
-      sku: 'BAG-003',
-      status: 'DRAFT',
-      type: 'SIMPLE',
-      price: 149.90,
-      inventory: 0,
-      sales: 0,
-      image: '/api/placeholder/80/80',
-      variants: 0,
-      category: 'אביזרים'
+      key: 'status',
+      header: 'סטטוס',
+      accessor: 'status',
+      sortable: true,
+      filterable: true,
+      filterOptions: [
+        { value: 'ACTIVE', label: 'פעיל' },
+        { value: 'DRAFT', label: 'טיוטה' },
+        { value: 'INACTIVE', label: 'לא פעיל' }
+      ],
+      render: (product) => getStatusBadge(product.status)
+    },
+    {
+      key: 'type',
+      header: 'סוג',
+      accessor: 'type',
+      sortable: true,
+      filterable: true,
+      filterOptions: [
+        { value: 'SIMPLE', label: 'פשוט' },
+        { value: 'VARIABLE', label: 'משתנה' },
+        { value: 'BUNDLE', label: 'חבילה' }
+      ]
+    },
+    {
+      key: 'price',
+      header: 'מחיר',
+      accessor: 'price',
+      sortable: true,
+      render: (product) => `₪${product.price?.toLocaleString('he-IL') || '0'}`
+    },
+    {
+      key: 'inventory',
+      header: 'מלאי',
+      accessor: 'inventory',
+      sortable: true,
+      render: (product) => (
+        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+          product.inventory === 0 ? 'bg-red-100 text-red-800' :
+          product.inventory < 10 ? 'bg-yellow-100 text-yellow-800' :
+          'bg-green-100 text-green-800'
+        }`}>
+          {product.inventory}
+        </span>
+      )
+    },
+    {
+      key: 'category',
+      header: 'קטגוריה',
+      accessor: 'category',
+      sortable: true,
+      filterable: true,
+      filterOptions: [] // Will be populated from API data
     }
   ];
+
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+        const storeId = localStorage.getItem('currentStoreId') || '1'; // Default to store 1
+        
+        if (!token) {
+          console.log('No token found for products');
+          setProducts([]);
+          return;
+        }
+        
+        apiService.setToken(token);
+        const result = await apiService.getProducts({ storeId });
+
+        if (result.success) {
+          // Transform API data to match component expectations
+          const transformedProducts = result.data.map(product => ({
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            status: product.status || 'ACTIVE',
+            type: product.variants?.length > 0 ? 'VARIABLE' : 'SIMPLE',
+            price: parseFloat(product.price || 0),
+            inventory: product.inventoryQuantity || 0,
+            sales: 0, // TODO: Get from analytics
+            image: product.media?.[0]?.media?.s3Url || null,
+            variants: product.variants?.length || 0,
+            category: product.category?.name || 'כללי'
+          }));
+          setProducts(transformedProducts);
+        } else {
+          setProducts([]);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -191,7 +283,14 @@ const ProductsPage = () => {
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <div className="flex items-center gap-2">
-          <button className="text-blue-600 hover:text-blue-900">
+          <button 
+            onClick={() => {
+              window.history.pushState({}, '', `/dashboard/products/${product.id}/edit`);
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="text-blue-600 hover:text-blue-900"
+            title="ערוך מוצר"
+          >
             <Edit className="w-4 h-4" />
           </button>
           <button className="text-gray-600 hover:text-gray-900">
@@ -210,7 +309,7 @@ const ProductsPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">מוצרים</h1>
+          <h1 className="text-xl font-bold text-gray-900">מוצרים</h1>
           <p className="text-gray-600">נהל את המוצרים והמלאי שלך</p>
         </div>
         <div className="flex items-center gap-3">
@@ -225,7 +324,7 @@ const ProductsPage = () => {
           <button 
             onClick={() => {
               window.history.pushState({}, '', '/dashboard/products/new');
-              window.dispatchEvent(new CustomEvent('urlchange', { detail: { path: '/dashboard/products/new' } }));
+              window.dispatchEvent(new PopStateEvent('popstate'));
             }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -326,7 +425,17 @@ const ProductsPage = () => {
       </div>
 
       {/* Products Display */}
-      {products.length > 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-lg border border-gray-100 p-8">
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <Package className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">טוען מוצרים...</h3>
+            <p className="text-gray-500">אנא המתן בזמן שאנחנו טוענים את המוצרים שלך</p>
+          </div>
+        </div>
+      ) : products.length > 0 ? (
         viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map(product => (
@@ -334,54 +443,17 @@ const ProductsPage = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      checked={selectedProducts.length === products.length}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedProducts(products.map(p => p.id));
-                        } else {
-                          setSelectedProducts([]);
-                        }
-                      }}
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    מוצר
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    סטטוס
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    סוג
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    מחיר
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    מלאי
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    קטגוריה
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    פעולות
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {products.map(product => (
-                  <ProductRow key={product.id} product={product} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            data={products}
+            columns={columns}
+            searchable={false}
+            filterable={false}
+            selectable={true}
+            sortable={true}
+            loading={false}
+            pagination={false}
+            className=""
+          />
         )
       ) : (
         <div className="bg-white rounded-lg border border-gray-100 p-8">
@@ -394,7 +466,7 @@ const ProductsPage = () => {
             <button 
               onClick={() => {
                 window.history.pushState({}, '', '/dashboard/products/new');
-                window.dispatchEvent(new CustomEvent('urlchange', { detail: { path: '/dashboard/products/new' } }));
+                window.dispatchEvent(new PopStateEvent('popstate'));
               }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto"
             >
@@ -406,7 +478,7 @@ const ProductsPage = () => {
       )}
 
       {/* Pagination */}
-      {products.length > 0 && (
+      {!loading && products.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-700">
             מציג 1-{products.length} מתוך {products.length} מוצרים

@@ -158,7 +158,7 @@ const StorePage = ({ storeData }) => {
                     לחנות שלנו
                   </span>
                 </h1>
-                <p className="text-xl lg:text-2xl text-gray-700 leading-relaxed max-w-2xl">
+                <p className="text-xl lg:text-xl text-gray-700 leading-relaxed max-w-2xl">
                   {storeData.description || 'גלו אלפי מוצרים איכותיים, משלוח מהיר וחינם, ושירות לקוחות מעולה.'}
                   <span className="font-semibold block mt-2">הקניות שלכם מתחילות כאן!</span>
                 </p>

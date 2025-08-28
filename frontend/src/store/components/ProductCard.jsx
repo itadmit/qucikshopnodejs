@@ -14,22 +14,57 @@ const ProductCard = ({ product, storeSlug, index = 0 }) => {
     const cartKey = `cart_${storeSlug}`
     const existingCart = JSON.parse(localStorage.getItem(cartKey) || '[]')
     
-    // Check if product already exists
-    const existingItemIndex = existingCart.findIndex(item => item.id === product.id)
-    
-    if (existingItemIndex > -1) {
-      // Update quantity
-      existingCart[existingItemIndex].quantity += 1
-    } else {
-      // Add new item
-      existingCart.push({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        imageUrl: product.imageUrl,
-        quantity: 1,
-        storeSlug: storeSlug
+    if (product.type === 'BUNDLE' && product.bundleItems) {
+      // For bundle products, add each item separately but mark them as part of a bundle
+      const bundleId = `bundle_${Date.now()}`
+      
+      product.bundleItems.forEach(bundleItem => {
+        if (bundleItem.isOptional) return // Skip optional items for now
+        
+        const existingItemIndex = existingCart.findIndex(item => 
+          item.id === bundleItem.product.id && 
+          item.variantId === bundleItem.variant?.id
+        )
+        
+        if (existingItemIndex > -1) {
+          existingCart[existingItemIndex].quantity += bundleItem.quantity
+        } else {
+          existingCart.push({
+            id: bundleItem.product.id,
+            name: bundleItem.product.name,
+            price: bundleItem.product.price,
+            imageUrl: bundleItem.product.image,
+            quantity: bundleItem.quantity,
+            variantId: bundleItem.variant?.id || null,
+            variantOptions: bundleItem.variant?.options || null,
+            bundleId: bundleId,
+            bundleName: product.name,
+            storeSlug: storeSlug
+          })
+        }
       })
+      
+      alert(`${product.name} (בנדל) נוסף לעגלה!`)
+    } else {
+      // Regular product logic
+      const existingItemIndex = existingCart.findIndex(item => item.id === product.id)
+      
+      if (existingItemIndex > -1) {
+        // Update quantity
+        existingCart[existingItemIndex].quantity += 1
+      } else {
+        // Add new item
+        existingCart.push({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          imageUrl: product.imageUrl,
+          quantity: 1,
+          storeSlug: storeSlug
+        })
+      }
+      
+      alert(`${product.name} נוסף לעגלה!`)
     }
     
     // Save to localStorage
@@ -37,9 +72,6 @@ const ProductCard = ({ product, storeSlug, index = 0 }) => {
     
     // Dispatch event to update cart count
     window.dispatchEvent(new Event('cartUpdated'))
-    
-    // Show success message (you can replace with a toast notification)
-    alert(`${product.name} נוסף לעגלה!`)
   }
 
   const formatPrice = (price) => {
@@ -91,6 +123,13 @@ const ProductCard = ({ product, storeSlug, index = 0 }) => {
             </div>
           )}
           
+          {/* Bundle Badge */}
+          {product.type === 'BUNDLE' && (
+            <div className={`absolute ${product.originalPrice && product.originalPrice > product.price ? 'top-16' : 'top-4'} right-4 rtl:right-auto rtl:left-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold`}>
+              בנדל
+            </div>
+          )}
+          
           {/* Out of Stock Badge */}
           {!product.inStock && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -137,7 +176,7 @@ const ProductCard = ({ product, storeSlug, index = 0 }) => {
         {/* Price */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <span className="text-2xl font-black text-gray-900">
+            <span className="text-xl font-black text-gray-900">
               {formatPrice(product.price)}
             </span>
             {product.originalPrice && product.originalPrice > product.price && (

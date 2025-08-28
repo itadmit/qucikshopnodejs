@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import apiService from '../../services/api.js';
 import { 
   LayoutDashboard,
@@ -11,7 +12,8 @@ import {
   Palette,
   Menu,
   Layout,
-  Truck
+  Truck,
+  Percent
 } from 'lucide-react';
 
 // Import components
@@ -29,14 +31,20 @@ import DesignPage from './pages/DesignPage.jsx';
 import MenusPage from './pages/MenusPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import ShippingPage from './pages/ShippingPage.jsx';
+import OrderDetailsPage from './pages/OrderDetailsPage.jsx';
+import CouponsPage from './pages/CouponsPage.jsx';
+import CouponFormPage from './pages/CouponFormPage.jsx';
+import AutomaticDiscountFormPage from './pages/AutomaticDiscountFormPage.jsx';
 import SiteBuilderPage from '../SiteBuilder/pages/SiteBuilderPage.jsx';
+import OnboardingTour from './components/OnboardingTour.jsx';
 
 const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
   const { t } = useTranslation();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userStore, setUserStore] = useState(null);
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [currentPath, setCurrentPath] = useState(location.pathname);
 
   // Fetch user store data
   const fetchUserStore = async () => {
@@ -55,6 +63,22 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
     }
   };
 
+  // Handle store change
+  const handleStoreChange = async (newStore) => {
+    try {
+      setUserStore(newStore);
+      // Save selected store to localStorage for persistence
+      localStorage.setItem('selectedStoreId', newStore.id);
+      
+      // Refresh dashboard data for the new store
+      await fetchDashboardData();
+      
+      console.log('🔄 Switched to store:', newStore.name);
+    } catch (err) {
+      console.error('Failed to switch store:', err);
+    }
+  };
+
   // Dashboard data states
   const [stats, setStats] = useState({
     totalProducts: 0,
@@ -70,6 +94,36 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
   const [popularProducts, setPopularProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isManualTourStart, setIsManualTourStart] = useState(false);
+
+  // Handle onboarding tour completion
+  const handleOnboardingComplete = async () => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      if (token) {
+        apiService.setToken(token);
+        await apiService.completeOnboarding();
+        
+        // עדכן את המשתמש ב-localStorage
+        const updatedUser = { ...user, hasCompletedOnboarding: true };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log('🎯 Dashboard: Onboarding completed, user updated');
+      }
+    } catch (err) {
+      console.error('Failed to complete onboarding:', err);
+    }
+  };
+
+  // Handle manual tour start
+  const handleStartTour = () => {
+    console.log('🎯 Dashboard: Starting manual tour, current state:', isManualTourStart);
+    setIsManualTourStart(true);
+  };
+
+  // Handle manual tour close
+  const handleManualTourClose = () => {
+    setIsManualTourStart(false);
+  };
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
@@ -120,50 +174,35 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
   useEffect(() => {
     fetchDashboardData();
     fetchUserStore();
-    
-    // Listen for URL changes
-    const handlePopState = () => {
-      // Force re-render when URL changes by updating a state
-      const newPath = window.location.pathname;
-      setCurrentPath(newPath);
-      
-      if (newPath.includes('/products')) {
-        setActiveTab('products');
-      } else if (newPath.includes('/orders')) {
-        setActiveTab('orders');
-      } else if (newPath.includes('/customers')) {
-        setActiveTab('customers');
-      } else if (newPath.includes('/analytics')) {
-        setActiveTab('analytics');
-      } else if (newPath.includes('/design')) {
-        setActiveTab('design');
-      } else if (newPath.includes('/builder')) {
-        setActiveTab('builder');
-      } else if (newPath.includes('/menus')) {
-        setActiveTab('menus');
-      } else if (newPath.includes('/settings')) {
-        setActiveTab('settings');
-      } else {
-        setActiveTab('overview');
-      }
-    };
-    
-    // Call once on mount to set initial state
-    handlePopState();
-    
-    // Listen for both popstate and custom urlchange events
-    const handleUrlChange = (event) => {
-      handlePopState();
-    };
-    
-    window.addEventListener('popstate', handlePopState);
-    window.addEventListener('urlchange', handleUrlChange);
-    
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('urlchange', handleUrlChange);
-    };
   }, []);
+
+  // Listen for location changes
+  useEffect(() => {
+    const newPath = location.pathname;
+    setCurrentPath(newPath);
+    
+    if (newPath.includes('/products')) {
+      setActiveTab('products');
+    } else if (newPath.includes('/orders')) {
+      setActiveTab('orders');
+    } else if (newPath.includes('/customers')) {
+      setActiveTab('customers');
+    } else if (newPath.includes('/analytics')) {
+      setActiveTab('analytics');
+    } else if (newPath.includes('/design')) {
+      setActiveTab('design');
+    } else if (newPath.includes('/builder')) {
+      setActiveTab('builder');
+    } else if (newPath.includes('/menus')) {
+      setActiveTab('menus');
+    } else if (newPath.includes('/coupons')) {
+      setActiveTab('coupons');
+    } else if (newPath.includes('/settings')) {
+      setActiveTab('settings');
+    } else {
+      setActiveTab('overview');
+    }
+  }, [location.pathname]);
 
   // Menu items for sidebar navigation
   const menuItems = [
@@ -171,11 +210,11 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
     { id: 'products', icon: ShoppingBag, label: t('dashboard.products') || 'מוצרים' },
     { id: 'orders', icon: ShoppingCart, label: t('dashboard.orders') || 'הזמנות' },
     { id: 'customers', icon: Users, label: t('dashboard.customers') || 'לקוחות' },
+    { id: 'coupons', icon: Percent, label: t('dashboard.coupons') || 'קופונים והנחות' },
     { id: 'analytics', icon: BarChart3, label: t('dashboard.analytics') || 'אנליטיקס' },
     { id: 'design', icon: Palette, label: t('dashboard.design') || 'עיצוב האתר' },
     { id: 'builder', icon: Layout, label: t('dashboard.builder') || 'עורך האתר' },
     { id: 'menus', icon: Menu, label: t('dashboard.menus') || 'תפריטים' },
-    { id: 'shipping', icon: Truck, label: t('dashboard.shipping') || 'הגדרות משלוחים' },
     { id: 'settings', icon: Settings, label: t('dashboard.settings') || 'הגדרות' }
   ];
 
@@ -187,12 +226,38 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
   }, [activeTab, onNavigateToBuilder]);
 
   const renderTabContent = () => {
-    // Check if we're on the product creation page
+    // Check if we're on specific pages
     if (currentPath === '/dashboard/products/new' || currentPath.includes('/products/new')) {
       return <ProductFormPage />;
     }
+    // Check for product edit page
+    if (currentPath.includes('/dashboard/products/') && currentPath.includes('/edit')) {
+      const productId = currentPath.split('/')[3]; // Extract product ID from URL
+      return <ProductFormPage productId={productId} />;
+    }
     if (currentPath === '/dashboard/products' || currentPath.includes('/products')) {
       return <ProductsPage />;
+    }
+    // Check for order details page
+    if (currentPath.includes('/dashboard/orders/') && currentPath !== '/dashboard/orders') {
+      const orderId = currentPath.split('/')[3]; // Extract order ID from URL
+      return <OrderDetailsPage orderId={orderId} />;
+    }
+    // Check for coupon form pages
+    if (currentPath === '/dashboard/coupons/new') {
+      return <CouponFormPage />;
+    }
+    if (currentPath.includes('/dashboard/coupons/') && currentPath.includes('/edit')) {
+      const couponId = currentPath.split('/')[3]; // Extract coupon ID from URL
+      return <CouponFormPage />;
+    }
+    // Check for automatic discount form pages
+    if (currentPath === '/dashboard/automatic-discounts/new') {
+      return <AutomaticDiscountFormPage />;
+    }
+    if (currentPath.includes('/dashboard/automatic-discounts/') && currentPath.includes('/edit')) {
+      const discountId = currentPath.split('/')[3]; // Extract discount ID from URL
+      return <AutomaticDiscountFormPage />;
     }
     
     switch (activeTab) {
@@ -205,7 +270,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
       case 'customers':
         return <CustomersPage />;
       case 'analytics':
-        return <AnalyticsPage />;
+        return <AnalyticsPage userStore={userStore} />;
       case 'design':
         return <DesignPage />;
       case 'builder':
@@ -213,10 +278,10 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
         return <OverviewPage stats={stats} recentOrders={recentOrders} popularProducts={popularProducts} userStore={userStore} />;
       case 'menus':
         return <MenusPage />;
-      case 'shipping':
-        return <ShippingPage />;
+      case 'coupons':
+        return <CouponsPage storeId={userStore?.id} />;
       case 'settings':
-        return <SettingsPage />;
+        return <SettingsPage userStore={userStore} />;
       default:
         return <OverviewPage stats={stats} recentOrders={recentOrders} popularProducts={popularProducts} userStore={userStore} />;
     }
@@ -254,7 +319,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex overflow-hidden" dir="rtl">
+    <div className="h-screen bg-gray-50 flex overflow-hidden" dir="rtl" data-tour="welcome">
       {/* Sidebar */}
       <DashboardSidebar 
         sidebarOpen={sidebarOpen}
@@ -276,6 +341,9 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
           loading={loading}
           fetchDashboardData={fetchDashboardData}
           setSidebarOpen={setSidebarOpen}
+          onLogout={onLogout}
+          onStartTour={handleStartTour}
+          onStoreChange={handleStoreChange}
         />
 
                 {/* Page Content */}
@@ -293,6 +361,14 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Onboarding Tour */}
+      <OnboardingTour 
+        user={user} 
+        onComplete={handleOnboardingComplete}
+        isManualStart={isManualTourStart}
+        onManualClose={handleManualTourClose}
+      />
     </div>
   );
 };

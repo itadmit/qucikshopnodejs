@@ -132,6 +132,81 @@ router.get('/user-stores', authenticateToken, requireActiveSubscription, async (
   }
 });
 
+// Get specific store by ID
+router.get('/user-store/:storeId', authenticateToken, requireActiveSubscription, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { storeId } = req.params;
+    
+    // Check if user has access to this store (either as owner or team member)
+    const storeAccess = await prisma.store.findFirst({
+      where: {
+        id: parseInt(storeId),
+        isActive: true,
+        OR: [
+          { userId: userId }, // User is owner
+          { 
+            storeUsers: {
+              some: {
+                userId: userId,
+                isActive: true,
+                acceptedAt: { not: null }
+              }
+            }
+          } // User is team member
+        ]
+      },
+      include: {
+        storeUsers: {
+          where: {
+            userId: userId,
+            isActive: true
+          },
+          select: {
+            role: true
+          }
+        }
+      }
+    });
+    
+    if (!storeAccess) {
+      return res.status(404).json({ 
+        error: 'Store not found or access denied',
+        message: 'אין לך גישה לחנות זו' 
+      });
+    }
+    
+    // Determine user role
+    const role = storeAccess.userId === userId ? 'OWNER' : storeAccess.storeUsers[0]?.role || 'VIEWER';
+    
+    const storeData = {
+      id: storeAccess.id,
+      name: storeAccess.name,
+      slug: storeAccess.slug,
+      description: storeAccess.description,
+      domain: storeAccess.domain,
+      logoUrl: storeAccess.logoUrl,
+      planType: storeAccess.planType,
+      subscriptionStatus: storeAccess.subscriptionStatus,
+      isActive: storeAccess.isActive,
+      createdAt: storeAccess.createdAt,
+      role: role
+    };
+    
+    res.json({
+      success: true,
+      data: storeData
+    });
+    
+  } catch (error) {
+    console.error('Error fetching specific store:', error);
+    res.status(500).json({
+      error: 'Failed to fetch store',
+      message: error.message
+    });
+  }
+});
+
 // Get primary/default store (for backward compatibility)
 router.get('/user-store', authenticateToken, requireActiveSubscription, async (req, res) => {
   try {

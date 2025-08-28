@@ -1,5 +1,6 @@
 import { X, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 const DashboardSidebar = ({ 
   sidebarOpen, 
@@ -11,6 +12,7 @@ const DashboardSidebar = ({
   onLogout
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   return (
     <div className={`fixed inset-y-0 right-0 z-50 w-64 bg-white shadow-lg transform ${
       sidebarOpen ? 'translate-x-0' : 'translate-x-full'
@@ -23,7 +25,7 @@ const DashboardSidebar = ({
             <img 
               src="/src/assets/logo.png" 
               alt="QuickShop Logo" 
-              className="h-12 w-auto"
+              className="h-10 w-auto"
             />
           </div>
           <button
@@ -44,10 +46,10 @@ const DashboardSidebar = ({
             return (
               <button
                 key={item.id}
+                data-tour={`sidebar-${item.id}`}
                 onClick={() => {
-                  setActiveTab(item.id);
                   setSidebarOpen(false);
-                  // Update URL based on tab
+                  // Navigate using React Router
                   let newPath;
                   if (item.id === 'products') {
                     newPath = '/dashboard/products';
@@ -56,8 +58,7 @@ const DashboardSidebar = ({
                   } else {
                     newPath = `/dashboard/${item.id}`;
                   }
-                  window.history.pushState({}, '', newPath);
-                  window.dispatchEvent(new CustomEvent('urlchange', { detail: { path: newPath } }));
+                  navigate(newPath);
                 }}
                 className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive

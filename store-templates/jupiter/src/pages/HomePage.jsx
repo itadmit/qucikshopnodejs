@@ -141,7 +141,7 @@ const HomePage = ({ storeData }) => {
                   </span>
                   <span className="block">מתחילה כאן</span>
                 </h1>
-                <p className="text-xl lg:text-2xl text-gray-700 leading-relaxed max-w-2xl">
+                <p className="text-xl lg:text-xl text-gray-700 leading-relaxed max-w-2xl">
                   גלו אלפי מוצרים איכותיים, משלוח מהיר וחינם, ושירות לקוחות מעולה. 
                   <span className="font-semibold">הקניות שלכם מתחילות כאן!</span>
                 </p>
@@ -492,7 +492,7 @@ const HomePage = ({ storeData }) => {
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                      <span className="text-2xl font-black text-gray-900">
+                      <span className="text-xl font-black text-gray-900">
                         ₪{product.price}
                       </span>
                       {product.originalPrice && (

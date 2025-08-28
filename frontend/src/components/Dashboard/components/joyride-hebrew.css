@@ -1,0 +1,23 @@
+/* CSS מותאם לעברית עבור react-joyride */
+
+/* תיקון רק לכפתור Next - הסתרת מידע הצעד */
+.__floater__body button[data-action="next"] {
+  font-family: 'Noto Sans Hebrew', sans-serif !important;
+}
+
+/* הסתרת הטקסט המקורי של כפתור Next בלבד */
+.__floater__body button[data-action="next"] span {
+  visibility: hidden !important;
+  position: relative !important;
+}
+
+/* הוספת הטקסט בעברית לכפתור Next */
+.__floater__body button[data-action="next"] span::after {
+  content: 'הבא' !important;
+  visibility: visible !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  text-align: center !important;
+}

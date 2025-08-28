@@ -230,7 +230,7 @@ const StoreSetupTodos = ({ storeId, compact = false }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-100 overflow-hidden" data-tour="setup-todos">
       {/* Header */}
       <div 
         className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -257,7 +257,7 @@ const StoreSetupTodos = ({ storeId, compact = false }) => {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-left">
-              <div className="text-2xl font-bold text-gray-900">{completedCount}/{setupTasks.length}</div>
+              <div className="text-xl font-bold text-gray-900">{completedCount}/{setupTasks.length}</div>
               <div className="text-sm text-gray-500">הושלמו</div>
             </div>
             <ArrowRight className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />

@@ -54,7 +54,7 @@ ProductTitle.schema = {
         label: 'גודל כותרת',
         options: [
           { value: 'text-xl', label: 'קטן' },
-          { value: 'text-2xl', label: 'בינוני' },
+          { value: 'text-xl', label: 'בינוני' },
           { value: 'text-3xl', label: 'גדול' },
           { value: 'text-4xl', label: 'גדול מאוד' }
         ],

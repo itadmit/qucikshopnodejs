@@ -110,6 +110,10 @@ class ApiService {
     return { success: true };
   }
 
+  async completeOnboarding() {
+    return this.post('/auth/complete-onboarding', {});
+  }
+
   // Dashboard APIs
   async getDashboardStats() {
     return this.get('/dashboard/stats');
@@ -125,6 +129,10 @@ class ApiService {
 
   async getUserStore() {
     return this.get('/dashboard/user-store');
+  }
+
+  async getStoreById(storeId) {
+    return this.get(`/dashboard/user-store/${storeId}`);
   }
 
   async getUserStores() {
@@ -228,8 +236,52 @@ class ApiService {
     const queryString = new URLSearchParams(params).toString();
     return this.get(`/analytics${queryString ? `?${queryString}` : ''}`);
   }
+
+  // Custom Fields APIs
+  async getCustomFields() {
+    return this.get('/custom-fields');
+  }
+
+  // Media APIs
+  async uploadMedia(files, folder = 'products') {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+    formData.append('folder', folder);
+
+    const url = `${this.baseURL}/media/upload-multiple`;
+    const config = {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`
+      },
+      body: formData
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Media upload failed`, error);
+      throw error;
+    }
+  }
+
+  async deleteMedia(key) {
+    return this.delete(`/media/delete/${encodeURIComponent(key)}`);
+  }
 }
 
 // Create and export a singleton instance
 const apiService = new ApiService();
+
+// Export both default and named export for flexibility
 export default apiService;
+export { apiService as api };

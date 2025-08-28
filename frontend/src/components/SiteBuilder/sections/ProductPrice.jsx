@@ -4,7 +4,7 @@ const ProductPrice = ({ settings = {}, product }) => {
   const {
     show_compare_price = true,
     show_currency = true,
-    price_size = 'text-2xl',
+    price_size = 'text-xl',
     price_weight = 'font-bold',
     price_color = '#000000',
     compare_price_size = 'text-lg',
@@ -105,10 +105,10 @@ ProductPrice.schema = {
         options: [
           { value: 'text-lg', label: 'קטן' },
           { value: 'text-xl', label: 'בינוני' },
-          { value: 'text-2xl', label: 'גדול' },
+          { value: 'text-xl', label: 'גדול' },
           { value: 'text-3xl', label: 'גדול מאוד' }
         ],
-        default: 'text-2xl'
+        default: 'text-xl'
       },
       {
         type: 'select',

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Upload, X, Image as ImageIcon, Video, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import apiService from '../../../services/api.js';
 
 const MediaUploader = ({ onUpload, onDelete, media = [], maxFiles = 10 }) => {
   const [uploading, setUploading] = useState(false);
@@ -25,19 +26,13 @@ const MediaUploader = ({ onUpload, onDelete, media = [], maxFiles = 10 }) => {
 
       setUploadProgress(newProgress);
 
-      const response = await fetch('/api/media/upload-multiple', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No authentication token found');
       }
-
-      const result = await response.json();
+      
+      apiService.setToken(token);
+      const result = await apiService.uploadMedia(Array.from(files), 'products');
       
       const newMediaItems = result.data.map(uploadResult => ({
         id: Date.now() + Math.random(),
@@ -71,16 +66,13 @@ const MediaUploader = ({ onUpload, onDelete, media = [], maxFiles = 10 }) => {
   const handleDelete = async (mediaItem) => {
     try {
       if (mediaItem.key) {
-        const response = await fetch(`/api/media/delete/${encodeURIComponent(mediaItem.key)}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Delete failed');
+        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+        if (!token) {
+          throw new Error('No authentication token found');
         }
+        
+        apiService.setToken(token);
+        await apiService.deleteMedia(mediaItem.key);
       }
       onDelete(mediaItem.id);
     } catch (error) {

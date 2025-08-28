@@ -8,10 +8,12 @@ import {
   ChevronDown,
   User,
   Copy,
-  Check
+  Check,
+  HelpCircle
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import NotificationDropdown from './NotificationDropdown.jsx';
+import StoreSwitcher from './StoreSwitcher.jsx';
 
 const DashboardHeader = ({ 
   user, 
@@ -20,12 +22,16 @@ const DashboardHeader = ({
   menuItems, 
   loading, 
   fetchDashboardData, 
-  setSidebarOpen 
+  setSidebarOpen,
+  onLogout,
+  onStartTour,
+  onStoreChange
 }) => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const userDropdownRef = useRef(null);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -48,6 +54,20 @@ const DashboardHeader = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    if (showUserDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showUserDropdown]);
 
   // Copy store URL to clipboard
   const copyStoreUrl = async () => {
@@ -79,10 +99,12 @@ const DashboardHeader = ({
             {/* Greeting */}
             <div className="hidden sm:block">
               <h1 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                <span>שלום, {user?.firstName || 'יוגב'}!</span>
                 <span>👋</span>
-                <span>שלום {user?.firstName || 'יוגב'}!</span>
               </h1>
             </div>
+
+
           </div>
           
           {/* Center - Search Bar (Shopify Style) */}
@@ -111,29 +133,10 @@ const DashboardHeader = ({
                     תוצאות חיפוש
                   </div>
                   
-                  {/* Mock search results */}
+                  {/* Search results will be implemented when search functionality is added */}
                   <div className="py-1">
-                    <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <Store className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">מוצרים</p>
-                          <p className="text-xs text-gray-500">נהל את המוצרים שלך</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                          <User className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">לקוחות</p>
-                          <p className="text-xs text-gray-500">נהל את הלקוחות שלך</p>
-                        </div>
-                      </div>
+                    <div className="px-4 py-2 text-center text-gray-500 text-sm">
+                      הקלד כדי לחפש...
                     </div>
                   </div>
                   
@@ -157,14 +160,31 @@ const DashboardHeader = ({
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 title="צפה בחנות"
+                data-tour="store-preview"
               >
                 <Store className="w-5 h-5 text-gray-900" />
               </a>
             )}
 
+            {/* Help/Tour Button */}
+            <button
+              onClick={() => {
+                console.log('🎯 Header: Help button clicked, onStartTour:', !!onStartTour);
+                if (onStartTour) {
+                  onStartTour();
+                } else {
+                  console.error('❌ onStartTour function not provided');
+                }
+              }}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              title="הדרכה - הפעל טור הכוונה"
+            >
+              <HelpCircle className="w-5 h-5 text-gray-900" />
+            </button>
+
             {/* Mobile Search Button */}
-            <button className="md:hidden p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              <Search className="w-5 h-5" />
+            <button className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
+              <Search className="w-5 h-5 text-gray-900" />
             </button>
 
             {/* Refresh Button - Hidden for now */}
@@ -183,30 +203,39 @@ const DashboardHeader = ({
             <NotificationDropdown />
 
             {/* User Avatar + Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={userDropdownRef}>
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-100 transition-colors group"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors group"
               >
+                {/* User Avatar */}
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-gray-900 font-semibold text-sm shadow-md" style={{background: 'linear-gradient(rgb(251, 236, 227) 0%, rgb(234, 206, 255) 100%)'}}>
                   {user?.firstName?.charAt(0) || 'י'}
                 </div>
+                
+                {/* User Details - RTL aligned */}
                 <div className="hidden lg:block text-right">
-                  <p className="text-sm font-medium text-gray-900">{user?.firstName || 'יוגב'} {user?.lastName || 'אביטן'}</p>
-                  <p className="text-xs text-gray-500">מנהל חנות</p>
+                  <p className="text-sm font-medium text-gray-900 text-right">{user?.firstName || 'יוגב'} {user?.lastName || 'אביטן'}</p>
+                  <p className="text-xs text-gray-500 text-right">מנהל חנות</p>
                 </div>
+                
                 <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
               </button>
 
                             {/* User Dropdown */}
               {showUserDropdown && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-0 z-50">
-                  {/* Store Info Section */}
+                <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-0 z-50">
+                  {/* Store Switcher Section */}
                   {userStore && (
-                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">החנות שלי</p>
-                      <p className="text-sm font-medium text-gray-900">{userStore.name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{userStore.slug}.localhost:5173</p>
+                    <div className="p-4 border-b border-gray-100">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">החנויות שלי</p>
+                      <StoreSwitcher 
+                        currentStore={userStore} 
+                        onStoreChange={(store) => {
+                          onStoreChange(store);
+                          setShowUserDropdown(false);
+                        }}
+                      />
                     </div>
                   )}
                   
@@ -265,7 +294,9 @@ const DashboardHeader = ({
                       className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-right"
                       onClick={() => {
                         setShowUserDropdown(false);
-                        // Add logout functionality here
+                        if (onLogout) {
+                          onLogout();
+                        }
                       }}
                     >
                       <ExternalLink className="w-4 h-4 text-red-400" />
@@ -279,14 +310,7 @@ const DashboardHeader = ({
         </div>
       </div>
 
-      {/* Click outside to close dropdowns */}
-      {showUserDropdown && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setShowUserDropdown(false)}
-        />
-      )}
-      
+      {/* Click outside to close search */}
       {showSearch && (
         <div 
           className="fixed inset-0 z-40" 

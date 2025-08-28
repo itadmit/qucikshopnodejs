@@ -39,6 +39,25 @@ router.get('/', authenticateToken, async (req, res) => {
               }
             }
           }
+        },
+        bundleItems: {
+          include: {
+            product: {
+              include: {
+                media: true
+              }
+            },
+            variant: {
+              include: {
+                optionValues: {
+                  include: {
+                    option: true,
+                    optionValue: true
+                  }
+                }
+              }
+            }
+          }
         }
       },
       orderBy: {
@@ -119,6 +138,7 @@ router.post('/', authenticateToken, async (req, res) => {
       description,
       shortDescription,
       sku,
+      type,
       price,
       comparePrice,
       costPrice,
@@ -135,7 +155,8 @@ router.post('/', authenticateToken, async (req, res) => {
       customFields,
       media,
       variants,
-      productOptions
+      productOptions,
+      bundleItems
     } = req.body;
 
     // Verify user has access to this store
@@ -170,6 +191,7 @@ router.post('/', authenticateToken, async (req, res) => {
           description,
           shortDescription,
           sku,
+          type: type || 'SIMPLE',
           price: price ? parseFloat(price) : null,
           comparePrice: comparePrice ? parseFloat(comparePrice) : null,
           costPrice: costPrice ? parseFloat(costPrice) : null,
@@ -259,6 +281,24 @@ router.post('/', authenticateToken, async (req, res) => {
               });
             }
           }
+        }
+      }
+
+      // Create bundle items if this is a bundle product
+      if (type === 'BUNDLE' && bundleItems && Array.isArray(bundleItems)) {
+        for (const bundleItem of bundleItems) {
+          await tx.bundleItem.create({
+            data: {
+              bundleId: product.id,
+              productId: parseInt(bundleItem.productId),
+              variantId: bundleItem.variantId ? parseInt(bundleItem.variantId) : null,
+              quantity: bundleItem.quantity || 1,
+              sortOrder: bundleItem.sortOrder || 0,
+              isOptional: bundleItem.isOptional || false,
+              discountType: bundleItem.discountType || null,
+              discountValue: bundleItem.discountValue ? parseFloat(bundleItem.discountValue) : null
+            }
+          });
         }
       }
 
@@ -394,6 +434,248 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Delete product error:', error);
     res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
+// Helper function to calculate bundle availability
+async function calculateBundleAvailability(bundleId) {
+  const bundleItems = await prisma.bundleItem.findMany({
+    where: {
+      bundleId: parseInt(bundleId)
+    },
+    include: {
+      product: true,
+      variant: true
+    }
+  });
+
+  let maxAvailableQuantity = Infinity;
+
+  for (const item of bundleItems) {
+    if (item.isOptional) continue; // Skip optional items
+
+    let itemAvailability = 0;
+    
+    if (item.variant) {
+      // Use variant inventory
+      itemAvailability = item.variant.inventoryQuantity;
+    } else {
+      // Use product inventory
+      itemAvailability = item.product.inventoryQuantity;
+    }
+
+    // Calculate how many bundles we can make with this item
+    const bundlesFromThisItem = Math.floor(itemAvailability / item.quantity);
+    maxAvailableQuantity = Math.min(maxAvailableQuantity, bundlesFromThisItem);
+  }
+
+  return maxAvailableQuantity === Infinity ? 0 : maxAvailableQuantity;
+}
+
+// API endpoint to get bundle availability
+router.get('/:id/bundle-availability', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Verify user has access to this product's store
+    const product = await prisma.product.findFirst({
+      where: {
+        id: parseInt(id),
+        type: 'BUNDLE'
+      },
+      include: {
+        store: {
+          include: {
+            storeUsers: {
+              where: {
+                userId: userId,
+                isActive: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: 'Bundle product not found' });
+    }
+
+    if (product.store.storeUsers.length === 0) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const availability = await calculateBundleAvailability(id);
+
+    res.json({
+      success: true,
+      data: {
+        productId: parseInt(id),
+        availableQuantity: availability,
+        inStock: availability > 0
+      }
+    });
+  } catch (error) {
+    console.error('Bundle availability error:', error);
+    res.status(500).json({ error: 'Failed to calculate bundle availability' });
+  }
+});
+
+// Helper function to reduce inventory for bundle items
+async function reduceBundleInventory(bundleId, quantity = 1) {
+  const bundleItems = await prisma.bundleItem.findMany({
+    where: {
+      bundleId: parseInt(bundleId)
+    },
+    include: {
+      product: true,
+      variant: true
+    }
+  });
+
+  const updates = [];
+
+  for (const item of bundleItems) {
+    const reduceBy = item.quantity * quantity;
+
+    if (item.variant) {
+      // Update variant inventory
+      updates.push(
+        prisma.productVariant.update({
+          where: { id: item.variantId },
+          data: {
+            inventoryQuantity: {
+              decrement: reduceBy
+            }
+          }
+        })
+      );
+    } else {
+      // Update product inventory
+      updates.push(
+        prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            inventoryQuantity: {
+              decrement: reduceBy
+            }
+          }
+        })
+      );
+    }
+  }
+
+  // Execute all updates in transaction
+  await prisma.$transaction(updates);
+}
+
+// API endpoint to reduce bundle inventory (for order processing)
+router.post('/:id/reduce-inventory', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity = 1 } = req.body;
+    const userId = req.user.id;
+
+    // Verify user has access to this product's store
+    const product = await prisma.product.findFirst({
+      where: {
+        id: parseInt(id),
+        type: 'BUNDLE'
+      },
+      include: {
+        store: {
+          include: {
+            storeUsers: {
+              where: {
+                userId: userId,
+                isActive: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: 'Bundle product not found' });
+    }
+
+    if (product.store.storeUsers.length === 0) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Check availability before reducing
+    const availability = await calculateBundleAvailability(id);
+    if (availability < quantity) {
+      return res.status(400).json({ 
+        error: 'Insufficient inventory',
+        available: availability,
+        requested: quantity
+      });
+    }
+
+    await reduceBundleInventory(id, quantity);
+
+    res.json({
+      success: true,
+      message: `Inventory reduced for bundle ${id}`,
+      data: {
+        productId: parseInt(id),
+        quantityReduced: quantity
+      }
+    });
+  } catch (error) {
+    console.error('Reduce bundle inventory error:', error);
+    res.status(500).json({ error: 'Failed to reduce bundle inventory' });
+  }
+});
+
+// Get all categories for a store
+router.get('/categories', authenticateToken, async (req, res) => {
+  try {
+    const { storeId } = req.query;
+    const userId = req.user.id;
+
+    // Verify user has access to this store
+    const storeUser = await prisma.storeUser.findFirst({
+      where: {
+        storeId: parseInt(storeId),
+        userId: userId,
+        isActive: true
+      }
+    });
+
+    if (!storeUser) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Get unique categories from products
+    const products = await prisma.product.findMany({
+      where: {
+        storeId: parseInt(storeId),
+        category: {
+          not: null
+        }
+      },
+      select: {
+        category: true
+      },
+      distinct: ['category']
+    });
+
+    // Format categories with IDs (using category name as ID for now)
+    const categories = products
+      .filter(p => p.category)
+      .map((p, index) => ({
+        id: p.category, // Using category name as ID
+        name: p.category
+      }));
+
+    res.json(categories);
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ error: 'Failed to fetch categories' });
   }
 });
 

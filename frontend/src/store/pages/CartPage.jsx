@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import CouponInput from '../components/CouponInput'
+import discountService from '../../services/discountService'
 
 const CartPage = ({ storeData }) => {
   const { t } = useTranslation()
   const [cartItems, setCartItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [discountData, setDiscountData] = useState(null)
+  const [appliedCoupon, setAppliedCoupon] = useState(null)
+  const [isCalculatingDiscounts, setIsCalculatingDiscounts] = useState(false)
 
   useEffect(() => {
     if (storeData) {
@@ -14,13 +19,42 @@ const CartPage = ({ storeData }) => {
     setLoading(false)
   }, [storeData])
 
-  const loadCartItems = () => {
+  const loadCartItems = async () => {
     const cartKey = `cart_${storeData.slug}`
     const cart = JSON.parse(localStorage.getItem(cartKey) || '[]')
     setCartItems(cart)
+    
+    // חישוב הנחות אוטומטיות
+    if (cart.length > 0) {
+      await calculateDiscounts(cart)
+    } else {
+      setDiscountData(null)
+      setAppliedCoupon(null)
+    }
   }
 
-  const updateQuantity = (itemId, newQuantity) => {
+  const calculateDiscounts = async (cart, couponCode = appliedCoupon) => {
+    if (!storeData || cart.length === 0) return
+    
+    setIsCalculatingDiscounts(true)
+    try {
+      const result = await discountService.calculateDiscounts(
+        { items: cart },
+        storeData.slug,
+        couponCode
+      )
+      
+      if (result.success) {
+        setDiscountData(result)
+      }
+    } catch (error) {
+      console.error('שגיאה בחישוב הנחות:', error)
+    } finally {
+      setIsCalculatingDiscounts(false)
+    }
+  }
+
+  const updateQuantity = async (itemId, newQuantity) => {
     if (newQuantity <= 0) {
       removeItem(itemId)
       return
@@ -34,14 +68,25 @@ const CartPage = ({ storeData }) => {
     const cartKey = `cart_${storeData.slug}`
     localStorage.setItem(cartKey, JSON.stringify(updatedCart))
     window.dispatchEvent(new Event('cartUpdated'))
+    
+    // חישוב הנחות מחדש
+    await calculateDiscounts(updatedCart)
   }
 
-  const removeItem = (itemId) => {
+  const removeItem = async (itemId) => {
     const updatedCart = cartItems.filter(item => item.id !== itemId)
     setCartItems(updatedCart)
     const cartKey = `cart_${storeData.slug}`
     localStorage.setItem(cartKey, JSON.stringify(updatedCart))
     window.dispatchEvent(new Event('cartUpdated'))
+    
+    // חישוב הנחות מחדש
+    if (updatedCart.length > 0) {
+      await calculateDiscounts(updatedCart)
+    } else {
+      setDiscountData(null)
+      setAppliedCoupon(null)
+    }
   }
 
   const clearCart = () => {
@@ -63,12 +108,23 @@ const CartPage = ({ storeData }) => {
   }
 
   const calculateShipping = () => {
+    if (discountData && discountData.success) {
+      return discountData.shipping
+    }
     const subtotal = calculateSubtotal()
     return subtotal > 200 ? 0 : 25 // Free shipping over 200 ILS
   }
 
   const calculateTotal = () => {
+    if (discountData && discountData.success) {
+      return discountData.total
+    }
     return calculateSubtotal() + calculateShipping()
+  }
+
+  const handleDiscountApplied = async (discountResult, couponCode) => {
+    setDiscountData(discountResult)
+    setAppliedCoupon(couponCode)
   }
 
   if (loading) {
@@ -98,7 +154,7 @@ const CartPage = ({ storeData }) => {
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <i className="ri-shopping-cart-line text-4xl text-gray-400"></i>
             </div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">העגלה ריקה</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">העגלה ריקה</h2>
             <p className="text-gray-600 mb-8">נראה שעדיין לא הוספת מוצרים לעגלה</p>
             <Link
               to="/products"
@@ -207,6 +263,16 @@ const CartPage = ({ storeData }) => {
               <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">סיכום הזמנה</h3>
                 
+                {/* Coupon Input */}
+                <div className="mb-6">
+                  <CouponInput
+                    cart={{ items: cartItems }}
+                    storeSlug={storeData.slug}
+                    onDiscountApplied={handleDiscountApplied}
+                    appliedCoupon={appliedCoupon}
+                  />
+                </div>
+                
                 <div className="space-y-4">
                   {/* Subtotal */}
                   <div className="flex justify-between">
@@ -214,22 +280,35 @@ const CartPage = ({ storeData }) => {
                     <span className="font-medium">{formatPrice(calculateSubtotal())}</span>
                   </div>
 
+                  {/* Discounts */}
+                  {discountData && discountData.appliedDiscounts && discountData.appliedDiscounts.length > 0 && (
+                    <div className="space-y-2">
+                      {discountData.appliedDiscounts.map((discount, index) => (
+                        <div key={index} className="flex justify-between text-sm text-green-600">
+                          <span className="flex items-center">
+                            <i className="ri-discount-percent-line ml-1"></i>
+                            {discount.name || discountService.getDiscountMessage(discount)}
+                          </span>
+                          <span>-{formatPrice(discount.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Shipping */}
                   <div className="flex justify-between">
                     <span className="text-gray-600">משלוח:</span>
-                    <span className="font-medium">
-                      {calculateShipping() === 0 ? (
-                        <span className="text-green-600">חינם</span>
-                      ) : (
-                        formatPrice(calculateShipping())
-                      )}
+                    <span className={`font-medium ${calculateShipping() === 0 ? 'text-green-600' : ''}`}>
+                      {calculateShipping() === 0 ? 'חינם' : formatPrice(calculateShipping())}
                     </span>
                   </div>
 
                   {/* Free Shipping Notice */}
-                  {calculateShipping() > 0 && (
+                  {calculateShipping() > 0 && !discountService.hasFreeShippingDiscount(discountData?.appliedDiscounts || []) && (
                     <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
-                      הוסף עוד {formatPrice(200 - calculateSubtotal())} לקבלת משלוח חינם
+                      {discountService.getFreeShippingMessage(
+                        discountService.getAmountUntilFreeShipping(calculateSubtotal())
+                      )}
                     </div>
                   )}
 
@@ -238,8 +317,20 @@ const CartPage = ({ storeData }) => {
                   {/* Total */}
                   <div className="flex justify-between text-lg font-semibold">
                     <span>סה״כ לתשלום:</span>
-                    <span>{formatPrice(calculateTotal())}</span>
+                    <span className="flex items-center">
+                      {isCalculatingDiscounts && (
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin ml-2"></div>
+                      )}
+                      {formatPrice(calculateTotal())}
+                    </span>
                   </div>
+
+                  {/* Savings Display */}
+                  {discountData && discountData.savings > 0 && (
+                    <div className="text-center text-sm text-green-600 font-medium bg-green-50 rounded-lg p-3">
+                      🎉 חסכת {formatPrice(discountData.savings)} בהזמנה זו!
+                    </div>
+                  )}
                 </div>
 
                 {/* Checkout Button */}

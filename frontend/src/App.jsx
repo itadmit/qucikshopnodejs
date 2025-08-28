@@ -12,30 +12,33 @@ import {
   RiSpeedUpLine,
   RiCustomerService2Line
 } from '@remixicon/react'
-import AuthModal from './components/AuthModal'
+import AuthPage from './components/AuthPage'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import Dashboard from './components/Dashboard/Dashboard'
 import StoreApp from './store/StoreApp'
 import SiteBuilderPage from './components/SiteBuilder/pages/SiteBuilderPage'
+import InfluencerLogin from './components/InfluencerLogin'
+import InfluencerDashboard from './components/InfluencerDashboard/InfluencerDashboard'
+import PartnersLandingPage from './components/Partners/PartnersLandingPage'
+import PartnersRegister from './components/Partners/PartnersRegister'
+import PartnersLogin from './components/Partners/PartnersLogin'
+import PartnersDashboard from './components/Partners/PartnersDashboard'
 
 function App() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const [selectedPlan, setSelectedPlan] = useState('pro')
-  const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'login' })
+
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [storeSlug, setStoreSlug] = useState(null)
 
   // Check if this is a store subdomain or main app
   useEffect(() => {
-    console.log('🔄 App initialization started')
     const hostname = window.location.hostname
     const pathname = location.pathname
     const urlParams = new URLSearchParams(window.location.search)
-    
-    console.log('Current pathname:', pathname)
     
     let detectedStoreSlug = null
     
@@ -66,8 +69,14 @@ function App() {
       if (token && userData) {
         try {
           const parsedUser = JSON.parse(userData)
+          
+          // אם המשתמש לא כולל את השדה hasCompletedOnboarding, הוסף אותו
+          if (parsedUser.hasCompletedOnboarding === undefined) {
+            parsedUser.hasCompletedOnboarding = false;
+            localStorage.setItem('user', JSON.stringify(parsedUser));
+          }
+          
           setUser(parsedUser)
-          console.log('User loaded from localStorage:', parsedUser)
         } catch (error) {
           console.error('Error parsing user data:', error)
           localStorage.removeItem('token')
@@ -98,7 +107,6 @@ function App() {
     localStorage.setItem('authToken', token)
     localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData)
-    setAuthModal({ isOpen: false, mode: 'login' })
     
     // Auto redirect to dashboard
     setTimeout(() => {
@@ -168,6 +176,26 @@ function App() {
   // Main App Routes
   return (
     <Routes>
+      <Route path="/auth" element={
+        <AuthPage 
+          onSuccess={handleAuthSuccess}
+          onClose={() => navigate('/')}
+        />
+      } />
+      <Route path="/login" element={
+        <AuthPage 
+          mode="login"
+          onSuccess={handleAuthSuccess}
+          onClose={() => navigate('/')}
+        />
+      } />
+      <Route path="/register" element={
+        <AuthPage 
+          mode="register"
+          onSuccess={handleAuthSuccess}
+          onClose={() => navigate('/')}
+        />
+      } />
       <Route path="/dashboard/*" element={
         user ? (
           <Dashboard 
@@ -177,7 +205,11 @@ function App() {
             onNavigateToBuilder={() => navigate('/builder')}
           />
         ) : (
-          <HomePage />
+          <AuthPage 
+            mode="login"
+            onSuccess={handleAuthSuccess}
+            onClose={() => navigate('/')}
+          />
         )
       } />
       <Route path="/builder" element={
@@ -187,10 +219,20 @@ function App() {
             onBack={() => navigate('/dashboard')} 
           />
         ) : (
-          <HomePage />
+          <AuthPage 
+            mode="login"
+            onSuccess={handleAuthSuccess}
+            onClose={() => navigate('/')}
+          />
         )
       } />
       <Route path="/stores/:slug" element={<StoreApp />} />
+      <Route path="/influencer/login" element={<InfluencerLogin />} />
+      <Route path="/influencer/dashboard" element={<InfluencerDashboard />} />
+      <Route path="/partners" element={<PartnersLandingPage />} />
+      <Route path="/partners/register" element={<PartnersRegister />} />
+      <Route path="/partners/login" element={<PartnersLogin />} />
+      <Route path="/partners/dashboard/*" element={<PartnersDashboard />} />
       <Route path="/" element={<HomePage />} />
     </Routes>
   )
@@ -241,13 +283,13 @@ function App() {
                 // Not logged in state
                 <>
                   <button 
-                    onClick={() => setAuthModal({ isOpen: true, mode: 'login' })}
+                    onClick={() => navigate('/login')}
                     className="text-gray-700 hover:text-purple-600 font-medium px-4 py-2 rounded-lg transition-colors"
                   >
                     {t('nav.login')}
                   </button>
                   <button 
-                    onClick={() => setAuthModal({ isOpen: true, mode: 'register' })}
+                    onClick={() => navigate('/register')}
                     className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     {t('nav.getStarted')}
@@ -288,7 +330,7 @@ function App() {
               
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <button 
-                  onClick={() => setAuthModal({ isOpen: true, mode: 'register' })}
+                  onClick={() => navigate('/register')}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold px-8 py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center"
                 >
                   התחל ניסיון חינם
@@ -320,7 +362,7 @@ function App() {
             <div className="relative">
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/50">
                 <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">למה לבחור ב-QuickShop?</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">למה לבחור ב-QuickShop?</h3>
                   <p className="text-gray-600">הנתונים מדברים בעד עצמם</p>
                 </div>
                 
@@ -448,13 +490,13 @@ function App() {
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 mb-6">
                 <div className="flex justify-center space-x-4 rtl:space-x-reverse mb-6">
                   <div className="bg-black rounded-2xl p-4 shadow-lg">
-                    <div className="text-white text-2xl">📱</div>
+                    <div className="text-white text-xl">📱</div>
                   </div>
                   <div className="bg-green-500 rounded-2xl p-4 shadow-lg">
-                    <div className="text-white text-2xl">🤖</div>
+                    <div className="text-white text-xl">🤖</div>
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">אפליקציות ניידות</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">אפליקציות ניידות</h3>
                 <p className="text-gray-600 mb-6">נהל את החנות שלך בדרכים עם האפליקציות המתקדמות שלנו</p>
                 <div className="flex flex-col space-y-3">
                   <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center">
@@ -479,7 +521,7 @@ function App() {
                 <div className="bg-blue-100 rounded-2xl p-4 w-16 h-16 mx-auto mb-6">
                   <RiShieldCheckLine className="h-8 w-8 text-blue-600 mx-auto" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">חברות סליקה</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">חברות סליקה</h3>
                 <p className="text-gray-600 mb-6">אינטגרציה מלאה עם חברות הסליקה המובילות בישראל</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
@@ -504,7 +546,7 @@ function App() {
                 <div className="bg-green-100 rounded-2xl p-4 w-16 h-16 mx-auto mb-6">
                   <RiSpeedUpLine className="h-8 w-8 text-green-600 mx-auto" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">חברות משלוחים</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">חברות משלוחים</h3>
                 <p className="text-gray-600 mb-6">חיבור אוטומטי לחברות המשלוחים המובילות</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
@@ -527,7 +569,7 @@ function App() {
           {/* Integration Benefits */}
           <div className="mt-16 bg-gradient-to-r from-gray-50 to-gray-100 rounded-3xl p-8">
             <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">למה האינטגרציות שלנו מיוחדות?</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">למה האינטגרציות שלנו מיוחדות?</h3>
               <p className="text-gray-600">חיבור אוטומטי וסנכרון מלא ללא מאמץ</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -587,7 +629,7 @@ function App() {
                 )}
                 
                 <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{plan.name}</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{plan.name}</h3>
                   <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
                     ₪{plan.price}
                     <span className="text-lg text-gray-600">/חודש</span>
@@ -747,20 +789,20 @@ function App() {
           {/* Success stories preview */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
-              <div className="text-2xl font-bold text-white mb-1">₪2.5M</div>
+              <div className="text-xl font-bold text-white mb-1">₪2.5M</div>
               <div className="text-purple-200 text-sm">מכירות חודשיות ממוצעות</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
-              <div className="text-2xl font-bold text-white mb-1">85%</div>
+              <div className="text-xl font-bold text-white mb-1">85%</div>
               <div className="text-purple-200 text-sm">עלייה במכירות שנתיות</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
-              <div className="text-2xl font-bold text-white mb-1">4.9/5</div>
+              <div className="text-xl font-bold text-white mb-1">4.9/5</div>
               <div className="text-purple-200 text-sm">דירוג שביעות רצון</div>
             </div>
           </div>
           <button 
-            onClick={() => setAuthModal({ isOpen: true, mode: 'register' })}
+            onClick={() => navigate('/register')}
             className="bg-white text-purple-600 hover:bg-gray-50 font-bold py-6 px-12 rounded-2xl text-xl transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 inline-flex items-center"
           >
             התחל ניסיון חינם ל-14 יום
@@ -791,15 +833,15 @@ function App() {
               </p>
               <div className="flex space-x-4 rtl:space-x-reverse">
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-                  <div className="text-2xl font-bold text-purple-400">1000+</div>
+                  <div className="text-xl font-bold text-purple-400">1000+</div>
                   <div className="text-gray-400 text-sm">חנויות</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-                  <div className="text-2xl font-bold text-pink-400">99.9%</div>
+                  <div className="text-xl font-bold text-pink-400">99.9%</div>
                   <div className="text-gray-400 text-sm">זמינות</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-                  <div className="text-2xl font-bold text-green-400">24/7</div>
+                  <div className="text-xl font-bold text-green-400">24/7</div>
                   <div className="text-gray-400 text-sm">תמיכה</div>
                 </div>
               </div>
@@ -822,6 +864,7 @@ function App() {
                 <li><a href="#" className="hover:text-purple-400 transition-colors text-lg">צור קשר</a></li>
                 <li><a href="#" className="hover:text-purple-400 transition-colors text-lg">סטטוס מערכת</a></li>
                 <li><a href="#" className="hover:text-purple-400 transition-colors text-lg">מדריכים</a></li>
+                <li><a href="/partners" className="hover:text-purple-400 transition-colors text-lg font-semibold">תוכנית שותפים 🚀</a></li>
               </ul>
             </div>
           </div>
@@ -837,13 +880,7 @@ function App() {
         </div>
       </footer>
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={authModal.isOpen}
-        mode={authModal.mode}
-        onClose={() => setAuthModal({ isOpen: false, mode: 'login' })}
-        onSuccess={handleAuthSuccess}
-      />
+
     </div>
   )
   }

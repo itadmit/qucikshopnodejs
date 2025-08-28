@@ -134,7 +134,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, mode: initialMode = 'login' }) 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900">
               {mode === 'login' ? t('auth.login.title') : t('auth.register.title')}
             </h2>
             <p className="text-gray-600 mt-1">

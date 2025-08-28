@@ -5,7 +5,7 @@ CREATE TYPE "public"."PlanType" AS ENUM ('BASIC', 'PRO');
 CREATE TYPE "public"."SubscriptionStatus" AS ENUM ('TRIAL', 'ACTIVE', 'INACTIVE', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "public"."ProductType" AS ENUM ('SIMPLE', 'VARIABLE');
+CREATE TYPE "public"."ProductType" AS ENUM ('SIMPLE', 'VARIABLE', 'BUNDLE');
 
 -- CreateEnum
 CREATE TYPE "public"."ProductStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'DRAFT');
@@ -38,7 +38,7 @@ CREATE TYPE "public"."OrderStatus" AS ENUM ('PENDING', 'PROCESSING', 'SHIPPED', 
 CREATE TYPE "public"."PaymentStatus" AS ENUM ('PENDING', 'PAID', 'FAILED', 'REFUNDED', 'PARTIALLY_REFUNDED');
 
 -- CreateEnum
-CREATE TYPE "public"."FulfillmentStatus" AS ENUM ('UNFULFILLED', 'PARTIAL', 'FULFILLED');
+CREATE TYPE "public"."FulfillmentStatus" AS ENUM ('UNFULFILLED', 'PARTIALLY_FULFILLED', 'FULFILLED');
 
 -- CreateEnum
 CREATE TYPE "public"."PageType" AS ENUM ('HOME', 'CONTENT', 'CATEGORY', 'PRODUCT');
@@ -61,6 +61,9 @@ CREATE TYPE "public"."StoreRole" AS ENUM ('OWNER', 'ADMIN', 'MANAGER', 'STAFF', 
 -- CreateEnum
 CREATE TYPE "public"."CustomFieldType" AS ENUM ('TEXT', 'TEXTAREA', 'NUMBER', 'EMAIL', 'URL', 'PHONE', 'DATE', 'CHECKBOX', 'DROPDOWN', 'RADIO', 'FILE');
 
+-- CreateEnum
+CREATE TYPE "public"."BundleDiscountType" AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT');
+
 -- CreateTable
 CREATE TABLE "public"."users" (
     "id" SERIAL NOT NULL,
@@ -76,6 +79,7 @@ CREATE TABLE "public"."users" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "last_login_at" TIMESTAMP(3),
+    "has_completed_onboarding" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -99,6 +103,11 @@ CREATE TABLE "public"."stores" (
     "subscription_ends_at" TIMESTAMP(3),
     "monthly_revenue" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "transaction_fee_rate" DOUBLE PRECISION NOT NULL DEFAULT 0.005,
+    "facebook_pixel_id" TEXT,
+    "facebook_access_token" TEXT,
+    "google_tag_manager_id" TEXT,
+    "google_analytics_id" TEXT,
+    "pixel_settings" JSONB,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -177,11 +186,11 @@ CREATE TABLE "public"."products" (
 -- CreateTable
 CREATE TABLE "public"."product_options" (
     "id" SERIAL NOT NULL,
-    "store_id" INTEGER NOT NULL,
+    "product_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "type" "public"."ProductOptionType" NOT NULL DEFAULT 'TEXT',
     "display_type" "public"."ProductOptionDisplay" NOT NULL DEFAULT 'DROPDOWN',
-    "sort_order" INTEGER NOT NULL DEFAULT 0,
+    "position" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "product_options_pkey" PRIMARY KEY ("id")
@@ -231,12 +240,40 @@ CREATE TABLE "public"."product_variants" (
     "cost_price" DOUBLE PRECISION,
     "inventory_quantity" INTEGER NOT NULL DEFAULT 0,
     "weight" DOUBLE PRECISION,
-    "option_values" JSONB,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "product_variants_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."product_variant_option_values" (
+    "id" SERIAL NOT NULL,
+    "variant_id" INTEGER NOT NULL,
+    "option_id" INTEGER NOT NULL,
+    "option_value_id" INTEGER NOT NULL,
+    "value" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "product_variant_option_values_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."bundle_items" (
+    "id" SERIAL NOT NULL,
+    "bundle_id" INTEGER NOT NULL,
+    "product_id" INTEGER NOT NULL,
+    "variant_id" INTEGER,
+    "quantity" INTEGER NOT NULL DEFAULT 1,
+    "sort_order" INTEGER NOT NULL DEFAULT 0,
+    "is_optional" BOOLEAN NOT NULL DEFAULT false,
+    "discount_type" "public"."BundleDiscountType",
+    "discount_value" DOUBLE PRECISION,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "bundle_items_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -264,6 +301,7 @@ CREATE TABLE "public"."product_media" (
     "media_id" INTEGER NOT NULL,
     "variant_id" INTEGER,
     "type" "public"."MediaType" NOT NULL DEFAULT 'IMAGE',
+    "alt_text" TEXT,
     "sort_order" INTEGER NOT NULL DEFAULT 0,
     "is_primary" BOOLEAN NOT NULL DEFAULT false,
     "color_option_value_id" INTEGER,
@@ -335,6 +373,11 @@ CREATE TABLE "public"."customers" (
     "last_name" TEXT,
     "phone" TEXT,
     "date_of_birth" TIMESTAMP(3),
+    "gender" TEXT,
+    "total_spent" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "orders_count" INTEGER NOT NULL DEFAULT 0,
+    "tags" JSONB,
+    "notes" TEXT,
     "accepts_marketing" BOOLEAN NOT NULL DEFAULT false,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -495,6 +538,71 @@ CREATE TABLE "public"."notifications" (
     CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "public"."active_sessions" (
+    "id" TEXT NOT NULL,
+    "store_id" INTEGER NOT NULL,
+    "customer_id" INTEGER,
+    "user_agent" TEXT,
+    "ip_address" TEXT,
+    "last_activity" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expires_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "active_sessions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."daily_analytics" (
+    "id" SERIAL NOT NULL,
+    "store_id" INTEGER NOT NULL,
+    "date" DATE NOT NULL,
+    "unique_visitors" INTEGER NOT NULL DEFAULT 0,
+    "page_views" INTEGER NOT NULL DEFAULT 0,
+    "sessions" INTEGER NOT NULL DEFAULT 0,
+    "orders" INTEGER NOT NULL DEFAULT 0,
+    "revenue" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "conversion_rate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "avg_session_duration" INTEGER NOT NULL DEFAULT 0,
+    "bounce_rate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "top_pages" JSONB NOT NULL DEFAULT '[]',
+    "top_products" JSONB NOT NULL DEFAULT '[]',
+    "traffic_sources" JSONB NOT NULL DEFAULT '{}',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "daily_analytics_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."hourly_analytics" (
+    "id" SERIAL NOT NULL,
+    "store_id" INTEGER NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "hour" INTEGER NOT NULL,
+    "active_users" INTEGER NOT NULL DEFAULT 0,
+    "page_views" INTEGER NOT NULL DEFAULT 0,
+    "new_sessions" INTEGER NOT NULL DEFAULT 0,
+    "orders" INTEGER NOT NULL DEFAULT 0,
+    "revenue" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "hourly_analytics_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."performance_metrics" (
+    "id" SERIAL NOT NULL,
+    "store_id" INTEGER NOT NULL,
+    "metric_type" TEXT NOT NULL,
+    "value" DOUBLE PRECISION NOT NULL,
+    "metadata" JSONB,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "performance_metrics_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "public"."users"("email");
 
@@ -514,10 +622,16 @@ CREATE UNIQUE INDEX "categories_store_id_slug_key" ON "public"."categories"("sto
 CREATE UNIQUE INDEX "products_store_id_slug_key" ON "public"."products"("store_id", "slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "product_options_store_id_name_key" ON "public"."product_options"("store_id", "name");
+CREATE UNIQUE INDEX "product_options_product_id_name_key" ON "public"."product_options"("product_id", "name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "custom_fields_store_id_name_key" ON "public"."custom_fields"("store_id", "name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "product_variant_option_values_variant_id_option_id_key" ON "public"."product_variant_option_values"("variant_id", "option_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "bundle_items_bundle_id_product_id_variant_id_key" ON "public"."bundle_items"("bundle_id", "product_id", "variant_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "coupons_store_id_code_key" ON "public"."coupons"("store_id", "code");
@@ -531,8 +645,17 @@ CREATE UNIQUE INDEX "orders_order_number_key" ON "public"."orders"("order_number
 -- CreateIndex
 CREATE UNIQUE INDEX "pages_store_id_slug_key" ON "public"."pages"("store_id", "slug");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "daily_analytics_store_id_date_key" ON "public"."daily_analytics"("store_id", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "hourly_analytics_store_id_date_hour_key" ON "public"."hourly_analytics"("store_id", "date", "hour");
+
 -- AddForeignKey
 ALTER TABLE "public"."stores" ADD CONSTRAINT "stores_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."store_users" ADD CONSTRAINT "store_users_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."store_users" ADD CONSTRAINT "store_users_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -541,22 +664,19 @@ ALTER TABLE "public"."store_users" ADD CONSTRAINT "store_users_store_id_fkey" FO
 ALTER TABLE "public"."store_users" ADD CONSTRAINT "store_users_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."store_users" ADD CONSTRAINT "store_users_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."categories" ADD CONSTRAINT "categories_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."categories" ADD CONSTRAINT "categories_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."categories" ADD CONSTRAINT "categories_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."products" ADD CONSTRAINT "products_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."products" ADD CONSTRAINT "products_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."products" ADD CONSTRAINT "products_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."product_options" ADD CONSTRAINT "product_options_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."product_options" ADD CONSTRAINT "product_options_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."product_option_values" ADD CONSTRAINT "product_option_values_option_id_fkey" FOREIGN KEY ("option_id") REFERENCES "public"."product_options"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -568,19 +688,37 @@ ALTER TABLE "public"."custom_fields" ADD CONSTRAINT "custom_fields_store_id_fkey
 ALTER TABLE "public"."product_variants" ADD CONSTRAINT "product_variants_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."product_variant_option_values" ADD CONSTRAINT "product_variant_option_values_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."product_variant_option_values" ADD CONSTRAINT "product_variant_option_values_option_id_fkey" FOREIGN KEY ("option_id") REFERENCES "public"."product_options"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."product_variant_option_values" ADD CONSTRAINT "product_variant_option_values_option_value_id_fkey" FOREIGN KEY ("option_value_id") REFERENCES "public"."product_option_values"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."bundle_items" ADD CONSTRAINT "bundle_items_bundle_id_fkey" FOREIGN KEY ("bundle_id") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."bundle_items" ADD CONSTRAINT "bundle_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."bundle_items" ADD CONSTRAINT "bundle_items_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."media" ADD CONSTRAINT "media_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."product_media" ADD CONSTRAINT "product_media_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."product_media" ADD CONSTRAINT "product_media_color_option_value_id_fkey" FOREIGN KEY ("color_option_value_id") REFERENCES "public"."product_option_values"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."product_media" ADD CONSTRAINT "product_media_media_id_fkey" FOREIGN KEY ("media_id") REFERENCES "public"."media"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."product_media" ADD CONSTRAINT "product_media_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."product_media" ADD CONSTRAINT "product_media_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."product_media" ADD CONSTRAINT "product_media_color_option_value_id_fkey" FOREIGN KEY ("color_option_value_id") REFERENCES "public"."product_option_values"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."product_media" ADD CONSTRAINT "product_media_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."coupons" ADD CONSTRAINT "coupons_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -595,10 +733,10 @@ ALTER TABLE "public"."customers" ADD CONSTRAINT "customers_store_id_fkey" FOREIG
 ALTER TABLE "public"."customer_addresses" ADD CONSTRAINT "customer_addresses_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."order_items" ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -610,22 +748,37 @@ ALTER TABLE "public"."order_items" ADD CONSTRAINT "order_items_product_id_fkey" 
 ALTER TABLE "public"."order_items" ADD CONSTRAINT "order_items_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."cart_sessions" ADD CONSTRAINT "cart_sessions_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."cart_sessions" ADD CONSTRAINT "cart_sessions_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."cart_sessions" ADD CONSTRAINT "cart_sessions_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."cart_sessions" ADD CONSTRAINT "cart_sessions_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."pages" ADD CONSTRAINT "pages_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."analytics_events" ADD CONSTRAINT "analytics_events_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."analytics_events" ADD CONSTRAINT "analytics_events_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."analytics_events" ADD CONSTRAINT "analytics_events_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."analytics_events" ADD CONSTRAINT "analytics_events_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."billing_history" ADD CONSTRAINT "billing_history_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."notifications" ADD CONSTRAINT "notifications_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."active_sessions" ADD CONSTRAINT "active_sessions_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."active_sessions" ADD CONSTRAINT "active_sessions_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."daily_analytics" ADD CONSTRAINT "daily_analytics_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."hourly_analytics" ADD CONSTRAINT "hourly_analytics_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."performance_metrics" ADD CONSTRAINT "performance_metrics_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE CASCADE ON UPDATE CASCADE;
