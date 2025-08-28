@@ -52,11 +52,13 @@ const AdvancedTemplateEditor = () => {
     try {
       setLoading(true);
       
-      // Load template from server
-      const response = await fetch(`http://localhost:3001/api/templates/${templateName}`);
-      if (!response.ok) {
-        throw new Error('Template not found');
-      }
+      // Use Jupiter as default template if templateName is undefined
+      const currentTemplateName = templateName || 'jupiter';
+      
+      // For now, show a message that this feature is coming soon
+      alert('עורך הקוד המתקדם יהיה זמין בקרוב. כרגע ניתן להשתמש בעורך הבסיסי.');
+      navigate('/dashboard/design');
+      return;
       
       const templateData = await response.json();
       setTemplate(templateData);
