@@ -1,6 +1,8 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.js';
+import { OrderService } from '../services/OrderService.js';
+import { InventoryService } from '../services/InventoryService.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -224,6 +226,134 @@ router.put('/:id/payment-status', authenticateToken, async (req, res) => {
       success: true,
       data: updatedOrder
     });
+  } catch (error) {
+    console.error('Update payment status error:', error);
+    res.status(500).json({ error: 'Failed to update payment status' });
+  }
+});
+
+// Create new order (for checkout and admin)
+router.post('/', async (req, res) => {
+  try {
+    const orderData = req.body;
+
+    // Validate required fields
+    if (!orderData.storeId || !orderData.items || orderData.items.length === 0) {
+      return res.status(400).json({
+        error: 'Store ID and items are required'
+      });
+    }
+
+    // Check inventory availability
+    const availability = await InventoryService.checkAvailability(orderData.items);
+    if (!availability.available) {
+      return res.status(400).json({
+        error: 'Some items are not available',
+        unavailableItems: availability.unavailableItems
+      });
+    }
+
+    // Create the order using OrderService
+    const order = await OrderService.createOrder(orderData);
+
+    res.status(201).json({
+      success: true,
+      data: order
+    });
+
+  } catch (error) {
+    console.error('Create order error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create order',
+      message: error.message 
+    });
+  }
+});
+
+// Update order status using OrderService
+router.put('/:id/status', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = req.user.id;
+
+    // Get order first to verify access
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!existingOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Verify user has access to this store
+    const storeUser = await prisma.storeUser.findFirst({
+      where: {
+        storeId: existingOrder.storeId,
+        userId: userId,
+        isActive: true
+      }
+    });
+
+    if (!storeUser) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Update using OrderService
+    const updatedOrder = await OrderService.updateOrderStatus(parseInt(id), status, userId);
+
+    res.json({
+      success: true,
+      data: updatedOrder
+    });
+
+  } catch (error) {
+    console.error('Update order status error:', error);
+    res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
+// Update payment status using OrderService  
+router.put('/:id/payment-status', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paymentStatus, paymentReference } = req.body;
+    const userId = req.user.id;
+
+    // Get order first to verify access
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!existingOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Verify user has access to this store
+    const storeUser = await prisma.storeUser.findFirst({
+      where: {
+        storeId: existingOrder.storeId,
+        userId: userId,
+        isActive: true
+      }
+    });
+
+    if (!storeUser) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Update using OrderService
+    const updatedOrder = await OrderService.updatePaymentStatus(
+      parseInt(id), 
+      paymentStatus, 
+      paymentReference
+    );
+
+    res.json({
+      success: true,
+      data: updatedOrder
+    });
+
   } catch (error) {
     console.error('Update payment status error:', error);
     res.status(500).json({ error: 'Failed to update payment status' });

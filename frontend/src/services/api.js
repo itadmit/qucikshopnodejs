@@ -277,6 +277,35 @@ class ApiService {
   async deleteMedia(key) {
     return this.delete(`/media/delete/${encodeURIComponent(key)}`);
   }
+
+  // Email Templates API
+  async getEmailTemplates(storeId) {
+    return this.get(`/email-templates?storeId=${storeId}`);
+  }
+
+  async getEmailTemplate(type, storeId) {
+    return this.get(`/email-templates/${type}?storeId=${storeId}`);
+  }
+
+  async saveEmailTemplate(templateData) {
+    return this.post('/email-templates', templateData);
+  }
+
+  async previewEmailTemplate(previewData) {
+    return this.post('/email-templates/preview', previewData);
+  }
+
+  async sendTestEmail(testData) {
+    return this.post('/email-templates/test', testData);
+  }
+
+  async deleteEmailTemplate(type, storeId) {
+    return this.delete(`/email-templates/${type}?storeId=${storeId}`);
+  }
+
+  async getEmailStats(storeId, days = 30) {
+    return this.get(`/email-templates/stats/overview?storeId=${storeId}&days=${days}`);
+  }
 }
 
 // Create and export a singleton instance

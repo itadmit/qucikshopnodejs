@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { OrderService } from '../services/OrderService.js';
 
 const prisma = new PrismaClient();
 
@@ -73,53 +74,57 @@ async function createDemoOrders() {
       const statuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
       const paymentStatuses = ['PENDING', 'PAID', 'FAILED'];
       
-      const order = await prisma.order.create({
-        data: {
-          storeId: store.id,
-          customerId: customer.id,
-          orderNumber: `ORD-${Date.now()}-${i}`,
-          status: statuses[Math.floor(Math.random() * statuses.length)],
-          paymentStatus: paymentStatuses[Math.floor(Math.random() * paymentStatuses.length)],
-          subtotal: total,
-          totalAmount: total,
-          customerEmail: customer.email,
-          customerPhone: customer.phone,
-          billingAddress: {
-            firstName: customer.firstName,
-            lastName: customer.lastName,
-            address: 'רחוב הרצל 123',
-            city: 'תל אביב',
-            postalCode: '12345',
-            country: 'IL'
-          },
-          shippingAddress: {
-            firstName: customer.firstName,
-            lastName: customer.lastName,
-            address: 'רחוב הרצל 123',
-            city: 'תל אביב',
-            postalCode: '12345',
-            country: 'IL'
-          },
-          items: {
-            create: {
-              productId: product.id,
-              quantity: quantity,
-              price: price,
-              total: total,
-              productName: product.name,
-              productSku: product.sku
-            }
-          }
+      // יצירת הזמנה באמצעות OrderService החדש
+      const orderData = {
+        storeId: store.id,
+        customerId: customer.id,
+        items: [{
+          productId: product.id,
+          quantity: quantity,
+          price: price,
+          name: product.name,
+          sku: product.sku
+        }],
+        customer: {
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone
         },
-        include: {
-          customer: true,
-          items: {
-            include: {
-              product: true
-            }
-          }
-        }
-      });
+        billing: {
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          address: 'רחוב הרצל 123',
+          city: 'תל אביב',
+          postalCode: '12345',
+          country: 'IL'
+        },
+        shipping: {
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          address: 'רחוב הרצל 123',
+          city: 'תל אביב',
+          postalCode: '12345',
+          country: 'IL'
+        },
+        paymentMethod: 'credit_card',
+        coupons: [],
+        discounts: []
+      };
+
+      const order = await OrderService.createOrder(orderData);
+      
+      // עדכון סטטוס אקראי (לדמו)
+      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+      const randomPaymentStatus = paymentStatuses[Math.floor(Math.random() * paymentStatuses.length)];
+      
+      if (randomStatus !== 'PENDING') {
+        await OrderService.updateOrderStatus(order.id, randomStatus, store.userId);
+      }
+      
+      if (randomPaymentStatus !== 'PENDING') {
+        await OrderService.updatePaymentStatus(order.id, randomPaymentStatus);
+      }
 
       orders.push(order);
       console.log(`✅ Created order: ${order.orderNumber} for ${customer.firstName} ${customer.lastName}`);

@@ -1,0 +1,42 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#fdf2f8"/>
+  
+  <!-- Header -->
+  <rect width="400" height="60" fill="#ffffff" stroke="#f9a8d4" stroke-width="1"/>
+  
+  <!-- Logo placeholder -->
+  <circle cx="40" cy="30" r="15" fill="#ec4899"/>
+  <text x="65" y="35" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#be185d">Venus Fashion</text>
+  
+  <!-- Navigation -->
+  <rect x="200" y="20" width="60" height="20" rx="4" fill="#f9a8d4"/>
+  <rect x="270" y="20" width="60" height="20" rx="4" fill="#f9a8d4"/>
+  <rect x="340" y="20" width="40" height="20" rx="4" fill="#ec4899"/>
+  
+  <!-- Hero Section - Fashion Banner -->
+  <rect x="20" y="80" width="360" height="120" rx="8" fill="#fce7f3"/>
+  <text x="200" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#be185d">Venus Template</text>
+  <text x="200" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#ec4899">Fashion & Elegant</text>
+  
+  <!-- Fashion Product Grid -->
+  <rect x="20" y="220" width="70" height="60" rx="4" fill="#ffffff" stroke="#f9a8d4" stroke-width="1"/>
+  <rect x="100" y="220" width="70" height="60" rx="4" fill="#ffffff" stroke="#f9a8d4" stroke-width="1"/>
+  <rect x="180" y="220" width="70" height="60" rx="4" fill="#ffffff" stroke="#f9a8d4" stroke-width="1"/>
+  <rect x="260" y="220" width="70" height="60" rx="4" fill="#ffffff" stroke="#f9a8d4" stroke-width="1"/>
+  <rect x="340" y="220" width="40" height="60" rx="4" fill="#fce7f3"/>
+  
+  <!-- Fashion items -->
+  <rect x="30" y="230" width="50" height="30" rx="2" fill="#fce7f3"/>
+  <rect x="110" y="230" width="50" height="30" rx="2" fill="#fce7f3"/>
+  <rect x="190" y="230" width="50" height="30" rx="2" fill="#fce7f3"/>
+  <rect x="270" y="230" width="50" height="30" rx="2" fill="#fce7f3"/>
+  
+  <!-- Venus planet icon -->
+  <circle cx="350" cy="50" r="8" fill="#ec4899" opacity="0.3"/>
+  <text x="350" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ffffff">💎</text>
+  
+  <!-- Coming Soon Badge -->
+  <rect x="320" y="10" width="70" height="20" rx="10" fill="#fbbf24"/>
+  <text x="355" y="22" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#92400e">COMING SOON</text>
+</svg>

@@ -486,4 +486,5 @@ class DiscountService {
   }
 }
 
+export { DiscountService }
 export default new DiscountService()

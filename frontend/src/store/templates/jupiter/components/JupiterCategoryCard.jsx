@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
-const CategoryCard = ({ category, index = 0 }) => {
+const JupiterCategoryCard = ({ category, index = 0 }) => {
   const { t } = useTranslation()
 
   return (
@@ -38,4 +38,4 @@ const CategoryCard = ({ category, index = 0 }) => {
   )
 }
 
-export default CategoryCard
+export default JupiterCategoryCard

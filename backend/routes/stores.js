@@ -1,5 +1,6 @@
 import express from 'express'
 import prisma from '../lib/prisma.js'
+import { authenticateToken, requireActiveSubscription } from '../middleware/auth.js'
 
 const router = express.Router()
 
@@ -558,6 +559,73 @@ router.post('/:storeSlug/design/product-page', async (req, res) => {
   } catch (error) {
     console.error('Error saving product page design:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update store settings (template, design settings, etc.)
+router.put('/:storeId/settings', authenticateToken, requireActiveSubscription, async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const userId = req.user.id;
+    const { templateName, settings } = req.body;
+
+    // Verify user owns the store
+    const store = await prisma.store.findFirst({
+      where: {
+        id: parseInt(storeId),
+        userId: userId
+      }
+    });
+
+    if (!store) {
+      return res.status(404).json({ error: 'Store not found or access denied' });
+    }
+
+    // Validate template name
+    const validTemplates = ['jupiter', 'mars', 'venus', 'saturn'];
+    if (templateName && !validTemplates.includes(templateName)) {
+      return res.status(400).json({ error: 'Invalid template name' });
+    }
+
+    // Prepare update data
+    const updateData = {};
+    if (templateName) {
+      updateData.templateName = templateName;
+    }
+    if (settings) {
+      // Merge with existing settings
+      updateData.settings = {
+        ...store.settings,
+        ...settings
+      };
+    }
+
+    // Update the store
+    const updatedStore = await prisma.store.update({
+      where: { id: parseInt(storeId) },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        templateName: true,
+        settings: true,
+        updatedAt: true
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Store settings updated successfully',
+      store: updatedStore
+    });
+
+  } catch (error) {
+    console.error('Error updating store settings:', error);
+    res.status(500).json({ 
+      error: 'Failed to update store settings',
+      message: error.message 
+    });
   }
 });
 

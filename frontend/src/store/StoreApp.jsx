@@ -1,14 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import StoreHeader from './components/StoreHeader'
-import StoreFooter from './components/StoreFooter'
-import StorePage from './pages/StorePage'
-import CategoryPage from './pages/CategoryPage'
-import ProductPage from './pages/ProductPage'
-import CartPage from './pages/CartPage'
-import CheckoutPage from './pages/CheckoutPage'
-import ThankYouPage from './pages/ThankYouPage'
+import TemplateManager from './TemplateManager'
 import analyticsTracker from '../utils/analyticsTracker'
 
 const StoreApp = ({ storeSlug }) => {
@@ -205,39 +197,14 @@ const StoreApp = ({ storeSlug }) => {
     )
   }
 
-  // Apply store template (currently only Jupiter)
-  const templateClass = `store-template-${storeData.templateName || 'jupiter'}`
+  // Get template name from store data
+  const templateName = storeData.templateName || 'jupiter'
 
   return (
-    <div className={`min-h-screen ${templateClass}`}>
-
-        <StoreHeader storeData={storeData} isOwner={isOwner} />
-        
-        <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<StorePage storeData={storeData} />} />
-            <Route path="/categories/:slug" element={<CategoryPage storeData={storeData} />} />
-            <Route path="/products/:slug" element={<ProductPage storeData={storeData} />} />
-            <Route path="/cart" element={<CartPage storeData={storeData} />} />
-            <Route path="/checkout" element={<CheckoutPage storeData={storeData} />} />
-            <Route path="/thank-you/:orderId" element={<ThankYouPage storeData={storeData} />} />
-            {/* Add more routes as needed */}
-            <Route path="*" element={
-              <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                  <h1 className="text-xl font-bold text-gray-900 mb-4">דף לא נמצא</h1>
-                  <p className="text-gray-600 mb-6">הדף שחיפשת לא קיים</p>
-                  <a href="/" className="text-primary-600 hover:text-primary-700 font-medium">
-                    חזור לעמוד הבית
-                  </a>
-                </div>
-              </div>
-            } />
-          </Routes>
-        </main>
-        
-        <StoreFooter storeData={storeData} />
-    </div>
+    <TemplateManager 
+      templateName={templateName}
+      storeData={{ ...storeData, isOwner }}
+    />
   )
 }
 

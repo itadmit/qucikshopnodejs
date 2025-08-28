@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import prisma from './lib/prisma.js';
+import { EventHandlers } from './services/EventHandlers.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -23,9 +24,14 @@ import automaticDiscountsRoutes from './routes/automatic-discounts.js';
 import influencerAuthRoutes from './routes/influencer-auth.js';
 import influencerDashboardRoutes from './routes/influencer-dashboard.js';
 import partnersRoutes from './routes/partners.js';
+import templatesRoutes from './routes/templates.js';
+import emailTemplatesRoutes from './routes/email-templates.js';
 
 // Load environment variables
 dotenv.config();
+
+// Initialize event handlers
+EventHandlers.initialize();
 
 // Initialize analytics cron jobs in production
 if (process.env.NODE_ENV === 'production') {
@@ -83,6 +89,8 @@ app.use('/api/automatic-discounts', automaticDiscountsRoutes);
 app.use('/api/influencer-auth', influencerAuthRoutes);
 app.use('/api/influencer-dashboard', influencerDashboardRoutes);
 app.use('/api/partners', partnersRoutes);
+app.use('/api/templates', templatesRoutes);
+app.use('/api/email-templates', emailTemplatesRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import CouponInput from '../components/CouponInput'
-import discountService from '../../services/discountService'
+import discountService from '../../../services/discountService'
 
 const CartPage = ({ storeData }) => {
   const { t } = useTranslation()

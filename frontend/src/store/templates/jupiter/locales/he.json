@@ -1,0 +1,73 @@
+{
+  "header": {
+    "search_placeholder": "חפש מוצרים...",
+    "cart": "עגלת קניות",
+    "menu": "תפריט",
+    "login": "התחבר",
+    "account": "החשבון שלי"
+  },
+  "footer": {
+    "about": "אודות",
+    "contact": "צור קשר",
+    "privacy": "מדיניות פרטיות",
+    "terms": "תנאי שימוש",
+    "follow_us": "עקבו אחרינו",
+    "newsletter": "הירשם לניוזלטר",
+    "newsletter_placeholder": "כתובת מייל",
+    "subscribe": "הירשם"
+  },
+  "home": {
+    "hero_title": "ברוכים הבאים לחנות שלנו",
+    "hero_subtitle": "גלה את המוצרים הטובים ביותר במחירים הכי טובים",
+    "shop_now": "קנה עכשיו",
+    "featured_products": "מוצרים מומלצים",
+    "categories": "קטגוריות",
+    "view_all": "צפה בהכל"
+  },
+  "product": {
+    "add_to_cart": "הוסף לעגלה",
+    "buy_now": "קנה עכשיו",
+    "quantity": "כמות",
+    "in_stock": "במלאי",
+    "out_of_stock": "אזל מהמלאי",
+    "price": "מחיר",
+    "description": "תיאור",
+    "specifications": "מפרט טכני",
+    "reviews": "ביקורות",
+    "related_products": "מוצרים קשורים"
+  },
+  "category": {
+    "sort_by": "מיין לפי",
+    "filter": "סנן",
+    "price_range": "טווח מחירים",
+    "brand": "מותג",
+    "color": "צבע",
+    "size": "גודל",
+    "clear_filters": "נקה מסננים",
+    "products_found": "מוצרים נמצאו"
+  },
+  "cart": {
+    "title": "עגלת הקניות שלך",
+    "empty": "העגלה ריקה",
+    "continue_shopping": "המשך קניות",
+    "checkout": "מעבר לתשלום",
+    "subtotal": "סכום ביניים",
+    "shipping": "משלוח",
+    "total": "סה\"כ",
+    "remove": "הסר",
+    "update": "עדכן"
+  },
+  "common": {
+    "loading": "טוען...",
+    "error": "שגיאה",
+    "success": "הצלחה",
+    "cancel": "ביטול",
+    "save": "שמור",
+    "edit": "ערוך",
+    "delete": "מחק",
+    "back": "חזור",
+    "next": "הבא",
+    "previous": "הקודם",
+    "close": "סגור"
+  }
+}

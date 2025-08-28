@@ -19,9 +19,11 @@ import {
   ChevronRight,
   Save,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Mail
 } from 'lucide-react';
 import PixelsPage from './PixelsPage';
+import EmailTemplatesPage from './EmailTemplatesPage';
 
 const SettingsPage = ({ userStore }) => {
   const [activeCategory, setActiveCategory] = useState('general');
@@ -171,7 +173,7 @@ const SettingsPage = ({ userStore }) => {
       case 'checkout':
         return <CheckoutSettings />;
       case 'notifications':
-        return <NotificationSettings />;
+        return <NotificationSettings userStore={userStore} />;
       case 'users':
         return <UserSettings />;
       case 'policies':
@@ -537,13 +539,103 @@ const CheckoutSettings = () => (
   </div>
 );
 
-const NotificationSettings = () => (
-  <div className="p-6">
-    <h3 className="text-lg font-semibold text-gray-900 mb-4">הגדרות התראות</h3>
-    <p className="text-gray-600">נהל התראות אוטומטיות ללקוחות ולצוות</p>
-    {/* Notification settings content */}
-  </div>
-);
+const NotificationSettings = ({ userStore }) => {
+  const [activeSubTab, setActiveSubTab] = useState('templates');
+
+  const subTabs = [
+    {
+      id: 'templates',
+      name: 'תבניות מייל',
+      icon: Mail,
+      description: 'עריכת תבניות מיילים ללקוחות'
+    },
+    {
+      id: 'settings',
+      name: 'הגדרות התראות',
+      icon: Bell,
+      description: 'הגדרות כלליות להתראות'
+    }
+  ];
+
+  return (
+    <div className="p-6">
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">התראות ומיילים</h3>
+        <p className="text-gray-600">נהל התראות אוטומטיות ותבניות מיילים ללקוחות</p>
+      </div>
+
+      {/* Sub Navigation */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8 space-x-reverse">
+          {subTabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSubTab(tab.id)}
+                className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeSubTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon className={`ml-2 h-5 w-5 ${
+                  activeSubTab === tab.id ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                }`} />
+                {tab.name}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Content */}
+      {activeSubTab === 'templates' && (
+        <EmailTemplatesPage storeId={userStore?.id} />
+      )}
+      
+      {activeSubTab === 'settings' && (
+        <div>
+          <h4 className="text-md font-medium text-gray-900 mb-4">הגדרות התראות כלליות</h4>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div>
+                <h5 className="font-medium text-gray-900">התראות הזמנות חדשות</h5>
+                <p className="text-sm text-gray-600">קבל התראה כשמתקבלת הזמנה חדשה</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+            
+            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div>
+                <h5 className="font-medium text-gray-900">התראות מלאי נמוך</h5>
+                <p className="text-sm text-gray-600">קבל התראה כשמלאי מוצר מתחת לסף המינימום</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div>
+                <h5 className="font-medium text-gray-900">מיילי עגלה נטושה</h5>
+                <p className="text-sm text-gray-600">שלח מייל אוטומטי ללקוחות שעזבו פריטים בעגלה</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const UserSettings = () => (
   <div className="p-6">

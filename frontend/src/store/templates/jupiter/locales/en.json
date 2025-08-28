@@ -1,0 +1,73 @@
+{
+  "header": {
+    "search_placeholder": "Search products...",
+    "cart": "Shopping Cart",
+    "menu": "Menu",
+    "login": "Login",
+    "account": "My Account"
+  },
+  "footer": {
+    "about": "About",
+    "contact": "Contact",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "follow_us": "Follow Us",
+    "newsletter": "Subscribe to Newsletter",
+    "newsletter_placeholder": "Email address",
+    "subscribe": "Subscribe"
+  },
+  "home": {
+    "hero_title": "Welcome to Our Store",
+    "hero_subtitle": "Discover the best products at the best prices",
+    "shop_now": "Shop Now",
+    "featured_products": "Featured Products",
+    "categories": "Categories",
+    "view_all": "View All"
+  },
+  "product": {
+    "add_to_cart": "Add to Cart",
+    "buy_now": "Buy Now",
+    "quantity": "Quantity",
+    "in_stock": "In Stock",
+    "out_of_stock": "Out of Stock",
+    "price": "Price",
+    "description": "Description",
+    "specifications": "Specifications",
+    "reviews": "Reviews",
+    "related_products": "Related Products"
+  },
+  "category": {
+    "sort_by": "Sort By",
+    "filter": "Filter",
+    "price_range": "Price Range",
+    "brand": "Brand",
+    "color": "Color",
+    "size": "Size",
+    "clear_filters": "Clear Filters",
+    "products_found": "Products Found"
+  },
+  "cart": {
+    "title": "Your Shopping Cart",
+    "empty": "Cart is Empty",
+    "continue_shopping": "Continue Shopping",
+    "checkout": "Checkout",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "total": "Total",
+    "remove": "Remove",
+    "update": "Update"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close"
+  }
+}

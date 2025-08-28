@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import analyticsTracker from '../../utils/analyticsTracker'
+import analyticsTracker from '../../../utils/analyticsTracker'
 import CouponInput from '../components/CouponInput'
-import discountService from '../../services/discountService'
+import discountService from '../../../services/discountService'
 
 const CheckoutPage = ({ storeData }) => {
   const { t } = useTranslation()

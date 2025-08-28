@@ -41,6 +41,9 @@ model Store {
   faviconUrl         String?                 @map("favicon_url")
   description        String?
   templateName       String                  @default("jupiter") @map("template_name")
+  templateId         String?                 @map("template_id")
+  template           Template?               @relation("StoreTemplate", fields: [templateId], references: [id])
+  templateCustomizations Json?               @map("template_customizations") // התאמות אישיות לתבנית
   settings           Json?
   isActive           Boolean                 @default(true) @map("is_active")
   planType           StorePlanType           @default(BASIC) @map("plan_type")
@@ -49,6 +52,7 @@ model Store {
   subscriptionEndsAt DateTime?               @map("subscription_ends_at")
   monthlyRevenue     Float                   @default(0) @map("monthly_revenue")
   transactionFeeRate Float                   @default(0.005) @map("transaction_fee_rate")
+  orderSequence      Int                     @default(0) @map("order_sequence") // מונה הזמנות לחנות
   
   // Pixel and tracking settings
   facebookPixelId    String?                 @map("facebook_pixel_id")
@@ -80,8 +84,43 @@ model Store {
   dailyAnalytics     DailyAnalytics[]
   hourlyAnalytics    HourlyAnalytics[]
   performanceMetrics PerformanceMetric[]
+  
+  // Email relations
+  emailTemplates     EmailTemplate[]
+  emailLogs          EmailLog[]
 
   @@map("stores")
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  displayName String   @map("display_name")
+  description String?
+  version     String   @default("1.0.0")
+  isActive    Boolean  @default(true) @map("is_active")
+  isPremium   Boolean  @default(false) @map("is_premium")
+  
+  // Template files and configuration
+  files       Json     // מבנה הקבצים והתוכן
+  config      Json     // הגדרות התבנית
+  
+  // Metadata
+  author      String?
+  thumbnail   String?
+  tags        String[]
+  category    String?  // מודרני, עסקי, אופנה וכו'
+  
+  // Pricing (for premium templates)
+  price       Float?   @default(0)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  stores      Store[]  @relation("StoreTemplate")
+  
+  @@map("templates")
 }
 
 model StoreUser {
@@ -346,6 +385,7 @@ model Customer {
   orders           Order[]
   activeSessions   ActiveSession[]
   couponUsages     CouponUsage[]
+  emailLogs        EmailLog[]
 
   @@unique([storeId, email])
   @@map("customers")
@@ -377,7 +417,7 @@ model Order {
   id                Int               @id @default(autoincrement())
   storeId           Int               @map("store_id")
   customerId        Int?              @map("customer_id")
-  orderNumber       String            @unique @map("order_number")
+  orderNumber       Int               @map("order_number") // מספר הזמנה לפי חנות (1,2,3...)
   status            OrderStatus       @default(PENDING)
   paymentStatus     PaymentStatus     @default(PENDING) @map("payment_status")
   fulfillmentStatus FulfillmentStatus @default(UNFULFILLED) @map("fulfillment_status")
@@ -403,7 +443,9 @@ model Order {
   customer          Customer?         @relation(fields: [customerId], references: [id])
   store             Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
   couponUsages      CouponUsage[]
+  emailLogs         EmailLog[]
 
+  @@unique([storeId, orderNumber])
   @@map("orders")
 }
 
@@ -1052,4 +1094,48 @@ enum PartnerActivityType {
   PAYOUT_REQUESTED
   PROFILE_UPDATED
   PASSWORD_CHANGED
+}
+
+// Email System Models
+model EmailTemplate {
+  id          Int      @id @default(autoincrement())
+  storeId     Int?     @map("store_id") // null = global template
+  type        String   // order_confirmation, abandoned_cart, welcome, etc.
+  name        String
+  subject     String
+  htmlContent String   @map("html_content") @db.Text
+  textContent String?  @map("text_content") @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  isDefault   Boolean  @default(false) @map("is_default")
+  variables   Json?    // Available variables for this template
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  store       Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  @@unique([storeId, type])
+  @@map("email_templates")
+}
+
+model EmailLog {
+  id                Int      @id @default(autoincrement())
+  storeId           Int?     @map("store_id")
+  to                String
+  subject           String
+  type              String   // order_confirmation, abandoned_cart, etc.
+  status            String   // sent, failed, bounced, opened, clicked
+  sendgridMessageId String?  @map("sendgrid_message_id")
+  error             String?  @db.Text
+  orderId           Int?     @map("order_id")
+  customerId        Int?     @map("customer_id")
+  sentAt            DateTime? @map("sent_at")
+  openedAt          DateTime? @map("opened_at")
+  clickedAt         DateTime? @map("clicked_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  
+  store             Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  order             Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  customer          Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  
+  @@map("email_logs")
 }

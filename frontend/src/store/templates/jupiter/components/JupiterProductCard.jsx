@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
-const ProductCard = ({ product, storeSlug, index = 0 }) => {
+const JupiterProductCard = ({ product, storeSlug, index = 0 }) => {
   const { t } = useTranslation()
 
   const addToCart = (e) => {
@@ -204,4 +204,4 @@ const ProductCard = ({ product, storeSlug, index = 0 }) => {
   )
 }
 
-export default ProductCard
+export default JupiterProductCard

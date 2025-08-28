@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
-const StoreFooter = ({ storeData }) => {
+const JupiterFooter = ({ storeData }) => {
   const { t } = useTranslation()
   const currentYear = new Date().getFullYear()
 
@@ -219,4 +219,4 @@ const StoreFooter = ({ storeData }) => {
   )
 }
 
-export default StoreFooter
+export default JupiterFooter

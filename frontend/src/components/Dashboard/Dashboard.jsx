@@ -28,6 +28,7 @@ import OrdersPage from './pages/OrdersPage.jsx';
 import CustomersPage from './pages/CustomersPage.jsx';
 import AnalyticsPage from './pages/AnalyticsPage.jsx';
 import DesignPage from './pages/DesignPage.jsx';
+import DesignAndCustomizationPage from './pages/DesignAndCustomizationPage.jsx';
 import MenusPage from './pages/MenusPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import ShippingPage from './pages/ShippingPage.jsx';
@@ -36,6 +37,7 @@ import CouponsPage from './pages/CouponsPage.jsx';
 import CouponFormPage from './pages/CouponFormPage.jsx';
 import AutomaticDiscountFormPage from './pages/AutomaticDiscountFormPage.jsx';
 import SiteBuilderPage from '../SiteBuilder/pages/SiteBuilderPage.jsx';
+import AdvancedTemplateEditor from './pages/AdvancedTemplateEditor.jsx';
 import OnboardingTour from './components/OnboardingTour.jsx';
 
 const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
@@ -189,6 +191,8 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
       setActiveTab('customers');
     } else if (newPath.includes('/analytics')) {
       setActiveTab('analytics');
+    } else if (newPath.includes('/design/basic')) {
+      setActiveTab('design-basic');
     } else if (newPath.includes('/design')) {
       setActiveTab('design');
     } else if (newPath.includes('/builder')) {
@@ -212,7 +216,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
     { id: 'customers', icon: Users, label: t('dashboard.customers') || 'לקוחות' },
     { id: 'coupons', icon: Percent, label: t('dashboard.coupons') || 'קופונים והנחות' },
     { id: 'analytics', icon: BarChart3, label: t('dashboard.analytics') || 'אנליטיקס' },
-    { id: 'design', icon: Palette, label: t('dashboard.design') || 'עיצוב האתר' },
+    { id: 'design', icon: Palette, label: t('dashboard.design') || 'עיצוב והתאמה' },
     { id: 'builder', icon: Layout, label: t('dashboard.builder') || 'עורך האתר' },
     { id: 'menus', icon: Menu, label: t('dashboard.menus') || 'תפריטים' },
     { id: 'settings', icon: Settings, label: t('dashboard.settings') || 'הגדרות' }
@@ -259,6 +263,14 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
       const discountId = currentPath.split('/')[3]; // Extract discount ID from URL
       return <AutomaticDiscountFormPage />;
     }
+    // Check for basic design page
+    if (currentPath === '/dashboard/design/basic') {
+      return <DesignPage />;
+    }
+    // Check for advanced template editor
+    if (currentPath.includes('/dashboard/design/editor/')) {
+      return <AdvancedTemplateEditor />;
+    }
     
     switch (activeTab) {
       case 'overview':
@@ -272,7 +284,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
       case 'analytics':
         return <AnalyticsPage userStore={userStore} />;
       case 'design':
-        return <DesignPage />;
+        return <DesignAndCustomizationPage />;
       case 'builder':
         // Builder navigation is handled by useEffect above
         return <OverviewPage stats={stats} recentOrders={recentOrders} popularProducts={popularProducts} userStore={userStore} />;

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import ProductCard from '../components/ProductCard'
+import JupiterProductCard from '../components/JupiterProductCard'
 
-const CategoryPage = ({ storeData }) => {
+const JupiterCategoryPage = ({ storeData }) => {
   const { t } = useTranslation()
   const { slug } = useParams()
   const [category, setCategory] = useState(null)
@@ -211,7 +211,7 @@ const CategoryPage = ({ storeData }) => {
         {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product, index) => (
-              <ProductCard key={product.id} product={product} storeSlug={storeData.slug} index={index} />
+                <JupiterProductCard key={product.id} product={product} storeSlug={storeData.slug} index={index} />
             ))}
           </div>
         ) : (
@@ -230,4 +230,4 @@ const CategoryPage = ({ storeData }) => {
   )
 }
 
-export default CategoryPage
+export default JupiterCategoryPage

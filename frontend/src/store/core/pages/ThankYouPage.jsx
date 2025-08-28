@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import analyticsTracker from '../../utils/analyticsTracker'
+import analyticsTracker from '../../../utils/analyticsTracker'
 
 const ThankYouPage = ({ storeData }) => {
   const { t } = useTranslation()

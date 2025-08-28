@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import ProductCard from '../components/ProductCard'
-import CategoryCard from '../components/CategoryCard'
+import JupiterProductCard from '../components/JupiterProductCard'
+import JupiterCategoryCard from '../components/JupiterCategoryCard'
 
-const StorePage = ({ storeData }) => {
+const JupiterHomePage = ({ storeData }) => {
   const { t } = useTranslation()
   const [featuredProducts, setFeaturedProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -274,7 +274,7 @@ const StorePage = ({ storeData }) => {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {categories.map((category, index) => (
-              <CategoryCard key={category.id} category={category} index={index} />
+                  <JupiterCategoryCard key={category.id} category={category} index={index} />
             ))}
           </div>
         </div>
@@ -307,7 +307,7 @@ const StorePage = ({ storeData }) => {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {featuredProducts.map((product, index) => (
-              <ProductCard key={product.id} product={product} storeSlug={storeData.slug} index={index} />
+                <JupiterProductCard key={product.id} product={product} storeSlug={storeData.slug} index={index} />
             ))}
           </div>
         </div>
@@ -344,4 +344,4 @@ const StorePage = ({ storeData }) => {
   )
 }
 
-export default StorePage
+export default JupiterHomePage

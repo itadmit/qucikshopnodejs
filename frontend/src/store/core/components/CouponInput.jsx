@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import discountService from '../../services/discountService'
+import discountService from '../../../services/discountService'
 
 const CouponInput = ({ 
   cart, 

@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Phone, Mail, LayoutDashboard, Facebook, Instagram, MessageCircle, Search, Heart, User, Menu, X } from 'lucide-react'
-import LanguageSwitcher from '../../components/LanguageSwitcher'
-import CartIcon from './CartIcon'
-import SideCart from './SideCart'
-import Toast from './Toast'
+import LanguageSwitcher from '../../../../components/LanguageSwitcher'
+import CartIcon from '../../../core/components/CartIcon'
+import SideCart from '../../../core/components/SideCart'
+import Toast from '../../../core/components/Toast'
 
-const StoreHeader = ({ storeData, isOwner }) => {
+const JupiterHeader = ({ storeData }) => {
+  const isOwner = storeData?.isOwner || false;
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -346,4 +347,4 @@ const StoreHeader = ({ storeData, isOwner }) => {
   )
 }
 
-export default StoreHeader
+export default JupiterHeader

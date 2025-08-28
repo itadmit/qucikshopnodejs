@@ -1,0 +1,35 @@
+{
+  "name": "jupiter",
+  "displayName": "Jupiter",
+  "description": "תבנית מודרנית ונקייה עם עיצוב מינימליסטי",
+  "version": "1.0.0",
+  "author": "QuickShop Team",
+  "category": "מודרני",
+  "isPremium": false,
+  "thumbnail": "/templates/jupiter-preview.svg",
+  "features": [
+    "עיצוב רספונסיבי",
+    "תמיכה ב-RTL", 
+    "אנימציות חלקות",
+    "SEO מיטבי"
+  ],
+  "colors": {
+    "primary": "#3b82f6",
+    "secondary": "#8b5cf6",
+    "accent": "#f59e0b"
+  },
+  "fonts": {
+    "primary": "Noto Sans Hebrew",
+    "secondary": "Inter"
+  },
+  "layout": {
+    "headerType": "modern",
+    "footerType": "minimal",
+    "sidebarEnabled": false
+  },
+  "customizations": {
+    "allowColorChange": true,
+    "allowFontChange": true,
+    "allowLayoutChange": false
+  }
+}

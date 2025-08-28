@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import ProductRenderer from '../components/ProductRenderer'
-import ProductDiscountBadge from '../components/ProductDiscountBadge'
-import analyticsTracker from '../../utils/analyticsTracker'
-import discountService from '../../services/discountService'
+import ProductRenderer from '../../../shared/components/ProductRenderer'
+import ProductDiscountBadge from '../../../shared/components/ProductDiscountBadge'
+import analyticsTracker from '../../../../utils/analyticsTracker'
+import discountService from '../../../../services/discountService'
 
-const ProductPage = ({ storeData }) => {
+const JupiterProductPage = ({ storeData }) => {
   const { t } = useTranslation()
   const { slug } = useParams()
   const [product, setProduct] = useState(null)
@@ -531,4 +531,4 @@ const ProductPage = ({ storeData }) => {
   )
 }
 
-export default ProductPage
+export default JupiterProductPage
