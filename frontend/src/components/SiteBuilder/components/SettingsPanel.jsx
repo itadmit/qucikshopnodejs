@@ -15,6 +15,7 @@ import {
   Settings,
   Info
 } from 'lucide-react';
+import { Select } from '../../ui';
 
 // Custom Toggle Component like Shopify - RTL Compatible
 const Toggle = ({ checked, onChange, label }) => {
@@ -120,21 +121,14 @@ const SettingsPanel = ({
 
       case 'select':
         return (
-          <div className="relative">
-            <select
-              value={value}
-              onChange={(e) => onSettingChange(setting.id, e.target.value)}
-              className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-right"
-              dir="rtl"
-            >
-              {setting.options?.map((option, index) => (
-                <option key={index} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
+          <Select
+            options={setting.options || []}
+            value={value}
+            onChange={(newValue) => onSettingChange(setting.id, newValue)}
+            placeholder={setting.placeholder || 'בחר אפשרות...'}
+            size="sm"
+            className="text-sm"
+          />
         );
 
       case 'checkbox':
@@ -352,10 +346,6 @@ const SettingsPanel = ({
   function getGeneralSettings() {
     return [
       {
-        type: 'header',
-        label: 'הגדרות עיצוב כלליות'
-      },
-      {
         id: 'primaryColor',
         type: 'color',
         label: 'צבע ראשי',
@@ -372,38 +362,21 @@ const SettingsPanel = ({
         type: 'select',
         label: 'גופן',
         options: [
-          { value: 'Inter', label: 'Inter' },
-          { value: 'Heebo', label: 'Heebo' },
-          { value: 'Assistant', label: 'Assistant' },
-          { value: 'Rubik', label: 'Rubik' }
+          { value: 'Inter', label: 'Inter (אנגלית)' },
+          { value: 'Heebo', label: 'Heebo (עברית + אנגלית)' },
+          { value: 'Assistant', label: 'Assistant (עברית + אנגלית)' },
+          { value: 'Rubik', label: 'Rubik (עברית + אנגלית)' },
+          { value: 'Noto Sans Hebrew', label: 'Noto Sans Hebrew (עברית + אנגלית)' },
+          { value: 'Open Sans', label: 'Open Sans (אנגלית)' },
+          { value: 'Roboto', label: 'Roboto (אנגלית)' }
         ],
-        default: 'Inter'
-      },
-      {
-        type: 'header',
-        label: 'הגדרות כלליות'
+        default: 'Noto Sans Hebrew'
       },
       {
         id: 'rtl',
         type: 'checkbox',
         label: 'תמיכה ב-RTL (עברית)',
         default: true
-      },
-      {
-        id: 'templateName',
-        type: 'select',
-        label: 'תבנית עיצוב',
-        options: [
-          { value: 'Jupiter', label: 'Jupiter' },
-          { value: 'Mars', label: 'Mars' },
-          { value: 'Venus', label: 'Venus' },
-          { value: 'Saturn', label: 'Saturn' }
-        ],
-        default: 'Jupiter'
-      },
-      {
-        type: 'header',
-        label: 'פעולות מתקדמות'
       },
       {
         id: 'resetPage',
@@ -417,7 +390,7 @@ const SettingsPanel = ({
   }
 
   return (
-    <div className="w-80 bg-white shadow-xl border-r border-gray-200 overflow-hidden flex flex-col h-full">
+    <div className="settings-panel w-80 bg-white shadow-xl border-r border-gray-200 overflow-hidden flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
         <button

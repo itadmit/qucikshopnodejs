@@ -196,7 +196,7 @@ const TemplateManager = ({ templateName = 'jupiter', storeData }) => {
   const templateClass = `store-template-${template.name}`;
 
   return (
-    <div className={`min-h-screen ${templateClass}`}>
+    <div className={`min-h-screen storefront-content ${templateClass}`}>
       {/* Header - מהתבנית */}
       {Header && <Header storeData={storeData} />}
       

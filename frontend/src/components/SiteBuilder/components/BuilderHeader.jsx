@@ -15,6 +15,7 @@ import {
   Redo, 
   Save 
 } from 'lucide-react';
+import { Select } from '../../ui';
 
 const BuilderHeader = ({
   selectedPage,
@@ -32,7 +33,7 @@ const BuilderHeader = ({
   onSave
 }) => {
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4">
+    <div className="builder-header bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4 space-x-reverse">
           <button
@@ -45,30 +46,27 @@ const BuilderHeader = ({
           
           {/* Page/Global Selector */}
           <div className="flex items-center space-x-2 space-x-reverse">
-            <select
+            <Select
               value={editingGlobal || selectedPage}
-              onChange={(e) => {
-                const value = e.target.value;
+              onChange={(value) => {
                 if (value === 'header' || value === 'footer') {
                   onPageChange({ editingGlobal: value, selectedPage: 'home' });
                 } else {
                   onPageChange({ editingGlobal: null, selectedPage: value });
                 }
               }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            >
-              <optgroup label="עמודים">
-                <option value="home">עמוד בית</option>
-                <option value="product">עמוד מוצר</option>
-                <option value="category">עמוד קטגוריה</option>
-                <option value="about">אודות</option>
-                <option value="contact">צור קשר</option>
-              </optgroup>
-              <optgroup label="גלובלי">
-                <option value="header">הדר האתר</option>
-                <option value="footer">פוטר האתר</option>
-              </optgroup>
-            </select>
+              options={[
+                { value: 'home', label: 'עמוד בית' },
+                { value: 'product', label: 'עמוד מוצר' },
+                { value: 'category', label: 'עמוד קטגוריה' },
+                { value: 'about', label: 'אודות' },
+                { value: 'contact', label: 'צור קשר' },
+                { value: 'header', label: 'הדר האתר' },
+                { value: 'footer', label: 'פוטר האתר' }
+              ]}
+              size="sm"
+              className="min-w-[150px]"
+            />
             
             {editingGlobal && (
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">

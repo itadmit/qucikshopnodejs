@@ -17,8 +17,23 @@ import AddSectionModal from '../components/AddSectionModal.jsx';
 import SettingsPanel from '../components/SettingsPanel.jsx';
 import Toast from '../../../store/core/components/Toast.jsx';
 
+// Import hooks for global styles management
+import useGlobalStyles from '../../../hooks/useGlobalStyles.js';
+import { useFonts } from '../../../hooks/useFonts.js';
+
 const SiteBuilderPage = ({ user, onBack }) => {
   const { t } = useTranslation();
+  
+  // Global styles management
+  const { updateSetting: updateGlobalStyle, globalSettings } = useGlobalStyles();
+  const { loadAndApplyFont } = useFonts();
+
+  // Apply current font to canvas when component mounts or font changes
+  useEffect(() => {
+    if (globalSettings.fontFamily) {
+      loadAndApplyFont(globalSettings.fontFamily);
+    }
+  }, [globalSettings.fontFamily, loadAndApplyFont]);
   
   // State management
   const [selectedPage, setSelectedPage] = useState('home');
@@ -514,7 +529,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50" dir="rtl">
+    <div className="site-builder h-screen flex flex-col bg-gray-50" dir="rtl">
       {/* Header */}
       <BuilderHeader
         selectedPage={selectedPage}
@@ -614,6 +629,9 @@ const SiteBuilderPage = ({ user, onBack }) => {
                 resetPage();
                 return;
               }
+              
+              // Update global styles immediately
+              updateGlobalStyle(settingId, value);
               
               // Update general page settings
               const newStructure = {

@@ -168,6 +168,8 @@ const SectionRenderer = ({
     const buttonPrimaryLink = getSetting('button_primary_link');
     const buttonSecondaryText = getSetting('button_secondary_text');
     const buttonSecondaryLink = getSetting('button_secondary_link');
+    const usePrimaryColor = getSetting('use_primary_color', true);
+    const useSecondaryColor = getSetting('use_secondary_color', true);
 
     const heightClasses = {
       small: 'min-h-96',
@@ -219,7 +221,9 @@ const SectionRenderer = ({
       return (
         <>
           {subtitle && (
-            <p className="text-blue-600 font-semibold mb-2">{subtitle}</p>
+            <p className={`font-semibold mb-2 ${usePrimaryColor ? 'text-primary' : 'text-blue-600'}`}>
+              {subtitle}
+            </p>
           )}
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-gray-900">
             {title}
@@ -235,7 +239,11 @@ const SectionRenderer = ({
             {buttonPrimaryText && (
               <a 
                 href={buttonPrimaryLink || '#'}
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
+                  usePrimaryColor 
+                    ? 'btn-primary' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
                 {buttonPrimaryText}
               </a>
@@ -243,7 +251,11 @@ const SectionRenderer = ({
             {buttonSecondaryText && (
               <a 
                 href={buttonSecondaryLink || '#'}
-                className="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
+                  useSecondaryColor 
+                    ? 'btn-outline-primary border-2' 
+                    : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
               >
                 {buttonSecondaryText}
               </a>
@@ -259,7 +271,9 @@ const SectionRenderer = ({
                   const label = getBlockSetting(block, 'label');
                   return (
                     <div key={index} className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{value}</div>
+                      <div className={`text-2xl font-bold ${usePrimaryColor ? 'text-primary' : 'text-blue-600'}`}>
+                        {value}
+                      </div>
                       <div className="text-sm text-gray-600">{label}</div>
                     </div>
                   );

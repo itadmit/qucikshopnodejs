@@ -32,12 +32,12 @@ const BuilderCanvas = ({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="builder-canvas flex-1 overflow-y-auto">
       <div className={`mx-auto transition-all duration-300 ${
         previewMode === 'mobile' ? 'max-w-sm' : 'max-w-none'
       }`}>
         {/* Always render header, page content, and footer */}
-        <div className="min-h-screen flex flex-col">
+        <div className="storefront-content min-h-screen flex flex-col">
           {/* Header Section - Always visible */}
           <HeaderSection
             globalStructure={globalStructure}

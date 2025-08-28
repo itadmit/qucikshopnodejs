@@ -36,7 +36,7 @@ const BuilderSidebar = ({
   if (!isOpen) return null;
 
   return (
-    <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
+    <div className="builder-sidebar w-80 bg-white border-l border-gray-200 flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">{selectedPage}</h2>

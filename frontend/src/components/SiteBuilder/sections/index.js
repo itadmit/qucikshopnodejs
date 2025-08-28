@@ -440,6 +440,18 @@ export const heroSection = createSectionSchema({
       default: '#f9fafb'
     }),
     createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'use_primary_color',
+      label: 'השתמש בצבע ראשי גלובלי לכפתור',
+      default: true
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'use_secondary_color',
+      label: 'השתמש בצבע משני גלובלי לכפתור משני',
+      default: true
+    }),
+    createSetting({
       type: SETTING_TYPES.SELECT,
       id: 'text_alignment',
       label: 'יישור טקסט',
