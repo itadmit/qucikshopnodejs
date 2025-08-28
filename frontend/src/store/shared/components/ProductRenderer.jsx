@@ -1,11 +1,11 @@
 import React from 'react';
 
 // Import product components from site builder
-import ProductTitle from '../../components/SiteBuilder/sections/ProductTitle';
-import ProductPrice from '../../components/SiteBuilder/sections/ProductPrice';
-import ProductOptions from '../../components/SiteBuilder/sections/ProductOptions';
-import AddToCart from '../../components/SiteBuilder/sections/AddToCart';
-import ProductImages from '../../components/SiteBuilder/sections/ProductImages';
+import ProductTitle from '../../../components/SiteBuilder/sections/ProductTitle';
+import ProductPrice from '../../../components/SiteBuilder/sections/ProductPrice';
+import ProductOptions from '../../../components/SiteBuilder/sections/ProductOptions';
+import AddToCart from '../../../components/SiteBuilder/sections/AddToCart';
+import ProductImages from '../../../components/SiteBuilder/sections/ProductImages';
 
 const ProductRenderer = ({ pageStructure, product, selectedOptions, onOptionChange, quantity, onQuantityChange, onAddToCart }) => {
   

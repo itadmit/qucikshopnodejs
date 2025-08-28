@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import discountService from '../../services/discountService'
+import discountService from '../../../services/discountService'
 
 const ProductDiscountBadge = ({ product, quantity = 1, storeSlug }) => {
   const [discounts, setDiscounts] = useState(null)

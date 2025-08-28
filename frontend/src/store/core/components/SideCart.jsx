@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { X, Plus, Minus, ShoppingBag, Trash2, Truck } from 'lucide-react'
-import analyticsTracker from '../../utils/analyticsTracker'
+import analyticsTracker from '../../../utils/analyticsTracker'
 import CouponInput from './CouponInput'
-import discountService from '../../services/discountService'
+import discountService from '../../../services/discountService'
 
 const SideCart = ({ isOpen, onClose, storeData }) => {
   const { t } = useTranslation()
