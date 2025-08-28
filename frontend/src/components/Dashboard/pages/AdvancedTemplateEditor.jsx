@@ -55,10 +55,11 @@ const AdvancedTemplateEditor = () => {
       // Use Jupiter as default template if templateName is undefined
       const currentTemplateName = templateName || 'jupiter';
       
-      // For now, show a message that this feature is coming soon
-      alert('עורך הקוד המתקדם יהיה זמין בקרוב. כרגע ניתן להשתמש בעורך הבסיסי.');
-      navigate('/dashboard/design');
-      return;
+      // Load template from server
+      const response = await fetch(`http://localhost:3001/api/templates/${currentTemplateName}`);
+      if (!response.ok) {
+        throw new Error('Template not found');
+      }
       
       const templateData = await response.json();
       setTemplate(templateData);
@@ -102,49 +103,101 @@ const AdvancedTemplateEditor = () => {
     const newWarnings = [];
 
     try {
-      // Basic JSX validation using Babel
-      if (selectedFile?.name.endsWith('.jsx')) {
-        Babel.transform(newCode, {
-          presets: ['react'],
-          plugins: ['syntax-jsx']
+      // Basic security checks
+      if (newCode.includes('eval(')) {
+        newErrors.push({
+          line: newCode.split('\n').findIndex(line => line.includes('eval(')) + 1,
+          message: 'שימוש ב-eval() אסור מטעמי בטיחות',
+          severity: 'error'
         });
       }
 
-      // Security checks
-      const dangerousPatterns = [
-        { pattern: /eval\s*\(/, message: 'שימוש ב-eval אסור מטעמי בטיחות' },
-        { pattern: /Function\s*\(/, message: 'יצירת פונקציות דינמיות אסורה' },
-        { pattern: /document\.write/, message: 'שימוש ב-document.write אסור' },
-        { pattern: /innerHTML\s*=/, message: 'שימוש ב-innerHTML מסוכן' },
-        { pattern: /dangerouslySetInnerHTML/, message: 'שימוש ב-dangerouslySetInnerHTML מסוכן' },
-        { pattern: /import\s+.*\s+from\s+['"]http/, message: 'ייבוא מ-URL חיצוני אסור' }
-      ];
+      if (newCode.includes('Function(')) {
+        newErrors.push({
+          line: newCode.split('\n').findIndex(line => line.includes('Function(')) + 1,
+          message: 'שימוש ב-Function() אסור מטעמי בטיחות',
+          severity: 'error'
+        });
+      }
 
-      dangerousPatterns.forEach(({ pattern, message }) => {
-        if (pattern.test(newCode)) {
-          newErrors.push(message);
+      if (newCode.includes('innerHTML')) {
+        newErrors.push({
+          line: newCode.split('\n').findIndex(line => line.includes('innerHTML')) + 1,
+          message: 'שימוש ב-innerHTML אסור מטעמי בטיחות',
+          severity: 'error'
+        });
+      }
+
+      if (newCode.includes('dangerouslySetInnerHTML')) {
+        newErrors.push({
+          line: newCode.split('\n').findIndex(line => line.includes('dangerouslySetInnerHTML')) + 1,
+          message: 'שימוש ב-dangerouslySetInnerHTML אסור מטעמי בטיחות',
+          severity: 'error'
+        });
+      }
+
+      // Check for external URLs in imports
+      const importRegex = /import.*from\s+['"`](https?:\/\/.*?)['"`]/g;
+      let match;
+      while ((match = importRegex.exec(newCode)) !== null) {
+        const lineNumber = newCode.substring(0, match.index).split('\n').length;
+        newErrors.push({
+          line: lineNumber,
+          message: `ייבוא מ-URL חיצוני אסור: ${match[1]}`,
+          severity: 'error'
+        });
+      }
+
+      // Warnings for debugging code
+      if (newCode.includes('console.log')) {
+        const lines = newCode.split('\n');
+        lines.forEach((line, index) => {
+          if (line.includes('console.log')) {
+            newWarnings.push({
+              line: index + 1,
+              message: 'מומלץ להסיר console.log לפני פרסום',
+              severity: 'warning'
+            });
+          }
+        });
+      }
+
+      if (newCode.includes('debugger')) {
+        newWarnings.push({
+          line: newCode.split('\n').findIndex(line => line.includes('debugger')) + 1,
+          message: 'מומלץ להסיר debugger לפני פרסום',
+          severity: 'warning'
+        });
+      }
+
+      // Try to parse JSX with Babel
+      if (selectedFile?.name?.endsWith('.jsx') || selectedFile?.name?.endsWith('.js')) {
+        try {
+          Babel.transform(newCode, {
+            presets: ['react'],
+            filename: selectedFile.name
+          });
+        } catch (babelError) {
+          const errorLine = babelError.loc ? babelError.loc.line : 1;
+          newErrors.push({
+            line: errorLine,
+            message: `שגיאת JSX: ${babelError.message}`,
+            severity: 'error'
+          });
         }
-      });
-
-      // Best practices warnings
-      const warningPatterns = [
-        { pattern: /console\.log/, message: 'מומלץ להסיר console.log בקוד פרודקשן' },
-        { pattern: /debugger/, message: 'מומלץ להסיר debugger בקוד פרודקשן' },
-        { pattern: /alert\s*\(/, message: 'מומלץ להשתמש ב-toast במקום alert' }
-      ];
-
-      warningPatterns.forEach(({ pattern, message }) => {
-        if (pattern.test(newCode)) {
-          newWarnings.push(message);
-        }
-      });
+      }
 
     } catch (error) {
-      newErrors.push(`שגיאת סינטקס: ${error.message}`);
+      newErrors.push({
+        line: 1,
+        message: `שגיאה בוולידציה: ${error.message}`,
+        severity: 'error'
+      });
     }
 
     setErrors(newErrors);
     setWarnings(newWarnings);
+    
     return newErrors.length === 0;
   };
 
@@ -154,26 +207,27 @@ const AdvancedTemplateEditor = () => {
   };
 
   const handleSave = async () => {
-    if (errors.length > 0) {
-      alert('לא ניתן לשמור קוד עם שגיאות');
-      return;
-    }
+    if (!selectedFile || !template) return;
 
     setSaving(true);
     try {
-      // Update file in template
-      const updatedFiles = { ...fileTree };
-      if (selectedFile) {
-        updatedFiles[selectedFile.category][selectedFile.name] = code;
+      // Validate code before saving
+      const isValid = validateCode(code);
+      if (!isValid) {
+        alert('יש שגיאות בקוד. אנא תקן אותן לפני השמירה.');
+        return;
       }
 
+      // Update file in template structure
+      const updatedFiles = { ...fileTree };
+      updatedFiles[selectedFile.category][selectedFile.name] = code;
+
       // Save to server
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const response = await fetch(`http://localhost:3001/api/templates/${template.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           files: updatedFiles
@@ -185,51 +239,67 @@ const AdvancedTemplateEditor = () => {
       }
 
       setFileTree(updatedFiles);
-      alert('התבנית נשמרה בהצלחה!');
+      alert('הקובץ נשמר בהצלחה!');
 
     } catch (error) {
-      console.error('Error saving template:', error);
-      alert('שגיאה בשמירת התבנית');
+      console.error('Error saving file:', error);
+      alert('שגיאה בשמירת הקובץ');
     } finally {
       setSaving(false);
     }
   };
 
   const handleFileSelect = (category, fileName) => {
-    const fileContent = fileTree[category][fileName];
+    const fileContent = fileTree[category]?.[fileName] || '';
     setSelectedFile({ category, name: fileName, content: fileContent });
-    setCode(typeof fileContent === 'string' ? fileContent : JSON.stringify(fileContent, null, 2));
+    setCode(fileContent);
+    validateCode(fileContent);
+  };
+
+  const handlePreview = () => {
+    // Open store preview in new tab
+    const previewUrl = `http://localhost:5173/store-preview?template=${template.name}`;
+    window.open(previewUrl, '_blank');
+  };
+
+  const getFileIcon = (fileName) => {
+    if (fileName.endsWith('.jsx') || fileName.endsWith('.js')) {
+      return <Code className="w-4 h-4 text-blue-600" />;
+    } else if (fileName.endsWith('.css')) {
+      return <FileText className="w-4 h-4 text-green-600" />;
+    } else if (fileName.endsWith('.json')) {
+      return <Settings className="w-4 h-4 text-orange-600" />;
+    }
+    return <FileText className="w-4 h-4 text-gray-600" />;
   };
 
   const renderFileTree = () => {
-    const categoryIcons = {
-      components: <Code className="w-4 h-4" />,
-      pages: <FileText className="w-4 h-4" />,
-      styles: <Settings className="w-4 h-4" />,
-      config: <Settings className="w-4 h-4" />,
-      locales: <FileText className="w-4 h-4" />
-    };
-
     return (
-      <div className="space-y-2">
+      <div className="bg-gray-50 border-r border-gray-200 w-64 p-4 h-full overflow-y-auto">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">קבצי התבנית</h3>
+        
         {Object.entries(fileTree).map(([category, files]) => (
-          <div key={category} className="border border-gray-200 rounded-lg">
-            <div className="flex items-center p-3 bg-gray-50 border-b border-gray-200">
-              {categoryIcons[category]}
-              <span className="mr-2 font-medium text-gray-900 capitalize">{category}</span>
+          <div key={category} className="mb-4">
+            <div className="flex items-center mb-2">
+              <Folder className="w-4 h-4 text-gray-500 ml-1" />
+              <span className="text-sm font-medium text-gray-700 capitalize">
+                {category}
+              </span>
             </div>
-            <div className="p-2 space-y-1">
-              {Object.entries(files).map(([fileName, content]) => (
+            
+            <div className="mr-4 space-y-1">
+              {Object.keys(files).map((fileName) => (
                 <button
                   key={fileName}
                   onClick={() => handleFileSelect(category, fileName)}
-                  className={`w-full text-right p-2 rounded text-sm transition-colors ${
-                    selectedFile?.category === category && selectedFile?.name === fileName
-                      ? 'bg-blue-100 text-blue-900'
-                      : 'hover:bg-gray-100 text-gray-700'
+                  className={`w-full flex items-center p-2 text-sm rounded hover:bg-gray-200 transition-colors ${
+                    selectedFile?.name === fileName && selectedFile?.category === category
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'text-gray-700'
                   }`}
                 >
-                  {fileName}
+                  {getFileIcon(fileName)}
+                  <span className="mr-2 truncate">{fileName}</span>
                 </button>
               ))}
             </div>
@@ -239,19 +309,49 @@ const AdvancedTemplateEditor = () => {
     );
   };
 
+  const renderErrorsAndWarnings = () => {
+    if (errors.length === 0 && warnings.length === 0) return null;
+
+    return (
+      <div className="bg-white border-t border-gray-200 p-4 max-h-48 overflow-y-auto">
+        <h4 className="text-sm font-semibold text-gray-900 mb-2">בעיות בקוד</h4>
+        
+        {errors.map((error, index) => (
+          <div key={`error-${index}`} className="flex items-start mb-2 text-sm">
+            <AlertTriangle className="w-4 h-4 text-red-500 ml-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="text-red-700 font-medium">שורה {error.line}: </span>
+              <span className="text-red-600">{error.message}</span>
+            </div>
+          </div>
+        ))}
+        
+        {warnings.map((warning, index) => (
+          <div key={`warning-${index}`} className="flex items-start mb-2 text-sm">
+            <AlertTriangle className="w-4 h-4 text-yellow-500 ml-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="text-yellow-700 font-medium">שורה {warning.line}: </span>
+              <span className="text-yellow-600">{warning.message}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">טוען עורך קוד...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">טוען עורך קוד...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -261,47 +361,50 @@ const AdvancedTemplateEditor = () => {
               className="flex items-center text-gray-600 hover:text-gray-900 ml-4"
             >
               <ArrowLeft className="w-5 h-5 ml-1" />
-              חזור
+              חזרה לעיצוב
             </button>
-            <h1 className="text-xl font-semibold text-gray-900">
-              עורך קוד - {template?.displayName}
-            </h1>
-            {selectedFile && (
-              <span className="mr-4 text-sm text-gray-500">
-                {selectedFile.category}/{selectedFile.name}
-              </span>
-            )}
+            
+            <div className="border-r border-gray-300 h-6 mx-4"></div>
+            
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">
+                עורך קוד מתקדם - {template?.displayName || 'Jupiter'}
+              </h1>
+              <p className="text-sm text-gray-600">
+                {selectedFile ? `${selectedFile.category}/${selectedFile.name}` : 'בחר קובץ לעריכה'}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Validation Status */}
-            <div className="flex items-center">
-              {errors.length > 0 ? (
-                <div className="flex items-center text-red-600">
-                  <AlertTriangle className="w-4 h-4 ml-1" />
-                  {errors.length} שגיאות
-                </div>
-              ) : (
-                <div className="flex items-center text-green-600">
-                  <CheckCircle className="w-4 h-4 ml-1" />
-                  תקין
-                </div>
-              )}
-            </div>
+            {errors.length === 0 ? (
+              <div className="flex items-center text-green-600">
+                <CheckCircle className="w-4 h-4 ml-1" />
+                <span className="text-sm">ללא שגיאות</span>
+              </div>
+            ) : (
+              <div className="flex items-center text-red-600">
+                <AlertTriangle className="w-4 h-4 ml-1" />
+                <span className="text-sm">{errors.length} שגיאות</span>
+              </div>
+            )}
 
-            {/* Actions */}
             <button
-              onClick={() => setPreviewMode(!previewMode)}
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              onClick={handlePreview}
+              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <Eye className="w-4 h-4 ml-1" />
-              {previewMode ? 'עריכה' : 'תצוגה'}
+              תצוגה מקדימה
             </button>
 
             <button
               onClick={handleSave}
               disabled={saving || errors.length > 0}
-              className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                saving || errors.length > 0
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
             >
               <Save className="w-4 h-4 ml-1" />
               {saving ? 'שומר...' : 'שמור'}
@@ -310,62 +413,68 @@ const AdvancedTemplateEditor = () => {
         </div>
       </div>
 
-      <div className="flex h-screen">
-        {/* File Tree Sidebar */}
-        <div className="w-64 bg-white border-l border-gray-200 p-4 overflow-y-auto">
-          <h3 className="text-sm font-medium text-gray-900 mb-4">קבצי התבנית</h3>
-          {renderFileTree()}
-        </div>
+      {/* Main Content */}
+      <div className="flex-1 flex">
+        {/* File Tree */}
+        {renderFileTree()}
 
-        {/* Main Editor Area */}
+        {/* Editor */}
         <div className="flex-1 flex flex-col">
-          {/* Editor */}
-          <div className="flex-1">
-            <Editor
-              height="100%"
-              language={selectedFile?.name.endsWith('.jsx') ? 'javascript' : 
-                       selectedFile?.name.endsWith('.css') ? 'css' :
-                       selectedFile?.name.endsWith('.json') ? 'json' : 'text'}
-              value={code}
-              onChange={handleCodeChange}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                wordWrap: 'on',
-                lineNumbers: 'on',
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                theme: 'vs-dark'
-              }}
-            />
-          </div>
-
-          {/* Error/Warning Panel */}
-          {(errors.length > 0 || warnings.length > 0) && (
-            <div className="bg-white border-t border-gray-200 p-4 max-h-48 overflow-y-auto">
-              {errors.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-red-900 mb-2">שגיאות:</h4>
-                  {errors.map((error, index) => (
-                    <div key={index} className="flex items-center text-sm text-red-700 mb-1">
-                      <AlertTriangle className="w-4 h-4 ml-2 text-red-500" />
-                      {error}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {warnings.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-yellow-900 mb-2">אזהרות:</h4>
-                  {warnings.map((warning, index) => (
-                    <div key={index} className="flex items-center text-sm text-yellow-700 mb-1">
-                      <AlertTriangle className="w-4 h-4 ml-2 text-yellow-500" />
-                      {warning}
-                    </div>
-                  ))}
-                </div>
-              )}
+          {selectedFile ? (
+            <>
+              <div className="flex-1">
+                <Editor
+                  height="100%"
+                  language={selectedFile.name.endsWith('.jsx') || selectedFile.name.endsWith('.js') ? 'javascript' : 
+                           selectedFile.name.endsWith('.css') ? 'css' : 
+                           selectedFile.name.endsWith('.json') ? 'json' : 'plaintext'}
+                  value={code}
+                  onChange={handleCodeChange}
+                  theme="vs-dark"
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    roundedSelection: false,
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    tabSize: 2,
+                    insertSpaces: true,
+                    wordWrap: 'on',
+                    contextmenu: true,
+                    selectOnLineNumbers: true,
+                    glyphMargin: true,
+                    folding: true,
+                    foldingStrategy: 'indentation',
+                    showFoldingControls: 'always',
+                    renderLineHighlight: 'all',
+                    renderWhitespace: 'selection',
+                    cursorBlinking: 'blink',
+                    mouseWheelZoom: true,
+                    links: true,
+                    colorDecorators: true,
+                    accessibilitySupport: 'auto',
+                    suggest: {
+                      showKeywords: true,
+                      showSnippets: true,
+                      showClasses: true,
+                      showFunctions: true,
+                      showVariables: true
+                    }
+                  }}
+                />
+              </div>
+              
+              {/* Errors and Warnings Panel */}
+              {renderErrorsAndWarnings()}
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <Code className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">בחר קובץ לעריכה</h3>
+                <p className="text-gray-600">בחר קובץ מעץ הקבצים כדי להתחיל לערוך</p>
+              </div>
             </div>
           )}
         </div>

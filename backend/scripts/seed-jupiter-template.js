@@ -28,28 +28,38 @@ async function seedJupiterTemplate() {
       path.join(jupiterPath, 'locales/en.json'), 'utf8'
     ));
 
-    // מבנה קבצי התבנית (לא נקרא את התוכן האמיתי כי הוא גדול מדי)
+    // קריאת תוכן הקבצים האמיתיים
+    const readFileContent = (filePath) => {
+      try {
+        return fs.readFileSync(filePath, 'utf8');
+      } catch (error) {
+        console.warn(`Warning: Could not read file ${filePath}, using placeholder`);
+        return `// Placeholder for ${path.basename(filePath)}`;
+      }
+    };
+
+    // מבנה קבצי התבנית עם תוכן אמיתי
     const templateFiles = {
       components: {
-        'JupiterHeader.jsx': 'Header component for Jupiter template',
-        'JupiterFooter.jsx': 'Footer component for Jupiter template',
-        'JupiterProductCard.jsx': 'Product card component for Jupiter template',
-        'JupiterCategoryCard.jsx': 'Category card component for Jupiter template'
+        'JupiterHeader.jsx': readFileContent(path.join(jupiterPath, 'components/JupiterHeader.jsx')),
+        'JupiterFooter.jsx': readFileContent(path.join(jupiterPath, 'components/JupiterFooter.jsx')),
+        'JupiterProductCard.jsx': readFileContent(path.join(jupiterPath, 'components/JupiterProductCard.jsx')),
+        'JupiterCategoryCard.jsx': readFileContent(path.join(jupiterPath, 'components/JupiterCategoryCard.jsx'))
       },
       pages: {
-        'JupiterHomePage.jsx': 'Home page component for Jupiter template',
-        'JupiterCategoryPage.jsx': 'Category page component for Jupiter template',
-        'JupiterProductPage.jsx': 'Product page component for Jupiter template'
+        'JupiterHomePage.jsx': readFileContent(path.join(jupiterPath, 'pages/JupiterHomePage.jsx')),
+        'JupiterCategoryPage.jsx': readFileContent(path.join(jupiterPath, 'pages/JupiterCategoryPage.jsx')),
+        'JupiterProductPage.jsx': readFileContent(path.join(jupiterPath, 'pages/JupiterProductPage.jsx'))
       },
       styles: {
-        'jupiter.css': 'Main stylesheet for Jupiter template'
+        'jupiter.css': readFileContent(path.join(jupiterPath, 'styles/jupiter.css'))
       },
       locales: {
-        'he.json': heTranslations,
-        'en.json': enTranslations
+        'he.json': JSON.stringify(heTranslations, null, 2),
+        'en.json': JSON.stringify(enTranslations, null, 2)
       },
       config: {
-        'jupiter-config.json': config
+        'jupiter-config.json': JSON.stringify(config, null, 2)
       }
     };
 
