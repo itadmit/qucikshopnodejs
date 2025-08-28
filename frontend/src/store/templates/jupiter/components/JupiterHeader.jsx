@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Phone, Mail, LayoutDashboard, Facebook, Instagram, MessageCircle, Search, Heart, User, Menu, X } from 'lucide-react'
+import { Phone, Mail, LayoutDashboard, Facebook, Instagram, MessageCircle, Search, Heart, User, Menu, X, Truck } from 'lucide-react'
 import LanguageSwitcher from '../../../../components/LanguageSwitcher'
 import CartIcon from '../../../core/components/CartIcon'
 import SideCart from '../../../core/components/SideCart'
@@ -73,6 +73,25 @@ const JupiterHeader = ({ storeData }) => {
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
+      {/* Announcement Bar */}
+      <div className="bg-gray-900 text-white py-2">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-center">
+            <div className="flex items-center gap-4 text-xs font-medium">
+              <div className="flex items-center gap-1">
+                <Truck className="w-3 h-3" />
+                <span>משלוח חינם על הזמנות מעל ₪200</span>
+              </div>
+              <div className="hidden sm:block w-px h-3 bg-gray-600"></div>
+              <div className="flex items-center gap-1">
+                <MessageCircle className="w-3 h-3" />
+                <span>שירות לקוחות 24/7</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       {/* Top Bar */}
       <div className="bg-black text-white py-2">
         <div className="container mx-auto px-4">

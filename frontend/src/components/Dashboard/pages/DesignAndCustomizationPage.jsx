@@ -243,7 +243,7 @@ const DesignAndCustomizationPage = () => {
                   <ArrowRight className="w-5 h-5 text-gray-400" />
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/dashboard/design/editor/${currentTemplate}`)}>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate('/dashboard/design/editor/jupiter')}>
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center ml-3">
                       <Code className="w-5 h-5 text-orange-600" />

@@ -69,6 +69,9 @@ model Store {
   categories         Category[]
   coupons            Coupon[]
   customFields       CustomField[]
+  customPages        CustomPage[]
+  globalSettings     GlobalSettings[]
+  menus              Menu[]
   customers          Customer[]
   influencers        Influencer[]
   media              Media[]
@@ -121,6 +124,58 @@ model Template {
   stores      Store[]  @relation("StoreTemplate")
   
   @@map("templates")
+}
+
+model CustomPage {
+  id          String      @id @default(cuid())
+  storeId     Int         @map("store_id")
+  pageType    PageType    @map("page_type")
+  structure   Json        // מבנה העמוד מהבילדר
+  settings    Json        @default("{}") // הגדרות נוספות
+  isPublished Boolean     @default(false) @map("is_published")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  
+  // Relations
+  store       Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  @@unique([storeId, pageType])
+  @@map("custom_pages")
+}
+
+model GlobalSettings {
+  id          String      @id @default(cuid())
+  storeId     Int         @map("store_id")
+  type        GlobalSettingsType @map("type") // HEADER, FOOTER, THEME
+  settings    Json        @default("{}") // הגדרות הסקשן הגלובלי
+  blocks      Json        @default("[]") // בלוקים של הסקשן (תפריטים, קישורים וכו')
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  
+  // Relations
+  store       Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  @@unique([storeId, type])
+  @@map("global_settings")
+}
+
+model Menu {
+  id          String      @id @default(cuid())
+  storeId     Int         @map("store_id")
+  name        String      // שם התפריט (תפריט ראשי, תפריט פוטר וכו')
+  handle      String      // מזהה ייחודי (main-menu, footer-menu)
+  items       Json        @default("[]") // פריטי התפריט
+  isActive    Boolean     @default(true) @map("is_active")
+  sortOrder   Int         @default(0) @map("sort_order")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  
+  // Relations
+  store       Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  @@unique([storeId, handle])
+  @@map("menus")
 }
 
 model StoreUser {
@@ -640,6 +695,13 @@ enum PageType {
   CONTENT
   CATEGORY
   PRODUCT
+}
+
+enum GlobalSettingsType {
+  HEADER
+  FOOTER
+  THEME
+  GENERAL
 }
 
 enum NotificationType {

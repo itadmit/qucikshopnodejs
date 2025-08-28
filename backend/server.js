@@ -26,6 +26,9 @@ import influencerDashboardRoutes from './routes/influencer-dashboard.js';
 import partnersRoutes from './routes/partners.js';
 import templatesRoutes from './routes/templates.js';
 import emailTemplatesRoutes from './routes/email-templates.js';
+import customPagesRoutes from './routes/custom-pages.js';
+import globalSettingsRoutes from './routes/global-settings.js';
+import menusRoutes from './routes/menus.js';
 
 // Load environment variables
 dotenv.config();
@@ -91,6 +94,9 @@ app.use('/api/influencer-dashboard', influencerDashboardRoutes);
 app.use('/api/partners', partnersRoutes);
 app.use('/api/templates', templatesRoutes);
 app.use('/api/email-templates', emailTemplatesRoutes);
+app.use('/api/custom-pages', customPagesRoutes);
+app.use('/api/global-settings', globalSettingsRoutes);
+app.use('/api/menus', menusRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

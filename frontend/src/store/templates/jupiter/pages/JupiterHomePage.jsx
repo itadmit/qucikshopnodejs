@@ -1,5 +1,28 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { 
+  Truck, 
+  RefreshCw, 
+  MessageCircle, 
+  CreditCard,
+  Star,
+  ShoppingCart,
+  ArrowRight,
+  Play,
+  Pause,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Gift,
+  Zap,
+  Shield,
+  Clock,
+  Award,
+  Heart,
+  Users,
+  TrendingUp,
+  Sparkles
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import JupiterProductCard from '../components/JupiterProductCard'
 import JupiterCategoryCard from '../components/JupiterCategoryCard'
@@ -133,210 +156,493 @@ const JupiterHomePage = ({ storeData }) => {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section - Shopify Style */}
-      <section className="relative overflow-hidden" style={{
-        background: 'linear-gradient(rgb(251, 236, 227) 0%, rgb(234, 206, 255) 100%)'
-      }}>
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
-        
-        <div className="relative container mx-auto px-4 py-20 lg:py-32">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-10 text-center lg:text-right">
+    <div className="min-h-screen bg-white">
+      {/* Classic Hero Section - Split Layout */}
+      <section className="relative bg-gray-50 overflow-hidden">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[60vh] items-center gap-8 py-12">
+            
+            {/* Content Side */}
+            <div className="space-y-8 text-center lg:text-right order-2 lg:order-1 py-12 lg:py-0">
               {/* Badge */}
-              <div className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
-                <span className="text-sm font-medium text-gray-800">✨ {storeData.name}</span>
+              <div className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                <span className="w-2 h-2 bg-green-500 rounded-full ml-2 rtl:ml-0 rtl:mr-2"></span>
+                הקולקציה החדשה של {storeData.name}
               </div>
               
-              <div className="space-y-6">
-                <h1 className="text-5xl lg:text-7xl font-black text-gray-900 leading-tight">
-                  <span className="block">ברוכים הבאים</span>
-                  <span className="block bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    לחנות שלנו
-                  </span>
+              <div className="space-y-4">
+                <h1 className="text-2xl lg:text-4xl font-bold text-gray-900 leading-tight">
+                  <span className="block">גלו את</span>
+                  <span className="block text-gray-600">הסגנון שלכם</span>
                 </h1>
-                <p className="text-xl lg:text-xl text-gray-700 leading-relaxed max-w-2xl">
-                  {storeData.description || 'גלו אלפי מוצרים איכותיים, משלוח מהיר וחינם, ושירות לקוחות מעולה.'}
-                  <span className="font-semibold block mt-2">הקניות שלכם מתחילות כאן!</span>
+                <p className="text-base lg:text-lg text-gray-600 leading-relaxed max-w-lg mx-auto lg:mx-0">
+                  {storeData.description || 'קולקציה חדשה של בגדים איכותיים, עיצובים ייחודיים ונוחות מקסימלית לכל יום.'}
                 </p>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-end">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                 <Link
                   to="/products"
-                  className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
+                  className="bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors duration-300 flex items-center gap-2 text-sm"
                 >
-                  <span className="relative z-10 flex items-center justify-center">
-                    התחילו לקנות עכשיו
-                    <i className="ri-arrow-left-line mr-3 rtl:mr-0 rtl:ml-3 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform"></i>
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-700 to-pink-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <ShoppingCart className="w-4 h-4" />
+                  קנו עכשיו
                 </Link>
                 <Link
-                  to="/about"
-                  className="px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-900 font-semibold text-lg rounded-2xl border-2 border-white/50 hover:bg-white hover:border-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                  to="/collections"
+                  className="border-2 border-gray-900 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-900 hover:text-white transition-colors duration-300 flex items-center gap-2 text-sm"
                 >
-                  למידע נוסף
+                  <ArrowRight className="w-4 h-4" />
+                  צפו בקולקציות
                 </Link>
               </div>
               
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-8 pt-8">
-                <div className="text-center">
-                  <div className="text-3xl font-black text-gray-900">{featuredProducts.length * 25}+</div>
-                  <div className="text-sm text-gray-600 font-medium">מוצרים</div>
+              {/* Simple Stats */}
+              <div className="flex justify-center lg:justify-start space-x-6 rtl:space-x-reverse pt-6">
+                <div className="text-center flex flex-col items-center">
+                  <div className="flex items-center gap-1 mb-1">
+                    <ShoppingCart className="w-3 h-3 text-gray-600" />
+                    <div className="text-lg font-bold text-gray-900">100+</div>
+                  </div>
+                  <div className="text-xs text-gray-600">מוצרים</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-black text-gray-900">1K+</div>
-                  <div className="text-sm text-gray-600 font-medium">לקוחות מרוצים</div>
+                <div className="text-center flex flex-col items-center">
+                  <div className="flex items-center gap-1 mb-1">
+                    <Users className="w-3 h-3 text-gray-600" />
+                    <div className="text-lg font-bold text-gray-900">5K+</div>
+                  </div>
+                  <div className="text-xs text-gray-600">לקוחות</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-black text-gray-900">24/7</div>
-                  <div className="text-sm text-gray-600 font-medium">תמיכה</div>
+                <div className="text-center flex flex-col items-center">
+                  <div className="flex items-center gap-1 mb-1">
+                    <Clock className="w-3 h-3 text-gray-600" />
+                    <div className="text-lg font-bold text-gray-900">24/7</div>
+                  </div>
+                  <div className="text-xs text-gray-600">תמיכה</div>
                 </div>
               </div>
             </div>
             
-            <div className="relative lg:order-first">
-              {/* Main Product Showcase */}
-              <div className="relative">
-                <div className="aspect-square bg-white/20 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-white/30">
-                  <img
-                    src={featuredProducts[0]?.imageUrl || "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=800&fit=crop"}
+            {/* Image Side */}
+            <div className="relative order-1 lg:order-2 p-4">
+              <div className="relative aspect-square lg:aspect-[4/5] bg-gray-100 rounded-2xl overflow-hidden">
+                <img
+                  src={featuredProducts[0]?.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=800&fit=crop"}
                     alt="מוצר מוביל"
                     className="w-full h-full object-cover"
                   />
-                </div>
                 
-                {/* Floating Product Cards */}
-                {featuredProducts.slice(1, 3).map((product, index) => (
-                  <div 
-                    key={product.id}
-                    className={`absolute bg-white rounded-2xl shadow-xl p-4 animate-float ${
-                      index === 0 
-                        ? '-top-6 -right-6 rtl:-right-auto rtl:-left-6' 
-                        : '-bottom-6 -left-6 rtl:-left-auto rtl:-right-6'
-                    }`}
-                    style={{animationDelay: `${index}s`}}
-                  >
-                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                      <img 
-                        src={product.imageUrl} 
-                        alt={product.name}
-                        className="w-12 h-12 rounded-lg object-cover"
-                      />
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900">{product.name}</div>
-                        <div className="text-xs text-gray-500">₪{product.price}</div>
-                      </div>
-                    </div>
+                {/* Floating Product Info */}
+                <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+                  <h3 className="font-semibold text-gray-900 mb-1">
+                    {featuredProducts[0]?.name || 'המוצר הנבחר שלנו'}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-3">
+                    {featuredProducts[0]?.category || 'קולקציה חדשה'}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-bold text-gray-900">
+                      ₪{featuredProducts[0]?.price || '299'}
+                    </span>
+                    <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
+                      הוסף לעגלה
+                    </button>
                   </div>
-                ))}
-                
-                {/* Decorative Elements */}
-                <div className="absolute top-1/4 -left-8 rtl:-left-auto rtl:-right-8 w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full animate-bounce opacity-80"></div>
-                <div className="absolute bottom-1/4 -right-8 rtl:-right-auto rtl:-left-8 w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full animate-pulse"></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        
-        {/* Bottom Wave */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-16 fill-white">
-            <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25"></path>
-            <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5"></path>
-            <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z"></path>
-          </svg>
-        </div>
       </section>
 
-      {/* Categories Section */}
-      <section className="py-24 bg-gradient-to-br from-gray-50 to-white">
+      {/* Shop by Categories - Classic Style */}
+      <section className="py-12 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-6">
-              🛍️ קטגוריות פופולריות
-            </div>
-            <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-6">
-              גלו את
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                הקטגוריות שלנו
-              </span>
+          <div className="text-center mb-8">
+            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">
+              קנו לפי קטגוריות
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              מגוון רחב של מוצרים איכותיים בכל הקטגוריות שאתם אוהבים
+            <p className="text-base text-gray-600 max-w-2xl mx-auto">
+              מצאו בדיוק מה שאתם מחפשים בקטגוריות המובחרות שלנו
             </p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {categories.map((category, index) => (
-                  <JupiterCategoryCard key={category.id} category={category} index={index} />
+              <Link
+                key={category.id}
+                to={`/category/${category.slug}`}
+                className="group relative aspect-square bg-gray-100 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300"
+              >
+                <img
+                  src={category.imageUrl}
+                  alt={category.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300"></div>
+                <div className="absolute bottom-6 left-6 right-6 text-center">
+                  <h3 className="text-white font-semibold text-lg mb-1">{category.name}</h3>
+                  <p className="text-white/80 text-sm">{category.productCount} מוצרים</p>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Featured Products Section */}
-      <section className="py-24 bg-white">
+      {/* Featured Products Grid - Modern Classic */}
+      <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium mb-6">
-              🔥 המוצרים הנמכרים ביותר
+          <div className="flex items-center justify-between mb-12">
+            <div>
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                המוצרים המובילים
+              </h2>
+              <p className="text-lg text-gray-600">
+                הקולקציה הנבחרת שלנו במיוחד עבורכם
+              </p>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-6">
-              המוצרים
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-blue-600">
-                המובילים שלנו
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-              המוצרים הפופולריים ביותר שלקוחותינו הכי אוהבים
-            </p>
             <Link
               to="/products"
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-full hover:from-green-700 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              className="hidden lg:inline-flex items-center px-6 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors duration-300"
+            >
+              צפו בהכל
+              <i className="ri-arrow-left-line mr-2 rtl:mr-0 rtl:ml-2"></i>
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredProducts.map((product, index) => (
+              <div key={product.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+                <div className="relative aspect-square overflow-hidden">
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <div className="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded-lg text-sm font-medium">
+                      חסכון ₪{product.originalPrice - product.price}
+                    </div>
+                  )}
+                  <button className="absolute bottom-4 left-4 right-4 bg-gray-900 text-white py-2 rounded-lg font-medium opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                    הוסף לעגלה
+                  </button>
+                </div>
+                <div className="p-6">
+                  <p className="text-sm text-gray-500 mb-1">{product.category}</p>
+                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                      <span className="text-xl font-bold text-gray-900">₪{product.price}</span>
+                      {product.originalPrice && product.originalPrice > product.price && (
+                        <span className="text-sm text-gray-500 line-through">₪{product.originalPrice}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                      <span className="text-yellow-400">★</span>
+                      <span className="text-sm text-gray-600">{product.rating}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="text-center mt-12 lg:hidden">
+            <Link
+              to="/products"
+              className="inline-flex items-center px-8 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors duration-300"
             >
               צפו בכל המוצרים
               <i className="ri-arrow-left-line mr-2 rtl:mr-0 rtl:ml-2"></i>
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* This Week's Highlights */}
+      <section className="py-12 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">
+              הדגשים של השבוע
+            </h2>
+            <p className="text-base text-gray-600">
+              המוצרים החמים ביותר שלא כדאי לפספס
+            </p>
+          </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {featuredProducts.map((product, index) => (
-                <JupiterProductCard key={product.id} product={product} storeSlug={storeData.slug} index={index} />
+              <div key={product.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+                <div className="relative aspect-square overflow-hidden">
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  {/* Dynamic badges */}
+                  <div className="absolute top-4 left-4 flex flex-col gap-2">
+                    {index % 3 === 0 && (
+                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        חדש
+                      </span>
+                    )}
+                    {index % 3 === 1 && (
+                      <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                        <Zap className="w-3 h-3" />
+                        מבצע
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-1 text-sm line-clamp-2">{product.name}</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-gray-900">₪{product.price}</span>
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <span className="text-sm text-gray-500 line-through">₪{product.originalPrice}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Newsletter Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-600 to-primary-700">
+      {/* Before/After Section - Mix & Match */}
+      <section className="py-12 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            
+            {/* Before/After Image */}
+            <div className="relative">
+              <div className="relative aspect-[4/5] bg-gray-200 rounded-2xl overflow-hidden">
+                <div className="absolute inset-0 flex">
+                  {/* Before */}
+                  <div className="w-1/2 relative">
+                    <img
+                      src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=600&fit=crop"
+                      alt="לפני"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-lg text-sm">
+                      לפני
+                    </div>
+                  </div>
+                  
+                  {/* After */}
+                  <div className="w-1/2 relative">
+                    <img
+                      src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=600&fit=crop&sat=-100"
+                      alt="אחרי"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-lg text-sm">
+                      אחרי
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Slider Handle */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center">
+                  <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center">
+                    <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-6 text-center lg:text-right">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                Mix & Match
+              </div>
+              
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                שלבו חלקים שעוצבו במיוחד
+              </h2>
+              
+              <p className="text-base text-gray-600">
+                זו ההזדמנות שלכם לשדרג את הארון עם מגוון סגנונות וגזרות שמתאימים לכולם.
+              </p>
+              
+              <button className="bg-gray-900 text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors duration-300 flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                קנו Mix & Match
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Collection Showcase - 3 Large Images */}
+      <section className="py-12 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[500px]">
+            
+            {/* Vintage Handbags */}
+            <div className="relative group bg-gray-200 rounded-2xl overflow-hidden cursor-pointer">
+              <img
+                src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=500&fit=crop"
+                alt="תיקים וינטאג'"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300"></div>
+              <div className="absolute bottom-8 left-8 right-8 text-white">
+                <p className="text-sm mb-2 opacity-80">הגעות חדשות</p>
+                <h3 className="text-2xl font-bold mb-4">תיקים וינטאג'</h3>
+              </div>
+            </div>
+
+            {/* Leather Boots */}
+            <div className="relative group bg-gray-200 rounded-2xl overflow-hidden cursor-pointer">
+              <img
+                src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=500&fit=crop"
+                alt="מגפי עור"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300"></div>
+              <div className="absolute bottom-8 left-8 right-8 text-white">
+                <p className="text-sm mb-2 opacity-80">הגעות חדשות</p>
+                <h3 className="text-2xl font-bold mb-4">מגפי עור</h3>
+              </div>
+            </div>
+
+            {/* Tailored Skirts */}
+            <div className="relative group bg-gray-200 rounded-2xl overflow-hidden cursor-pointer">
+              <img
+                src="https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=400&h=500&fit=crop"
+                alt="חצאיות מחויטות"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300"></div>
+              <div className="absolute bottom-8 left-8 right-8 text-white">
+                <p className="text-sm mb-2 opacity-80">הגעות חדשות</p>
+                <h3 className="text-2xl font-bold mb-4">חצאיות מחויטות</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Promotion Banner */}
+      <section className="py-12 bg-gradient-to-r from-gray-900 to-gray-700">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            
+            {/* Content */}
+            <div className="space-y-6 text-white">
+              <div className="inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-full text-sm font-medium gap-2">
+                <Clock className="w-4 h-4" />
+                מבצע מוגבל
+              </div>
+              
+              <h2 className="text-2xl lg:text-3xl font-bold">
+                <span className="block">תזוזו קדימה עם</span>
+                <span className="block text-yellow-400">60% הנחה</span>
+                <span className="block">על חולצות כבדות</span>
+              </h2>
+              
+              <p className="text-base lg:text-lg text-gray-300">
+                השילוב המושלם של נוחות ועמידות עכשיו בהישג יד, במחיר שקשה לסרב לו.
+              </p>
+              
+              <button className="bg-white text-gray-900 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors duration-300 flex items-center gap-2">
+                <Zap className="w-5 h-5" />
+                קנו בקולקציה
+              </button>
+            </div>
+
+            {/* Images */}
+            <div className="grid grid-cols-2 gap-4">
+              <img
+                src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=400&fit=crop"
+                alt="חולצה 1"
+                className="w-full aspect-[3/4] object-cover rounded-2xl"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1583743814966-8936f37f3a3e?w=300&h=400&fit=crop"
+                alt="חולצה 2"
+                className="w-full aspect-[3/4] object-cover rounded-2xl"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Badges */}
+      <section className="py-10 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+            
+            <div className="flex flex-col items-center space-y-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Truck className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">משלוח חינם</h3>
+              <p className="text-sm text-gray-600">משלוח חינם על הזמנות מעל ₪130</p>
+            </div>
+
+            <div className="flex flex-col items-center space-y-3">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <RefreshCw className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">החזר כספי מובטח</h3>
+              <p className="text-sm text-gray-600">תוך 30 יום להחלפה</p>
+            </div>
+
+            <div className="flex flex-col items-center space-y-3">
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <MessageCircle className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">תמיכה אונליין</h3>
+              <p className="text-sm text-gray-600">24 שעות ביום, 7 ימים בשבוע</p>
+            </div>
+
+            <div className="flex flex-col items-center space-y-3">
+              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                <CreditCard className="w-6 h-6 text-yellow-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">תשלום גמיש</h3>
+              <p className="text-sm text-gray-600">תשלום במספר כרטיסי אשראי</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Section - Clean & Simple */}
+      <section className="py-12 bg-gray-900">
         <div className="container mx-auto px-4 text-center">
-          <div className="max-w-2xl mx-auto space-y-8">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white">
-              הירשמו לניוזלטר
+          <div className="max-w-xl mx-auto space-y-8">
+            <h2 className="text-2xl lg:text-3xl font-bold text-white">
+              בואו ניצור קשר
             </h2>
-            <p className="text-primary-100 text-lg leading-relaxed">
-              קבלו עדכונים על מוצרים חדשים, מבצעים מיוחדים והנחות בלעדיות
+            <p className="text-gray-300 text-base">
+              הירשמו לניוזלטר שלנו וקבלו 10% הנחה על ההזמנה הראשונה
             </p>
             
             <form className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
               <input
                 type="email"
-                placeholder="כתובת אימייל"
-                className="flex-1 px-4 py-3 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-white"
+                placeholder="הכניסו את כתובת האימייל שלכם"
+                className="flex-1 px-4 py-3 rounded-lg bg-white border-0 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-900"
               />
               <button
                 type="submit"
-                className="px-6 py-3 bg-white text-primary-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors"
+                className="px-6 py-3 bg-white text-gray-900 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-300 flex items-center gap-2"
               >
-                הירשמו
+                <Gift className="w-4 h-4" />
+                הירשמו עכשיו
               </button>
             </form>
+            
+            <p className="text-gray-400 text-sm">
+              אנחנו מכבדים את הפרטיות שלכם ולא נשלח ספאם
+            </p>
           </div>
         </div>
       </section>

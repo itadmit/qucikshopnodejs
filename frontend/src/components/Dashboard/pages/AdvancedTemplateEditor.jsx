@@ -66,13 +66,23 @@ const AdvancedTemplateEditor = () => {
       
       // Build file tree from template files
       if (templateData.files) {
+        console.log('📁 Template files loaded:', templateData.files);
         setFileTree(templateData.files);
         
-        // Select first file by default
-        const firstFile = getFirstFile(templateData.files);
+        // Select first JSX file by default (prefer components or pages)
+        const firstFile = getFirstJSXFile(templateData.files);
+        console.log('📄 Selected first file:', firstFile);
         if (firstFile) {
           setSelectedFile(firstFile);
-          setCode(firstFile.content || '// קובץ ריק');
+          const codeContent = firstFile.content || '// קובץ ריק';
+          setCode(codeContent);
+          console.log('💾 Code set:', codeContent.substring(0, 100) + '...');
+          
+          // Force Monaco to update by setting a timeout
+          setTimeout(() => {
+            console.log('🔄 Force updating code in Monaco...');
+            setCode(codeContent);
+          }, 100);
         }
       }
       
@@ -98,7 +108,31 @@ const AdvancedTemplateEditor = () => {
     return null;
   };
 
+  const getFirstJSXFile = (files) => {
+    // Priority order: components, pages, styles, config, locales
+    const priorities = ['components', 'pages', 'styles', 'config', 'locales'];
+    
+    for (const category of priorities) {
+      if (files[category]) {
+        for (const fileName in files[category]) {
+          // Prefer JSX files
+          if (fileName.endsWith('.jsx') || fileName.endsWith('.js')) {
+            return {
+              category,
+              name: fileName,
+              content: files[category][fileName]
+            };
+          }
+        }
+      }
+    }
+    
+    // If no JSX files found, return first file
+    return getFirstFile(files);
+  };
+
   const validateCode = (newCode) => {
+    console.log('🔍 Validating code:', newCode?.length, 'characters');
     const newErrors = [];
     const newWarnings = [];
 
@@ -202,6 +236,7 @@ const AdvancedTemplateEditor = () => {
   };
 
   const handleCodeChange = (newCode) => {
+    console.log('✏️ Code changed:', newCode?.length, 'characters');
     setCode(newCode);
     validateCode(newCode);
   };
@@ -251,6 +286,9 @@ const AdvancedTemplateEditor = () => {
 
   const handleFileSelect = (category, fileName) => {
     const fileContent = fileTree[category]?.[fileName] || '';
+    console.log('🔄 File selected:', { category, fileName, contentLength: fileContent.length });
+    console.log('📝 File content preview:', fileContent.substring(0, 200) + '...');
+    
     setSelectedFile({ category, name: fileName, content: fileContent });
     setCode(fileContent);
     validateCode(fileContent);
@@ -275,31 +313,31 @@ const AdvancedTemplateEditor = () => {
 
   const renderFileTree = () => {
     return (
-      <div className="bg-gray-50 border-r border-gray-200 w-64 p-4 h-full overflow-y-auto">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">קבצי התבנית</h3>
+      <div className="bg-gray-50 border-r border-gray-200 w-56 p-3 h-full overflow-y-auto">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Template Files</h3>
         
         {Object.entries(fileTree).map(([category, files]) => (
           <div key={category} className="mb-4">
             <div className="flex items-center mb-2">
-              <Folder className="w-4 h-4 text-gray-500 ml-1" />
+              <Folder className="w-4 h-4 text-gray-500 mr-2" />
               <span className="text-sm font-medium text-gray-700 capitalize">
                 {category}
               </span>
             </div>
             
-            <div className="mr-4 space-y-1">
+            <div className="ml-3 space-y-1">
               {Object.keys(files).map((fileName) => (
                 <button
                   key={fileName}
                   onClick={() => handleFileSelect(category, fileName)}
-                  className={`w-full flex items-center p-2 text-sm rounded hover:bg-gray-200 transition-colors ${
+                  className={`w-full flex items-center px-2 py-1.5 text-sm rounded hover:bg-gray-200 transition-colors ${
                     selectedFile?.name === fileName && selectedFile?.category === category
                       ? 'bg-blue-100 text-blue-800'
                       : 'text-gray-700'
                   }`}
                 >
                   {getFileIcon(fileName)}
-                  <span className="mr-2 truncate">{fileName}</span>
+                  <span className="ml-1.5 truncate text-xs">{fileName}</span>
                 </button>
               ))}
             </div>
@@ -314,13 +352,13 @@ const AdvancedTemplateEditor = () => {
 
     return (
       <div className="bg-white border-t border-gray-200 p-4 max-h-48 overflow-y-auto">
-        <h4 className="text-sm font-semibold text-gray-900 mb-2">בעיות בקוד</h4>
+        <h4 className="text-sm font-semibold text-gray-900 mb-2">Code Issues</h4>
         
         {errors.map((error, index) => (
           <div key={`error-${index}`} className="flex items-start mb-2 text-sm">
-            <AlertTriangle className="w-4 h-4 text-red-500 ml-2 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
             <div>
-              <span className="text-red-700 font-medium">שורה {error.line}: </span>
+              <span className="text-red-700 font-medium">Line {error.line}: </span>
               <span className="text-red-600">{error.message}</span>
             </div>
           </div>
@@ -328,9 +366,9 @@ const AdvancedTemplateEditor = () => {
         
         {warnings.map((warning, index) => (
           <div key={`warning-${index}`} className="flex items-start mb-2 text-sm">
-            <AlertTriangle className="w-4 h-4 text-yellow-500 ml-2 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
             <div>
-              <span className="text-yellow-700 font-medium">שורה {warning.line}: </span>
+              <span className="text-yellow-700 font-medium">Line {warning.line}: </span>
               <span className="text-yellow-600">{warning.message}</span>
             </div>
           </div>
@@ -344,34 +382,34 @@ const AdvancedTemplateEditor = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">טוען עורך קוד...</p>
+          <p className="text-gray-600 text-lg">Loading code editor...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col" dir="ltr">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <button
               onClick={() => navigate('/dashboard/design')}
-              className="flex items-center text-gray-600 hover:text-gray-900 ml-4"
+              className="flex items-center text-gray-600 hover:text-gray-900 mr-4"
             >
-              <ArrowLeft className="w-5 h-5 ml-1" />
-              חזרה לעיצוב
+              <ArrowLeft className="w-5 h-5 mr-1" />
+              Back to Design
             </button>
             
-            <div className="border-r border-gray-300 h-6 mx-4"></div>
+            <div className="border-l border-gray-300 h-6 mx-4"></div>
             
             <div>
               <h1 className="text-xl font-bold text-gray-900">
-                עורך קוד מתקדם - {template?.displayName || 'Jupiter'}
+                Advanced Code Editor - {template?.displayName || 'Jupiter'}
               </h1>
               <p className="text-sm text-gray-600">
-                {selectedFile ? `${selectedFile.category}/${selectedFile.name}` : 'בחר קובץ לעריכה'}
+                {selectedFile ? `${selectedFile.category}/${selectedFile.name}` : 'Select a file to edit'}
               </p>
             </div>
           </div>
@@ -379,13 +417,13 @@ const AdvancedTemplateEditor = () => {
           <div className="flex items-center gap-3">
             {errors.length === 0 ? (
               <div className="flex items-center text-green-600">
-                <CheckCircle className="w-4 h-4 ml-1" />
-                <span className="text-sm">ללא שגיאות</span>
+                <CheckCircle className="w-4 h-4 mr-1" />
+                <span className="text-sm">No Errors</span>
               </div>
             ) : (
               <div className="flex items-center text-red-600">
-                <AlertTriangle className="w-4 h-4 ml-1" />
-                <span className="text-sm">{errors.length} שגיאות</span>
+                <AlertTriangle className="w-4 h-4 mr-1" />
+                <span className="text-sm">{errors.length} Errors</span>
               </div>
             )}
 
@@ -393,8 +431,8 @@ const AdvancedTemplateEditor = () => {
               onClick={handlePreview}
               className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              <Eye className="w-4 h-4 ml-1" />
-              תצוגה מקדימה
+              <Eye className="w-4 h-4 mr-1" />
+              Preview
             </button>
 
             <button
@@ -406,8 +444,8 @@ const AdvancedTemplateEditor = () => {
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
-              <Save className="w-4 h-4 ml-1" />
-              {saving ? 'שומר...' : 'שמור'}
+              <Save className="w-4 h-4 mr-1" />
+              {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
@@ -419,22 +457,28 @@ const AdvancedTemplateEditor = () => {
         {renderFileTree()}
 
         {/* Editor */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col" dir="ltr">
           {selectedFile ? (
             <>
-              <div className="flex-1">
+              <div className="flex-1" dir="ltr">
                 <Editor
+                  key={`${selectedFile.category}-${selectedFile.name}`}
                   height="100%"
+                  defaultLanguage="javascript"
                   language={selectedFile.name.endsWith('.jsx') || selectedFile.name.endsWith('.js') ? 'javascript' : 
                            selectedFile.name.endsWith('.css') ? 'css' : 
                            selectedFile.name.endsWith('.json') ? 'json' : 'plaintext'}
                   value={code}
                   onChange={handleCodeChange}
                   theme="vs-dark"
+                  loading={<div className="flex items-center justify-center h-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>}
                   options={{
                     minimap: { enabled: false },
                     fontSize: 14,
                     lineNumbers: 'on',
+                    lineNumbersMinChars: 3,
                     roundedSelection: false,
                     scrollBeyondLastLine: false,
                     automaticLayout: true,
@@ -443,7 +487,7 @@ const AdvancedTemplateEditor = () => {
                     wordWrap: 'on',
                     contextmenu: true,
                     selectOnLineNumbers: true,
-                    glyphMargin: true,
+                    glyphMargin: false,
                     folding: true,
                     foldingStrategy: 'indentation',
                     showFoldingControls: 'always',
@@ -454,6 +498,19 @@ const AdvancedTemplateEditor = () => {
                     links: true,
                     colorDecorators: true,
                     accessibilitySupport: 'auto',
+                    // Force LTR direction
+                    readOnly: false,
+                    domReadOnly: false,
+                    // Add padding inside the editor
+                    padding: {
+                      top: 16,
+                      bottom: 16
+                    },
+                    // Language and direction settings
+                    unicodeHighlight: {
+                      ambiguousCharacters: false,
+                      invisibleCharacters: false
+                    },
                     suggest: {
                       showKeywords: true,
                       showSnippets: true,
@@ -472,8 +529,8 @@ const AdvancedTemplateEditor = () => {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <Code className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">בחר קובץ לעריכה</h3>
-                <p className="text-gray-600">בחר קובץ מעץ הקבצים כדי להתחיל לערוך</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Select a file to edit</h3>
+                <p className="text-gray-600">Choose a file from the file tree to start editing</p>
               </div>
             </div>
           )}
