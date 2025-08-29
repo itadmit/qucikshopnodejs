@@ -1,11 +1,13 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { builderTranslations } from './builder.js';
 
 // Translation resources
 const resources = {
   he: {
     translation: {
+      ...builderTranslations.he,
       // Navigation
       "nav.features": "תכונות",
       "nav.pricing": "מחירים",
@@ -294,6 +296,7 @@ const resources = {
   },
   en: {
     translation: {
+      ...builderTranslations.en,
       // Navigation
       "nav.features": "Features",
       "nav.pricing": "Pricing",

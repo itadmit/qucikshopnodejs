@@ -3,34 +3,23 @@
  * מערכת הסקשנים החדשה בהשראת שופיפיי ו-Minimog
  */
 
-// קטגוריות הסקשנים
+import { SETTING_TYPES, SETTING_GROUPS } from './settingTypes.js';
+
+// קטגוריות הסקשנים מורחבות
 export const SECTION_CATEGORIES = {
   HEADER: 'header',
   HERO: 'hero', 
   PRODUCTS: 'products',
   CONTENT: 'content',
   MARKETING: 'marketing',
+  SOCIAL: 'social',
+  FORMS: 'forms',
+  MEDIA: 'media',
   FOOTER: 'footer'
 };
 
-// סוגי הגדרות
-export const SETTING_TYPES = {
-  TEXT: 'text',
-  TEXTAREA: 'textarea',
-  RICHTEXT: 'richtext',
-  SELECT: 'select',
-  CHECKBOX: 'checkbox',
-  RADIO: 'radio',
-  COLOR: 'color',
-  IMAGE: 'image',
-  URL: 'url',
-  RANGE: 'range',
-  NUMBER: 'number',
-  HEADER: 'header',
-  PARAGRAPH: 'paragraph',
-  LINK_LIST: 'link_list',
-  IMAGE_PICKER: 'image_picker'
-};
+// ייצוא סוגי הגדרות מהמודול החדש
+export { SETTING_TYPES, SETTING_GROUPS };
 
 // בסיס לכל סקשן
 export const createSectionSchema = (config) => ({
@@ -48,20 +37,13 @@ export const createSectionSchema = (config) => ({
   }
 });
 
-// יוצר הגדרה חדשה
-export const createSetting = (config) => ({
-  type: config.type,
-  id: config.id,
-  label: config.label,
-  default: config.default,
-  info: config.info,
-  options: config.options,
-  min: config.min,
-  max: config.max,
-  step: config.step,
-  unit: config.unit,
-  placeholder: config.placeholder
-});
+// ייצוא פונקציות יצירה מהמודול החדש
+export { 
+  createSetting, 
+  createResponsiveSetting, 
+  createSettingGroup, 
+  createConditionalSetting 
+} from './settingTypes.js';
 
 // יוצר בלוק חדש
 export const createBlock = (config) => ({

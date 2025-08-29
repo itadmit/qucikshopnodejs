@@ -16,6 +16,14 @@ import {
   Info
 } from 'lucide-react';
 import { Select } from '../../ui';
+import { 
+  FontPicker, 
+  CollectionPicker, 
+  ProductList, 
+  MenuPicker, 
+  IconPicker 
+} from './SettingInputs';
+import { SETTING_TYPES } from '../types/settingTypes';
 
 // Custom Toggle Component like Shopify - RTL Compatible
 const Toggle = ({ checked, onChange, label }) => {
@@ -128,6 +136,61 @@ const SettingsPanel = ({
             placeholder={setting.placeholder || 'בחר אפשרות...'}
             size="sm"
             className="text-sm"
+          />
+        );
+
+      // סוגי הגדרות חדשים
+      case SETTING_TYPES.FONT_PICKER:
+        return (
+          <FontPicker
+            value={value}
+            onChange={(newValue) => onSettingChange(setting.id, newValue)}
+            placeholder={setting.placeholder}
+            hebrewSupport={setting.hebrewSupport !== false}
+            showPreview={setting.showPreview !== false}
+          />
+        );
+
+      case SETTING_TYPES.COLLECTION_PICKER:
+        return (
+          <CollectionPicker
+            value={value}
+            onChange={(newValue) => onSettingChange(setting.id, newValue)}
+            placeholder={setting.placeholder}
+            multiple={setting.multiple || false}
+            showProductCount={setting.showProductCount !== false}
+          />
+        );
+
+      case SETTING_TYPES.PRODUCT_LIST:
+        return (
+          <ProductList
+            value={value}
+            onChange={(newValue) => onSettingChange(setting.id, newValue)}
+            maxProducts={setting.maxProducts || 12}
+            showImages={setting.showImages !== false}
+            showPrices={setting.showPrices !== false}
+          />
+        );
+
+      case SETTING_TYPES.MENU_PICKER:
+        return (
+          <MenuPicker
+            value={value}
+            onChange={(newValue) => onSettingChange(setting.id, newValue)}
+            placeholder={setting.placeholder}
+            showPreview={setting.showPreview !== false}
+          />
+        );
+
+      case SETTING_TYPES.ICON_PICKER:
+        return (
+          <IconPicker
+            value={value}
+            onChange={(newValue) => onSettingChange(setting.id, newValue)}
+            placeholder={setting.placeholder}
+            size={setting.size || 'medium'}
+            showPreview={setting.showPreview !== false}
           />
         );
 
