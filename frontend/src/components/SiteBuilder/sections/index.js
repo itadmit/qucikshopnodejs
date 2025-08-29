@@ -22,7 +22,17 @@ import {
   Star,
   Award,
   CheckCircle,
-  Users
+  Users,
+  Image as ImageIcon,
+  Video,
+  Phone,
+  Camera,
+  Play,
+  MapPin,
+  FileText,
+  Clock,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
 
 // Header Section
@@ -1650,6 +1660,1229 @@ export const featuresSection = createSectionSchema({
   }]
 });
 
+// Gallery Section
+export const gallerySection = createSectionSchema({
+  id: 'gallery',
+  name: 'גלריית תמונות',
+  category: SECTION_CATEGORIES.MEDIA,
+  icon: Camera,
+  description: 'הצגת גלריית תמונות מרשימה',
+  settings: [
+    // תוכן
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'תוכן',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'subtitle',
+      label: 'כותרת משנה',
+      placeholder: 'הגלריה שלנו',
+      default: 'הגלריה שלנו',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'title',
+      label: 'כותרת ראשית',
+      placeholder: 'גלריית תמונות',
+      default: 'גלריית תמונות',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'description',
+      label: 'תיאור',
+      placeholder: 'צפו בתמונות מהעבודות והפרויקטים שלנו',
+      default: 'צפו בתמונות מהעבודות והפרויקטים שלנו',
+      group: 'content'
+    }),
+
+    // פריסה
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'פריסה',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'layout_type',
+      label: 'סוג פריסה',
+      options: [
+        { value: 'grid', label: 'רשת רגילה' },
+        { value: 'masonry', label: 'מזונרי (גבהים שונים)' },
+        { value: 'carousel', label: 'קרוסלה' }
+      ],
+      default: 'grid',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'columns_desktop',
+      label: 'עמודות בדסקטופ',
+      options: [
+        { value: '2', label: '2 עמודות' },
+        { value: '3', label: '3 עמודות' },
+        { value: '4', label: '4 עמודות' },
+        { value: '5', label: '5 עמודות' }
+      ],
+      default: '4',
+      conditional: { setting: 'layout_type', operator: 'in', value: ['grid', 'masonry'] },
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'columns_mobile',
+      label: 'עמודות בנייד',
+      options: [
+        { value: '1', label: '1 עמודה' },
+        { value: '2', label: '2 עמודות' }
+      ],
+      default: '2',
+      conditional: { setting: 'layout_type', operator: 'in', value: ['grid', 'masonry'] },
+      group: 'layout'
+    }),
+
+    // עיצוב
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'עיצוב',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'aspect_ratio',
+      label: 'יחס גובה-רוחב',
+      options: [
+        { value: 'square', label: 'ריבוע (1:1)' },
+        { value: 'landscape', label: 'לרוחב (4:3)' },
+        { value: 'portrait', label: 'לגובה (3:4)' },
+        { value: 'wide', label: 'רחב (16:9)' },
+        { value: 'auto', label: 'אוטומטי' }
+      ],
+      default: 'square',
+      conditional: { setting: 'layout_type', operator: 'not_equals', value: 'masonry' },
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'enable_lightbox',
+      label: 'הפעל לייטבוקס',
+      default: true,
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_captions',
+      label: 'הצג כיתובים',
+      default: true,
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'background_color',
+      label: 'צבע רקע',
+      default: '#ffffff',
+      group: 'style'
+    })
+  ],
+  blocks: [
+    {
+      type: 'gallery_image',
+      name: 'תמונה',
+      settings: [
+        createSetting({
+          type: SETTING_TYPES.IMAGE,
+          id: 'image',
+          label: 'תמונה'
+        }),
+        createSetting({
+          type: SETTING_TYPES.TEXT,
+          id: 'caption',
+          label: 'כיתוב',
+          placeholder: 'תיאור התמונה'
+        }),
+        createSetting({
+          type: SETTING_TYPES.URL,
+          id: 'link',
+          label: 'קישור (אופציונלי)'
+        })
+      ]
+    }
+  ],
+  max_blocks: 20,
+  presets: [{
+    name: 'ברירת מחדל',
+    settings: {
+      subtitle: 'הגלריה שלנו',
+      title: 'גלריית תמונות',
+      description: 'צפו בתמונות מהעבודות והפרויקטים שלנו',
+      layout_type: 'grid',
+      columns_desktop: '4',
+      columns_mobile: '2',
+      aspect_ratio: 'square',
+      enable_lightbox: true,
+      show_captions: true,
+      background_color: '#ffffff'
+    },
+    blocks: [
+      {
+        type: 'gallery_image',
+        settings: {
+          caption: 'פרויקט 1'
+        }
+      },
+      {
+        type: 'gallery_image',
+        settings: {
+          caption: 'פרויקט 2'
+        }
+      },
+      {
+        type: 'gallery_image',
+        settings: {
+          caption: 'פרויקט 3'
+        }
+      },
+      {
+        type: 'gallery_image',
+        settings: {
+          caption: 'פרויקט 4'
+        }
+      }
+    ]
+  }]
+});
+
+// Video Section
+export const videoSection = createSectionSchema({
+  id: 'video',
+  name: 'סקשן וידאו',
+  category: SECTION_CATEGORIES.MEDIA,
+  icon: Play,
+  description: 'הטמעת וידאו מרכזי',
+  settings: [
+    // תוכן
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'תוכן',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'subtitle',
+      label: 'כותרת משנה',
+      placeholder: 'צפו בוידאו',
+      default: 'צפו בוידאו',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'title',
+      label: 'כותרת ראשית',
+      placeholder: 'הסרטון שלנו',
+      default: 'הסרטון שלנו',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'description',
+      label: 'תיאור',
+      placeholder: 'למדו עלינו יותר דרך הסרטון הזה',
+      default: 'למדו עלינו יותר דרך הסרטון הזה',
+      group: 'content'
+    }),
+
+    // וידאו
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'הגדרות וידאו',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'video_source',
+      label: 'מקור הוידאו',
+      options: [
+        { value: 'youtube', label: 'YouTube' },
+        { value: 'vimeo', label: 'Vimeo' },
+        { value: 'upload', label: 'העלאת קובץ' }
+      ],
+      default: 'youtube',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'youtube_url',
+      label: 'קישור YouTube',
+      placeholder: 'https://www.youtube.com/watch?v=...',
+      conditional: { setting: 'video_source', value: 'youtube' },
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'vimeo_url',
+      label: 'קישור Vimeo',
+      placeholder: 'https://vimeo.com/...',
+      conditional: { setting: 'video_source', value: 'vimeo' },
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.VIDEO,
+      id: 'video_file',
+      label: 'קובץ וידאו',
+      conditional: { setting: 'video_source', value: 'upload' },
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.IMAGE,
+      id: 'cover_image',
+      label: 'תמונת כיסוי',
+      info: 'תמונה שתוצג לפני הפעלת הוידאו',
+      group: 'content'
+    }),
+
+    // פריסה
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'פריסה',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'video_width',
+      label: 'רוחב הוידאו',
+      options: [
+        { value: 'container', label: 'רוחב מכולה' },
+        { value: 'full', label: 'רוחב מלא' }
+      ],
+      default: 'container',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'aspect_ratio',
+      label: 'יחס גובה-רוחב',
+      options: [
+        { value: '16:9', label: 'רחב (16:9)' },
+        { value: '4:3', label: 'קלאסי (4:3)' },
+        { value: '1:1', label: 'ריבוע (1:1)' },
+        { value: '9:16', label: 'אנכי (9:16)' }
+      ],
+      default: '16:9',
+      group: 'layout'
+    }),
+
+    // התנהגות
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'התנהגות',
+      group: 'behavior'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'autoplay',
+      label: 'הפעלה אוטומטית',
+      default: false,
+      group: 'behavior'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'muted',
+      label: 'השתק בהתחלה',
+      default: true,
+      conditional: { setting: 'autoplay', value: true },
+      group: 'behavior'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'loop',
+      label: 'לופ (חזרה)',
+      default: false,
+      group: 'behavior'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_controls',
+      label: 'הצג בקרות',
+      default: true,
+      group: 'behavior'
+    }),
+
+    // עיצוב
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'עיצוב',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'background_color',
+      label: 'צבע רקע',
+      default: '#000000',
+      group: 'style'
+    })
+  ],
+  presets: [{
+    name: 'ברירת מחדל',
+    settings: {
+      subtitle: 'צפו בוידאו',
+      title: 'הסרטון שלנו',
+      description: 'למדו עלינו יותר דרך הסרטון הזה',
+      video_source: 'youtube',
+      video_width: 'container',
+      aspect_ratio: '16:9',
+      autoplay: false,
+      muted: true,
+      loop: false,
+      show_controls: true,
+      background_color: '#000000'
+    }
+  }]
+});
+
+// Contact Form Section
+export const contactFormSection = createSectionSchema({
+  id: 'contact_form',
+  name: 'טופס יצירת קשר',
+  category: SECTION_CATEGORIES.FORMS,
+  icon: Phone,
+  description: 'טופס ליצירת קשר עם הלקוחות',
+  settings: [
+    // תוכן
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'תוכן',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'subtitle',
+      label: 'כותרת משנה',
+      placeholder: 'נשמח לשמוע מכם',
+      default: 'נשמח לשמוע מכם',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'title',
+      label: 'כותרת ראשית',
+      placeholder: 'צרו קשר',
+      default: 'צרו קשר',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'description',
+      label: 'תיאור',
+      placeholder: 'מלאו את הטופס ונחזור אליכם בהקדם',
+      default: 'מלאו את הטופס ונחזור אליכם בהקדם',
+      group: 'content'
+    }),
+
+    // שדות טופס
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'שדות הטופס',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_name_field',
+      label: 'הצג שדה שם',
+      default: true,
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'name_required',
+      label: 'שם חובה',
+      default: true,
+      conditional: { setting: 'show_name_field', value: true },
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_phone_field',
+      label: 'הצג שדה טלפון',
+      default: true,
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'phone_required',
+      label: 'טלפון חובה',
+      default: false,
+      conditional: { setting: 'show_phone_field', value: true },
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_subject_field',
+      label: 'הצג שדה נושא',
+      default: true,
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'button_text',
+      label: 'טקסט כפתור שליחה',
+      placeholder: 'שלח הודעה',
+      default: 'שלח הודעה',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'success_message',
+      label: 'הודעת הצלחה',
+      placeholder: 'תודה! ההודעה נשלחה בהצלחה',
+      default: 'תודה! ההודעה נשלחה בהצלחה',
+      group: 'content'
+    }),
+
+    // פריסה
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'פריסה',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'form_layout',
+      label: 'פריסת הטופס',
+      options: [
+        { value: 'single', label: 'עמודה אחת' },
+        { value: 'two_columns', label: 'שתי עמודות' }
+      ],
+      default: 'single',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'form_width',
+      label: 'רוחב הטופס',
+      options: [
+        { value: 'narrow', label: 'צר (400px)' },
+        { value: 'medium', label: 'בינוני (600px)' },
+        { value: 'wide', label: 'רחב (800px)' },
+        { value: 'full', label: 'מלא' }
+      ],
+      default: 'medium',
+      group: 'layout'
+    }),
+
+    // עיצוב
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'עיצוב',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'background_color',
+      label: 'צבע רקע',
+      default: '#f9fafb',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'field_style',
+      label: 'סגנון שדות',
+      options: [
+        { value: 'outlined', label: 'מתואר' },
+        { value: 'filled', label: 'מלא' },
+        { value: 'underlined', label: 'קו תחתון' }
+      ],
+      default: 'outlined',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'button_color',
+      label: 'צבע כפתור',
+      default: '#3b82f6',
+      group: 'style'
+    })
+  ],
+  presets: [{
+    name: 'ברירת מחדל',
+    settings: {
+      subtitle: 'נשמח לשמוע מכם',
+      title: 'צרו קשר',
+      description: 'מלאו את הטופס ונחזור אליכם בהקדם',
+      show_name_field: true,
+      name_required: true,
+      show_phone_field: true,
+      phone_required: false,
+      show_subject_field: true,
+      button_text: 'שלח הודעה',
+      success_message: 'תודה! ההודעה נשלחה בהצלחה',
+      form_layout: 'single',
+      form_width: 'medium',
+      background_color: '#f9fafb',
+      field_style: 'outlined',
+      button_color: '#3b82f6'
+    }
+  }]
+});
+
+// Map Section
+export const mapSection = createSectionSchema({
+  id: 'map',
+  name: 'מפת מיקום',
+  category: SECTION_CATEGORIES.CONTENT,
+  icon: MapPin,
+  description: 'הצגת מיקום העסק על המפה',
+  settings: [
+    // תוכן
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'תוכן',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'title',
+      label: 'כותרת ראשית',
+      placeholder: 'המיקום שלנו',
+      default: 'המיקום שלנו',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'description',
+      label: 'תיאור',
+      placeholder: 'בואו לבקר אותנו במיקום הנוח שלנו',
+      default: 'בואו לבקר אותנו במיקום הנוח שלנו',
+      group: 'content'
+    }),
+
+    // פרטי מיקום
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'פרטי מיקום',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'address',
+      label: 'כתובת',
+      placeholder: 'רחוב הראשי 123, תל אביב',
+      default: 'רחוב הראשי 123, תל אביב',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'phone',
+      label: 'טלפון',
+      placeholder: '03-1234567',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'email',
+      label: 'אימייל',
+      placeholder: 'info@example.com',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'hours',
+      label: 'שעות פתיחה',
+      placeholder: 'ראשון-חמישי: 9:00-18:00\nשישי: 9:00-14:00',
+      default: 'ראשון-חמישי: 9:00-18:00\nשישי: 9:00-14:00',
+      group: 'content'
+    }),
+
+    // הגדרות מפה
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'הגדרות מפה',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'map_url',
+      label: 'קישור Google Maps',
+      placeholder: 'https://maps.google.com/...',
+      info: 'העתיקו את הקישור מ-Google Maps',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.RANGE,
+      id: 'map_zoom',
+      label: 'רמת זום',
+      min: 10,
+      max: 20,
+      step: 1,
+      default: 15,
+      group: 'content'
+    }),
+
+    // פריסה
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'פריסה',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'layout_type',
+      label: 'סוג פריסה',
+      options: [
+        { value: 'map_only', label: 'מפה בלבד' },
+        { value: 'map_with_info', label: 'מפה עם פרטים' },
+        { value: 'side_by_side', label: 'זה לצד זה' }
+      ],
+      default: 'map_with_info',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.RANGE,
+      id: 'map_height',
+      label: 'גובה המפה',
+      min: 200,
+      max: 600,
+      step: 50,
+      unit: 'px',
+      default: 400,
+      group: 'layout'
+    }),
+
+    // עיצוב
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'עיצוב',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'background_color',
+      label: 'צבע רקע',
+      default: '#ffffff',
+      group: 'style'
+    })
+  ],
+  presets: [{
+    name: 'ברירת מחדל',
+    settings: {
+      title: 'המיקום שלנו',
+      description: 'בואו לבקר אותנו במיקום הנוח שלנו',
+      address: 'רחוב הראשי 123, תל אביב',
+      phone: '03-1234567',
+      email: 'info@example.com',
+      hours: 'ראשון-חמישי: 9:00-18:00\nשישי: 9:00-14:00',
+      map_zoom: 15,
+      layout_type: 'map_with_info',
+      map_height: 400,
+      background_color: '#ffffff'
+    }
+  }]
+});
+
+// Blog Posts Section
+export const blogPostsSection = createSectionSchema({
+  id: 'blog_posts',
+  name: 'פוסטים אחרונים',
+  category: SECTION_CATEGORIES.CONTENT,
+  icon: FileText,
+  description: 'הצגת פוסטים אחרונים מהבלוג',
+  settings: [
+    // תוכן
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'תוכן',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'subtitle',
+      label: 'כותרת משנה',
+      placeholder: 'מהבלוג שלנו',
+      default: 'מהבלוג שלנו',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'title',
+      label: 'כותרת ראשית',
+      placeholder: 'פוסטים אחרונים',
+      default: 'פוסטים אחרונים',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'description',
+      label: 'תיאור',
+      placeholder: 'קראו את הפוסטים האחרונים שלנו',
+      default: 'קראו את הפוסטים האחרונים שלנו',
+      group: 'content'
+    }),
+
+    // הגדרות פוסטים
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'הגדרות פוסטים',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.RANGE,
+      id: 'posts_count',
+      label: 'מספר פוסטים להצגה',
+      min: 2,
+      max: 12,
+      step: 1,
+      default: 6,
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'category_filter',
+      label: 'סינון לפי קטגוריה',
+      placeholder: 'השאירו ריק לכל הקטגוריות',
+      group: 'content'
+    }),
+
+    // פריסה
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'פריסה',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'layout_type',
+      label: 'סוג פריסה',
+      options: [
+        { value: 'grid', label: 'רשת' },
+        { value: 'list', label: 'רשימה' },
+        { value: 'carousel', label: 'קרוסלה' }
+      ],
+      default: 'grid',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'columns_desktop',
+      label: 'עמודות בדסקטופ',
+      options: [
+        { value: '2', label: '2 עמודות' },
+        { value: '3', label: '3 עמודות' },
+        { value: '4', label: '4 עמודות' }
+      ],
+      default: '3',
+      conditional: { setting: 'layout_type', value: 'grid' },
+      group: 'layout'
+    }),
+
+    // הצגת מידע
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'הצגת מידע',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_date',
+      label: 'הצג תאריך',
+      default: true,
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_author',
+      label: 'הצג כותב',
+      default: true,
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_excerpt',
+      label: 'הצג תקציר',
+      default: true,
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_read_more',
+      label: 'הצג כפתור "קרא עוד"',
+      default: true,
+      group: 'style'
+    }),
+
+    // עיצוב
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'background_color',
+      label: 'צבע רקע',
+      default: '#ffffff',
+      group: 'style'
+    })
+  ],
+  presets: [{
+    name: 'ברירת מחדל',
+    settings: {
+      subtitle: 'מהבלוג שלנו',
+      title: 'פוסטים אחרונים',
+      description: 'קראו את הפוסטים האחרונים שלנו',
+      posts_count: 6,
+      layout_type: 'grid',
+      columns_desktop: '3',
+      show_date: true,
+      show_author: true,
+      show_excerpt: true,
+      show_read_more: true,
+      background_color: '#ffffff'
+    }
+  }]
+});
+
+// Countdown Timer Section
+export const countdownSection = createSectionSchema({
+  id: 'countdown',
+  name: 'טיימר ספירה לאחור',
+  category: SECTION_CATEGORIES.MARKETING,
+  icon: Clock,
+  description: 'ספירה לאחור למבצעים ואירועים',
+  settings: [
+    // תוכן
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'תוכן',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'subtitle',
+      label: 'כותרת משנה',
+      placeholder: 'מבצע מוגבל בזמן',
+      default: 'מבצע מוגבל בזמן',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'title',
+      label: 'כותרת ראשית',
+      placeholder: 'המבצע מסתיים בעוד',
+      default: 'המבצע מסתיים בעוד',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'description',
+      label: 'תיאור',
+      placeholder: 'אל תפספסו את המבצע המיוחד הזה!',
+      default: 'אל תפספסו את המבצע המיוחד הזה!',
+      group: 'content'
+    }),
+
+    // הגדרות טיימר
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'הגדרות טיימר',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'target_date',
+      label: 'תאריך יעד',
+      placeholder: '2024-12-31T23:59:59',
+      info: 'פורמט: YYYY-MM-DDTHH:MM:SS',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'end_message',
+      label: 'הודעה בסיום',
+      placeholder: 'המבצע הסתיים!',
+      default: 'המבצע הסתיים!',
+      group: 'content'
+    }),
+
+    // תצוגת יחידות
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'תצוגת יחידות',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_days',
+      label: 'הצג ימים',
+      default: true,
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_hours',
+      label: 'הצג שעות',
+      default: true,
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_minutes',
+      label: 'הצג דקות',
+      default: true,
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'show_seconds',
+      label: 'הצג שניות',
+      default: true,
+      group: 'layout'
+    }),
+
+    // עיצוב
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'עיצוב',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'timer_size',
+      label: 'גודל טיימר',
+      options: [
+        { value: 'small', label: 'קטן' },
+        { value: 'medium', label: 'בינוני' },
+        { value: 'large', label: 'גדול' }
+      ],
+      default: 'medium',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'timer_color',
+      label: 'צבע טיימר',
+      default: '#dc2626',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'background_color',
+      label: 'צבע רקע',
+      default: '#1f2937',
+      group: 'style'
+    })
+  ],
+  presets: [{
+    name: 'ברירת מחדל',
+    settings: {
+      subtitle: 'מבצע מוגבל בזמן',
+      title: 'המבצע מסתיים בעוד',
+      description: 'אל תפספסו את המבצע המיוחד הזה!',
+      target_date: '2024-12-31T23:59:59',
+      end_message: 'המבצע הסתיים!',
+      show_days: true,
+      show_hours: true,
+      show_minutes: true,
+      show_seconds: true,
+      timer_size: 'medium',
+      timer_color: '#dc2626',
+      background_color: '#1f2937'
+    }
+  }]
+});
+
+// Social Proof Section
+export const socialProofSection = createSectionSchema({
+  id: 'social_proof',
+  name: 'הוכחה חברתית',
+  category: SECTION_CATEGORIES.SOCIAL,
+  icon: TrendingUp,
+  description: 'הצגת סטטיסטיקות והישגים',
+  settings: [
+    // תוכן
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'תוכן',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'subtitle',
+      label: 'כותרת משנה',
+      placeholder: 'המספרים מדברים בעדנו',
+      default: 'המספרים מדברים בעדנו',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXT,
+      id: 'title',
+      label: 'כותרת ראשית',
+      placeholder: 'ההישגים שלנו',
+      default: 'ההישגים שלנו',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.TEXTAREA,
+      id: 'description',
+      label: 'תיאור',
+      placeholder: 'אלפי לקוחות מרוצים בוחרים בנו כל יום',
+      default: 'אלפי לקוחות מרוצים בוחרים בנו כל יום',
+      group: 'content'
+    }),
+
+    // פריסה
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'פריסה',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'columns_desktop',
+      label: 'עמודות בדסקטופ',
+      options: [
+        { value: '2', label: '2 עמודות' },
+        { value: '3', label: '3 עמודות' },
+        { value: '4', label: '4 עמודות' }
+      ],
+      default: '4',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'columns_mobile',
+      label: 'עמודות בנייד',
+      options: [
+        { value: '1', label: '1 עמודה' },
+        { value: '2', label: '2 עמודות' }
+      ],
+      default: '2',
+      group: 'layout'
+    }),
+
+    // עיצוב
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'עיצוב',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'animate_numbers',
+      label: 'אנימציית מספרים',
+      default: true,
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'numbers_color',
+      label: 'צבע מספרים',
+      default: '#3b82f6',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'background_color',
+      label: 'צבע רקע',
+      default: '#f9fafb',
+      group: 'style'
+    })
+  ],
+  blocks: [
+    {
+      type: 'stat',
+      name: 'סטטיסטיקה',
+      settings: [
+        createSetting({
+          type: SETTING_TYPES.ICON_PICKER,
+          id: 'icon',
+          label: 'אייקון',
+          default: 'users'
+        }),
+        createSetting({
+          type: SETTING_TYPES.TEXT,
+          id: 'number',
+          label: 'מספר',
+          placeholder: '10,000',
+          default: '10,000'
+        }),
+        createSetting({
+          type: SETTING_TYPES.TEXT,
+          id: 'suffix',
+          label: 'סיומת',
+          placeholder: '+',
+          default: '+'
+        }),
+        createSetting({
+          type: SETTING_TYPES.TEXT,
+          id: 'label',
+          label: 'תווית',
+          placeholder: 'לקוחות מרוצים',
+          default: 'לקוחות מרוצים'
+        }),
+        createSetting({
+          type: SETTING_TYPES.TEXTAREA,
+          id: 'description',
+          label: 'תיאור',
+          placeholder: 'בוחרים בנו כל יום'
+        })
+      ]
+    }
+  ],
+  max_blocks: 6,
+  presets: [{
+    name: 'ברירת מחדל',
+    settings: {
+      subtitle: 'המספרים מדברים בעדנו',
+      title: 'ההישגים שלנו',
+      description: 'אלפי לקוחות מרוצים בוחרים בנו כל יום',
+      columns_desktop: '4',
+      columns_mobile: '2',
+      animate_numbers: true,
+      numbers_color: '#3b82f6',
+      background_color: '#f9fafb'
+    },
+    blocks: [
+      {
+        type: 'stat',
+        settings: {
+          icon: 'users',
+          number: '10,000',
+          suffix: '+',
+          label: 'לקוחות מרוצים',
+          description: 'בוחרים בנו כל יום'
+        }
+      },
+      {
+        type: 'stat',
+        settings: {
+          icon: 'shopping-bag',
+          number: '50,000',
+          suffix: '+',
+          label: 'הזמנות',
+          description: 'נשלחו בהצלחה'
+        }
+      },
+      {
+        type: 'stat',
+        settings: {
+          icon: 'star',
+          number: '4.9',
+          suffix: '/5',
+          label: 'דירוג ממוצע',
+          description: 'מלקוחותינו'
+        }
+      },
+      {
+        type: 'stat',
+        settings: {
+          icon: 'award',
+          number: '5',
+          suffix: '',
+          label: 'שנות ניסיון',
+          description: 'בתחום'
+        }
+      }
+    ]
+  }]
+});
+
 // רישום כל הסקשנים
 export const ALL_SECTIONS = [
   headerSection,
@@ -1659,10 +2892,19 @@ export const ALL_SECTIONS = [
   featuredProductsSection,
   newsletterSection,
   footerSection,
-  // סקשנים חדשים
+  // סקשנים חדשים - חלק א'
   testimonialsSection,
   faqSection,
-  featuresSection
+  featuresSection,
+  // סקשנים חדשים - חלק ב'
+  gallerySection,
+  videoSection,
+  contactFormSection,
+  // סקשנים חדשים - חלק ג'
+  mapSection,
+  blogPostsSection,
+  countdownSection,
+  socialProofSection
 ];
 
 // קבלת סקשן לפי ID
@@ -1686,8 +2928,12 @@ export default {
   featuredProductsSection,
   newsletterSection,
   footerSection,
-  // סקשנים חדשים
+  // סקשנים חדשים - חלק א'
   testimonialsSection,
   faqSection,
-  featuresSection
+  featuresSection,
+  // סקשנים חדשים - חלק ב'
+  gallerySection,
+  videoSection,
+  contactFormSection
 };

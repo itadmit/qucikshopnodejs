@@ -110,7 +110,7 @@ const SettingsPanel = ({
             value={value}
             onChange={(e) => onSettingChange(setting.id, e.target.value)}
             placeholder={setting.placeholder}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-right bg-white"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white hover:border-gray-400"
             dir="rtl"
           />
         );
@@ -121,8 +121,8 @@ const SettingsPanel = ({
             value={value}
             onChange={(e) => onSettingChange(setting.id, e.target.value)}
             placeholder={setting.placeholder}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-right bg-white"
+            rows={setting.rows || 3}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white hover:border-gray-400 resize-none"
             dir="rtl"
           />
         );
@@ -194,6 +194,33 @@ const SettingsPanel = ({
           />
         );
 
+      case SETTING_TYPES.VIDEO:
+        return (
+          <div className="space-y-2">
+            <input
+              type="file"
+              accept="video/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  // TODO: Upload video to server and get URL
+                  onSettingChange(setting.id, URL.createObjectURL(file));
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {value && (
+              <div className="mt-2">
+                <video 
+                  src={value} 
+                  controls 
+                  className="w-full max-w-xs rounded-lg"
+                />
+              </div>
+            )}
+          </div>
+        );
+
       case 'checkbox':
         return (
           <Toggle
@@ -205,19 +232,23 @@ const SettingsPanel = ({
 
       case 'color':
         return (
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={value}
-              onChange={(e) => onSettingChange(setting.id, e.target.value)}
-              className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
-            />
+          <div className="flex items-center space-x-3 space-x-reverse">
+            <div className="relative">
+              <input
+                type="color"
+                value={value}
+                onChange={(e) => onSettingChange(setting.id, e.target.value)}
+                className="w-10 h-10 border-2 border-gray-200 rounded-lg cursor-pointer bg-white shadow-sm hover:border-gray-300 transition-colors"
+              />
+              <div className="absolute inset-0 rounded-lg border border-gray-300 pointer-events-none"></div>
+            </div>
             <input
               type="text"
               value={value}
               onChange={(e) => onSettingChange(setting.id, e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-right"
-              dir="rtl"
+              placeholder="#000000"
+              className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white hover:border-gray-400 font-mono"
+              dir="ltr"
             />
           </div>
         );
@@ -239,17 +270,11 @@ const SettingsPanel = ({
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
             />
             <div className="flex items-center justify-center">
-              <input
-                type="number"
-                value={value}
-                onChange={(e) => onSettingChange(setting.id, parseInt(e.target.value))}
-                min={setting.min}
-                max={setting.max}
-                className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center"
-              />
-              {setting.unit && (
-                <span className="mr-2 text-sm text-gray-500">{setting.unit}</span>
-              )}
+              <div className="px-3 py-1.5 bg-gray-100 rounded-lg border">
+                <span className="text-sm font-semibold text-gray-900">
+                  {value}{setting.unit && ` ${setting.unit}`}
+                </span>
+              </div>
             </div>
           </div>
         );
@@ -378,23 +403,24 @@ const SettingsPanel = ({
     }
 
     return (
-      <div key={index} className="mb-4 last:mb-0">
+      <div key={index} className="space-y-2">
         {setting.type !== 'checkbox' && (
-          <div className="flex items-center justify-start mb-2">
-            <label className="text-sm font-medium text-gray-900 text-right">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-900">
               {setting.label}
             </label>
             {setting.info && (
-              <div className="group relative mr-2">
-                <Info className="w-3 h-3 text-gray-400 cursor-help" />
-                <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+              <div className="group relative">
+                <Info className="w-4 h-4 text-gray-400 cursor-help hover:text-gray-600 transition-colors" />
+                <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap z-20 shadow-lg">
                   {setting.info}
+                  <div className="absolute top-full left-3 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                 </div>
               </div>
             )}
           </div>
         )}
-        <div className={setting.type === 'checkbox' ? '' : 'bg-white'}>
+        <div className="w-full">
           {renderSettingInput(setting)}
         </div>
       </div>
@@ -404,6 +430,43 @@ const SettingsPanel = ({
   // Handle general settings
   const isGeneralSettings = section?.id === 'general';
   const allSettings = isGeneralSettings ? getGeneralSettings() : (section?.settings || []);
+
+  // Group settings by their group property - Shopify style
+  const renderSettingsGroups = (settings) => {
+    const groups = settings.reduce((acc, setting) => {
+      const group = setting.group || 'general';
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(setting);
+      return acc;
+    }, {});
+
+    const groupOrder = ['content', 'layout', 'style', 'behavior', 'advanced', 'general'];
+    const groupLabels = {
+      content: 'תוכן',
+      layout: 'פריסה', 
+      style: 'עיצוב',
+      behavior: 'התנהגות',
+      advanced: 'מתקדם',
+      general: 'כללי'
+    };
+
+    return groupOrder.map(groupKey => {
+      if (!groups[groupKey] || groups[groupKey].length === 0) return null;
+      
+      return (
+        <div key={groupKey} className="space-y-4">
+          <div className="flex items-center space-x-2 space-x-reverse pb-2 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+              {groupLabels[groupKey]}
+            </h3>
+          </div>
+          <div className="space-y-4">
+            {groups[groupKey].map((setting, index) => renderSetting(setting, `${groupKey}-${index}`))}
+          </div>
+        </div>
+      );
+    }).filter(Boolean);
+  };
 
   // General settings configuration
   function getGeneralSettings() {
@@ -453,30 +516,49 @@ const SettingsPanel = ({
   }
 
   return (
-    <div className="settings-panel w-80 bg-white shadow-xl border-r border-gray-200 overflow-hidden flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+    <div className="settings-panel w-80 bg-white shadow-xl border-r border-gray-200 overflow-hidden flex flex-col h-full" dir="rtl">
+      {/* Header - Shopify Style */}
+      <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-white">
+        <div className="flex items-center space-x-3 space-x-reverse">
+          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+            {section?.icon ? (
+              <section.icon className="w-4 h-4 text-gray-600" />
+            ) : (
+              <Settings className="w-4 h-4 text-gray-600" />
+            )}
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">
+              {isGeneralSettings ? 'הגדרות כלליות' : title}
+            </h2>
+            {section?.description && (
+              <p className="text-xs text-gray-500 mt-0.5">
+                {section.description}
+              </p>
+            )}
+          </div>
+        </div>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-gray-200 rounded-md transition-colors"
+          className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
         >
-          <X className="w-5 h-5 text-gray-600" />
+          <X className="w-4 h-4 text-gray-500" />
         </button>
-        <h2 className="text-lg font-semibold text-gray-900 text-right">
-          {isGeneralSettings ? 'הגדרות כלליות' : title}
-        </h2>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto">
         {allSettings.length > 0 ? (
-          <div className="space-y-1">
-            {allSettings.map((setting, index) => renderSetting(setting, index))}
+          <div className="p-5 space-y-6">
+            {renderSettingsGroups(allSettings)}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <Settings className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">אין הגדרות זמינות לסקשן זה</p>
+          <div className="text-center py-12 text-gray-500">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Settings className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-sm font-medium text-gray-900 mb-1">אין הגדרות זמינות</p>
+            <p className="text-xs text-gray-500">בחר סקשן כדי לערוך את ההגדרות שלו</p>
           </div>
         )}
       </div>

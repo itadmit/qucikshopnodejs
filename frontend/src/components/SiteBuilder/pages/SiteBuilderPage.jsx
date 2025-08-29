@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import '../SiteBuilder.css';
 
 // Import our new sections system
 import { ALL_SECTIONS, getSectionById } from '../sections/index.js';
