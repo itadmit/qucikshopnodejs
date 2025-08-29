@@ -28,7 +28,7 @@ const JupiterProductPage = ({ storeData }) => {
 
   const fetchPageDesign = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/stores/${storeData.slug}/design/product-page`)
+              const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/stores/${storeData.slug}/design/product-page`)
       if (response.ok) {
         const designData = await response.json()
         setPageStructure(designData)
@@ -43,7 +43,7 @@ const JupiterProductPage = ({ storeData }) => {
     try {
       setLoading(true)
       
-      const response = await fetch(`http://localhost:3001/api/stores/${storeData.slug}/products/${slug}`)
+              const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/stores/${storeData.slug}/products/${slug}`)
       
       if (response.ok) {
         const productData = await response.json()

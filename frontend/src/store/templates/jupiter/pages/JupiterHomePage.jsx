@@ -45,8 +45,8 @@ const JupiterHomePage = ({ storeData }) => {
       
       // Fetch categories and products for this store
       const [categoriesResponse, productsResponse] = await Promise.all([
-        fetch(`http://localhost:3001/api/stores/${storeData.slug}/categories`),
-        fetch(`http://localhost:3001/api/stores/${storeData.slug}/products/featured`)
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/stores/${storeData.slug}/categories`),
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/stores/${storeData.slug}/products/featured`)
       ])
       
       if (categoriesResponse.ok) {

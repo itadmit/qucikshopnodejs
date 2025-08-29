@@ -34,7 +34,7 @@ const StoreApp = ({ storeSlug }) => {
       if (!userData) {
         console.log('🔄 Token found but no user data, fetching from server...')
         try {
-          const response = await fetch('http://localhost:3001/api/dashboard/user-store', {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/dashboard/user-store`.replace('/api/dashboard', '/dashboard'), {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -98,7 +98,7 @@ const StoreApp = ({ storeSlug }) => {
       setError(null)
       
       // Fetch store data from API
-      const response = await fetch(`http://localhost:3001/api/stores/${storeSlug}`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/stores/${storeSlug}`.replace('/api/stores', '/stores'))
       
       if (!response.ok) {
         if (response.status === 404) {

@@ -25,7 +25,7 @@ class TemplateLoader {
       // טעינה מהשרת (אם קיים)
       let templateFromServer = null;
       try {
-        const response = await fetch(`http://localhost:3001/api/templates/${templateName}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/templates/${templateName}`);
         if (response.ok) {
           templateFromServer = await response.json();
           console.log(`📡 Template ${templateName} loaded from server`);
@@ -115,7 +115,7 @@ class TemplateLoader {
    */
   async getAvailableTemplates() {
     try {
-      const response = await fetch('http://localhost:3001/api/templates');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/templates`);
       if (response.ok) {
         const templates = await response.json();
         console.log(`📡 Loaded ${templates.length} templates from server`);
