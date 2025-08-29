@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -111,7 +111,7 @@ model Template {
   // Metadata
   author      String?
   thumbnail   String?
-  tags        String[]
+  tags        String?  // JSON string of tags for MySQL compatibility
   category    String?  // מודרני, עסקי, אופנה וכו'
   
   // Pricing (for premium templates)
