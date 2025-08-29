@@ -242,6 +242,18 @@ class ApiService {
     return this.get('/custom-fields');
   }
 
+  async createCustomField(data) {
+    return this.post('/custom-fields', data);
+  }
+
+  async updateCustomField(id, data) {
+    return this.put(`/custom-fields/${id}`, data);
+  }
+
+  async deleteCustomField(id) {
+    return this.delete(`/custom-fields/${id}`);
+  }
+
   // Media APIs
   async uploadMedia(files, folder = 'products') {
     const formData = new FormData();

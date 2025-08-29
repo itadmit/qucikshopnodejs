@@ -98,6 +98,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
         },
         category: true,
         media: true,
+        options: {
+          include: {
+            values: true
+          }
+        },
         variants: {
           include: {
             optionValues: {
@@ -118,6 +123,18 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Process options to parse pattern data
+    if (product.options) {
+      product.options = product.options.map(option => ({
+        ...option,
+        values: option.values.map(value => ({
+          ...value,
+          pattern: value.patternData ? JSON.parse(value.patternData) : null,
+          mixedColor: value.mixedColorData ? JSON.parse(value.mixedColorData) : null
+        }))
+      }));
+    }
+
     res.json({
       success: true,
       data: product
@@ -132,6 +149,54 @@ router.get('/:id', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
+    
+    // אימות שדות חובה
+    if (!req.body.name || req.body.name.trim() === '') {
+      return res.status(400).json({ error: 'שם המוצר הוא שדה חובה' });
+    }
+
+    if (!req.body.sku || req.body.sku.trim() === '') {
+      return res.status(400).json({ error: 'מקט הוא שדה חובה' });
+    }
+
+    // אימות מחיר למוצר פשוט
+    if (req.body.type === 'SIMPLE') {
+      if (req.body.price === undefined || req.body.price === null || req.body.price === '') {
+        return res.status(400).json({ error: 'מחיר המוצר הוא שדה חובה' });
+      }
+      if (parseFloat(req.body.price) < 0) {
+        return res.status(400).json({ error: 'מחיר המוצר לא יכול להיות שלילי' });
+      }
+    }
+
+    // אימות אפשרויות למוצר עם וריאציות
+    if (req.body.type === 'VARIABLE') {
+      if (!req.body.options || req.body.options.length === 0) {
+        return res.status(400).json({ error: 'מוצר עם וריאציות חייב לכלול אפשרויות' });
+      }
+
+      if (!req.body.variants || req.body.variants.length === 0) {
+        return res.status(400).json({ error: 'מוצר עם וריאציות חייב לכלול וריאציות' });
+      }
+
+      // בדיקת מחירי וריאציות
+      const emptyPriceVariants = req.body.variants.filter(variant => 
+        variant.price === undefined || variant.price === null || variant.price === ''
+      );
+      
+      const negativePriceVariants = req.body.variants.filter(variant => 
+        variant.price && parseFloat(variant.price) < 0
+      );
+      
+      if (emptyPriceVariants.length > 0) {
+        return res.status(400).json({ error: 'כל הוריאציות חייבות לכלול מחיר' });
+      }
+      
+      if (negativePriceVariants.length > 0) {
+        return res.status(400).json({ error: 'מחיר הוריאציות לא יכול להיות שלילי' });
+      }
+    }
+
     const {
       storeId,
       name,
@@ -204,7 +269,7 @@ router.post('/', authenticateToken, async (req, res) => {
           seoTitle,
           seoDescription,
           tags: tags ? JSON.parse(tags) : null,
-          customFields: customFields || null
+          customFields: customFields ? JSON.stringify(customFields) : null
         }
       });
 
@@ -230,6 +295,8 @@ router.post('/', authenticateToken, async (req, res) => {
                   value: value.value,
                   colorCode: value.colorCode,
                   imageUrl: value.imageUrl,
+                  patternData: value.pattern ? JSON.stringify(value.pattern) : null,
+                  mixedColorData: value.mixedColor ? JSON.stringify(value.mixedColor) : null,
                   sortOrder: value.sortOrder || 0
                 }
               });
@@ -276,7 +343,8 @@ router.post('/', authenticateToken, async (req, res) => {
               await tx.productVariantOptionValue.create({
                 data: {
                   variantId: createdVariant.id,
-                  optionValueId: optionValue.valueId
+                  optionValueId: optionValue.valueId,
+                  value: optionValue.value
                 }
               });
             }
@@ -372,7 +440,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
         isDigital: updateData.isDigital,
         seoTitle: updateData.seoTitle,
         seoDescription: updateData.seoDescription,
-        tags: updateData.tags ? JSON.parse(updateData.tags) : null
+        tags: updateData.tags ? JSON.parse(updateData.tags) : null,
+        customFields: updateData.customFields ? JSON.stringify(updateData.customFields) : null
       }
     });
 

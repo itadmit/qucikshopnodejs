@@ -125,6 +125,27 @@ const SectionRenderer = ({
         return renderNewsletterSection();
       case 'footer':
         return renderFooterSection();
+      // סקשנים חדשים
+      case 'testimonials':
+        return renderTestimonialsSection();
+      case 'faq':
+        return renderFaqSection();
+      case 'features':
+        return renderFeaturesSection();
+      case 'gallery':
+        return renderGallerySection();
+      case 'video':
+        return renderVideoSection();
+      case 'contact_form':
+        return renderContactFormSection();
+      case 'map':
+        return renderMapSection();
+      case 'blog_posts':
+        return renderBlogPostsSection();
+      case 'countdown':
+        return renderCountdownSection();
+      case 'social_proof':
+        return renderSocialProofSection();
       default:
         return renderDefaultSection();
     }
@@ -159,13 +180,17 @@ const SectionRenderer = ({
     const subtitle = getSetting('subtitle');
     const title = getSetting('title');
     const description = getSetting('description');
+    const mediaType = getSetting('media_type', 'image');
     const backgroundImage = getSetting('background_image');
+    const backgroundVideo = getSetting('background_video');
     const backgroundColor = getSetting('background_color');
     const textAlignment = getSetting('text_alignment');
     const layout = getSetting('layout');
     const height = getSetting('height');
+    const showPrimaryButton = getSetting('show_primary_button', true);
     const buttonPrimaryText = getSetting('button_primary_text');
     const buttonPrimaryLink = getSetting('button_primary_link');
+    const showSecondaryButton = getSetting('show_secondary_button', false);
     const buttonSecondaryText = getSetting('button_secondary_text');
     const buttonSecondaryLink = getSetting('button_secondary_link');
     const usePrimaryColor = getSetting('use_primary_color', true);
@@ -186,15 +211,31 @@ const SectionRenderer = ({
 
     return (
       <div 
-        className={`relative ${heightClasses[height] || heightClasses.large} flex items-center justify-center`}
+        className={`relative ${heightClasses[height] || heightClasses.large} flex items-center justify-center overflow-hidden`}
         style={{
-          backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
+          backgroundImage: mediaType === 'image' && backgroundImage ? `url(${backgroundImage})` : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundColor: !backgroundImage ? backgroundColor : undefined,
+          backgroundColor: mediaType === 'color' || (!backgroundImage && !backgroundVideo) ? backgroundColor : undefined,
         }}
       >
-        {backgroundImage && <div className="absolute inset-0 bg-black bg-opacity-40"></div>}
+        {/* Background Video */}
+        {mediaType === 'video' && backgroundVideo && (
+          <video
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+          >
+            <source src={backgroundVideo} type="video/mp4" />
+          </video>
+        )}
+        
+        {/* Overlay */}
+        {(mediaType === 'image' && backgroundImage) || (mediaType === 'video' && backgroundVideo) ? (
+          <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+        ) : null}
         
         <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
           {layout === 'split' ? (
@@ -225,9 +266,11 @@ const SectionRenderer = ({
               {subtitle}
             </p>
           )}
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-gray-900">
-            {title}
-          </h1>
+          {title && (
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-gray-900">
+              {title}
+            </h1>
+          )}
           {description && (
             <p className="text-xl mb-8 text-gray-600">
               {description}
@@ -235,53 +278,36 @@ const SectionRenderer = ({
           )}
           
           {/* CTA Buttons */}
-          <div className="flex flex-wrap gap-4 mb-8">
-            {buttonPrimaryText && (
-              <a 
-                href={buttonPrimaryLink || '#'}
-                className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
-                  usePrimaryColor 
-                    ? 'btn-primary' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {buttonPrimaryText}
-              </a>
-            )}
-            {buttonSecondaryText && (
-              <a 
-                href={buttonSecondaryLink || '#'}
-                className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
-                  useSecondaryColor 
-                    ? 'btn-outline-primary border-2' 
-                    : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {buttonSecondaryText}
-              </a>
-            )}
-          </div>
-
-          {/* Stats */}
-          {section.blocks && section.blocks.length > 0 && (
-            <div className="flex flex-wrap gap-8">
-              {section.blocks.map((block, index) => {
-                if (block.type === 'stat') {
-                  const value = getBlockSetting(block, 'value');
-                  const label = getBlockSetting(block, 'label');
-                  return (
-                    <div key={index} className="text-center">
-                      <div className={`text-2xl font-bold ${usePrimaryColor ? 'text-primary' : 'text-blue-600'}`}>
-                        {value}
-                      </div>
-                      <div className="text-sm text-gray-600">{label}</div>
-                    </div>
-                  );
-                }
-                return null;
-              })}
+          {(showPrimaryButton || showSecondaryButton) && (
+            <div className="flex flex-wrap items-center gap-4 mb-8">
+              {showPrimaryButton && buttonPrimaryText && (
+                <a 
+                  href={buttonPrimaryLink || '#'}
+                  className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
+                    usePrimaryColor 
+                      ? 'btn-primary' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {buttonPrimaryText}
+                </a>
+              )}
+              {showSecondaryButton && buttonSecondaryText && (
+                <a 
+                  href={buttonSecondaryLink || '#'}
+                  className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
+                    useSecondaryColor 
+                      ? 'btn-outline-primary border-2' 
+                      : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {buttonSecondaryText}
+                </a>
+              )}
             </div>
           )}
+
+
         </>
       );
     }
@@ -317,7 +343,7 @@ const SectionRenderer = ({
             {subtitle && (
               <p className="text-blue-600 font-semibold mb-2">{subtitle}</p>
             )}
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">{title}</h2>
+            {title && <h2 className="text-3xl font-bold text-gray-900 mb-4">{title}</h2>}
             {description && (
               <p className="text-gray-600 max-w-2xl mx-auto">{description}</p>
             )}
@@ -416,7 +442,7 @@ const SectionRenderer = ({
             {subtitle && (
               <p className="text-blue-600 font-semibold mb-2">{subtitle}</p>
             )}
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">{title}</h2>
+            {title && <h2 className="text-3xl font-bold text-gray-900 mb-4">{title}</h2>}
             {description && (
               <p className="text-gray-600 max-w-2xl mx-auto">{description}</p>
             )}
@@ -474,8 +500,8 @@ const SectionRenderer = ({
         style={{ backgroundColor, color: textColor }}
       >
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">{title}</h2>
-          <p className="text-lg mb-8 opacity-90">{description}</p>
+          {title && <h2 className="text-3xl font-bold mb-4">{title}</h2>}
+          {description && <p className="text-lg mb-8 opacity-90">{description}</p>}
           
           <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
             <input
@@ -1131,6 +1157,316 @@ const SectionRenderer = ({
       </footer>
     );
   };
+
+  // 💬 Testimonials Section
+  const renderTestimonialsSection = () => {
+    const title = getSetting('title');
+    const subtitle = getSetting('subtitle');
+    const description = getSetting('description');
+    const layoutType = getSetting('layout_type');
+    const columnsDesktop = getSetting('columns_desktop');
+    const showRatings = getSetting('show_ratings');
+    const backgroundColor = getSetting('background_color');
+    
+    const testimonials = section.blocks || [];
+    
+    return (
+      <div className="py-16 px-6" style={{ backgroundColor }}>
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            {subtitle && (
+              <p className="text-sm font-semibold text-blue-600 uppercase tracking-wide mb-2">
+                {subtitle}
+              </p>
+            )}
+            {title && (
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                {title}
+              </h2>
+            )}
+            {description && (
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                {description}
+              </p>
+            )}
+          </div>
+          
+          {/* Testimonials Grid */}
+          <div className={`grid gap-8 ${
+            layoutType === 'grid' 
+              ? `md:grid-cols-${columnsDesktop} grid-cols-1`
+              : 'grid-cols-1 space-y-8'
+          }`}>
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="bg-white p-6 rounded-lg shadow-sm border">
+                {showRatings && getBlockSetting(testimonial, 'rating') && (
+                  <div className="flex mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        className={`w-5 h-5 ${
+                          i < getBlockSetting(testimonial, 'rating') 
+                            ? 'text-yellow-400 fill-current' 
+                            : 'text-gray-300'
+                        }`} 
+                      />
+                    ))}
+                  </div>
+                )}
+                <blockquote className="text-gray-700 mb-4">
+                  "{getBlockSetting(testimonial, 'quote')}"
+                </blockquote>
+                <div className="flex items-center">
+                  {getBlockSetting(testimonial, 'customer_photo') && (
+                    <img 
+                      src={getBlockSetting(testimonial, 'customer_photo')} 
+                      alt={getBlockSetting(testimonial, 'customer_name')}
+                      className="w-12 h-12 rounded-full mr-4"
+                    />
+                  )}
+                  <div>
+                    <div className="font-semibold text-gray-900">
+                      {getBlockSetting(testimonial, 'customer_name')}
+                    </div>
+                    {getBlockSetting(testimonial, 'customer_title') && (
+                      <div className="text-sm text-gray-600">
+                        {getBlockSetting(testimonial, 'customer_title')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {testimonials.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>אין המלצות להצגה</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // 🗺️ Map Section  
+  const renderMapSection = () => {
+    const title = getSetting('title');
+    const description = getSetting('description');
+    const address = getSetting('address');
+    const phone = getSetting('phone');
+    const email = getSetting('email');
+    const hours = getSetting('hours');
+    const mapUrl = getSetting('map_url');
+    const layoutType = getSetting('layout_type');
+    const mapHeight = getSetting('map_height');
+    const backgroundColor = getSetting('background_color');
+    
+    return (
+      <div className="py-16 px-6" style={{ backgroundColor }}>
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            {title && (
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                {title}
+              </h2>
+            )}
+            {description && (
+              <p className="text-lg text-gray-600">
+                {description}
+              </p>
+            )}
+          </div>
+          
+          {/* Map and Info */}
+          <div className={`${layoutType === 'side_by_side' ? 'grid md:grid-cols-2 gap-8' : 'space-y-8'}`}>
+            {/* Map */}
+            <div className="bg-gray-200 rounded-lg overflow-hidden" style={{ height: `${mapHeight}px` }}>
+              {mapUrl ? (
+                <iframe
+                  src={mapUrl}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                ></iframe>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <MapPin className="w-12 h-12 mx-auto mb-2" />
+                    <p>הוסף קישור למפה בהגדרות</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Contact Info */}
+            {layoutType !== 'map_only' && (
+              <div className="space-y-6">
+                {address && (
+                  <div className="flex items-start">
+                    <MapPin className="w-5 h-5 text-gray-400 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">כתובת</h3>
+                      <p className="text-gray-600 whitespace-pre-line">{address}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {phone && (
+                  <div className="flex items-start">
+                    <Phone className="w-5 h-5 text-gray-400 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">טלפון</h3>
+                      <p className="text-gray-600">{phone}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {email && (
+                  <div className="flex items-start">
+                    <Mail className="w-5 h-5 text-gray-400 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">אימייל</h3>
+                      <p className="text-gray-600">{email}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {hours && (
+                  <div className="flex items-start">
+                    <Settings className="w-5 h-5 text-gray-400 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">שעות פתיחה</h3>
+                      <p className="text-gray-600 whitespace-pre-line">{hours}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ❓ FAQ Section
+  const renderFaqSection = () => {
+    const title = getSetting('title');
+    const description = getSetting('description');
+    const backgroundColor = getSetting('background_color');
+    
+    const faqs = section.blocks || [];
+    
+    return (
+      <div className="py-16 px-6" style={{ backgroundColor }}>
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            {title && (
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                {title}
+              </h2>
+            )}
+            {description && (
+              <p className="text-lg text-gray-600">
+                {description}
+              </p>
+            )}
+          </div>
+          
+          {/* FAQ Items */}
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <div key={index} className="bg-white border border-gray-200 rounded-lg">
+                <button className="w-full px-6 py-4 text-right font-semibold text-gray-900 hover:bg-gray-50 flex items-center justify-between">
+                  <span>{getBlockSetting(faq, 'question')}</span>
+                  <MessageSquare className="w-5 h-5 text-gray-400" />
+                </button>
+                <div className="px-6 pb-4 text-gray-700 text-right">
+                  {getBlockSetting(faq, 'answer')}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {faqs.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>אין שאלות להצגה</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ⭐ Features Section
+  const renderFeaturesSection = () => {
+    const title = getSetting('title');
+    const description = getSetting('description');
+    const columnsDesktop = getSetting('columns_desktop');
+    const backgroundColor = getSetting('background_color');
+    
+    const features = section.blocks || [];
+    
+    return (
+      <div className="py-16 px-6" style={{ backgroundColor }}>
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            {title && (
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                {title}
+              </h2>
+            )}
+            {description && (
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                {description}
+              </p>
+            )}
+          </div>
+          
+          {/* Features Grid */}
+          <div className={`grid gap-8 md:grid-cols-${columnsDesktop} grid-cols-1`}>
+            {features.map((feature, index) => (
+              <div key={index} className="text-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Star className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {getBlockSetting(feature, 'title')}
+                </h3>
+                <p className="text-gray-600">
+                  {getBlockSetting(feature, 'description')}
+                </p>
+              </div>
+            ))}
+          </div>
+          
+          {features.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <Star className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>אין תכונות להצגה</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Placeholder functions for remaining sections
+  const renderGallerySection = () => renderDefaultSection();
+  const renderVideoSection = () => renderDefaultSection();
+  const renderContactFormSection = () => renderDefaultSection();
+  const renderBlogPostsSection = () => renderDefaultSection();
+  const renderCountdownSection = () => renderDefaultSection();
+  const renderSocialProofSection = () => renderDefaultSection();
 
   // Default section renderer
   const renderDefaultSection = () => {

@@ -1,30 +1,18 @@
-import { 
-  ArrowRight, 
-  Save, 
-  Eye, 
-  Upload, 
-  X, 
-  Plus, 
-  Trash2, 
-  Image as ImageIcon,
-  Video,
-  Palette,
-  Ruler,
-  Tag,
-  Package,
-  DollarSign,
-  BarChart3,
-  Settings,
-  Info,
-  AlertCircle,
-  CheckCircle2
-} from 'lucide-react';
 import React, { useState, useRef } from 'react';
-import MediaUploader from '../components/MediaUploader.jsx';
+import { Eye, Save, ArrowRight } from 'lucide-react';
 import apiService from '../../../services/api.js';
 
+// Import sub-components
+import ProductBasicInfo from './ProductForm/ProductBasicInfo.jsx';
+import ProductPricing from './ProductForm/ProductPricing.jsx';
+import ProductOptions from './ProductForm/ProductOptions.jsx';
+import ProductVariants from './ProductForm/ProductVariants.jsx';
+import ProductMedia from './ProductForm/ProductMedia.jsx';
+import ProductSidebar from './ProductForm/ProductSidebar.jsx';
+import CustomFieldsTab from './ProductForm/CustomFieldsTab.jsx';
+
 const ProductFormPage = ({ productId = null }) => {
-  const [productType, setProductType] = useState('SIMPLE'); // 'SIMPLE', 'VARIABLE', or 'BUNDLE'
+  const [productType, setProductType] = useState('SIMPLE');
   const [isDraft, setIsDraft] = useState(true);
   const fileInputRef = useRef(null);
   
@@ -38,41 +26,68 @@ const ProductFormPage = ({ productId = null }) => {
     comparePrice: '',
     costPrice: '',
     trackInventory: true,
-    inventoryQuantity: 0,
+    inventoryQuantity: '',
     allowBackorder: false,
+    lowStockThreshold: '',
     weight: '',
+    dimensions: { length: '', width: '', height: '' },
     requiresShipping: true,
     isDigital: false,
+    taxable: true,
     tags: [],
-    category: '',
     seoTitle: '',
     seoDescription: '',
     publishedAt: ''
   });
 
+  // Images
+  const [productImages, setProductImages] = useState([]);
+
+  // Options and variants
+  const [productOptions, setProductOptions] = useState([]);
+  const [variants, setVariants] = useState([]);
+
+  // Bundle items (for bundle products)
+  const [bundleItems, setBundleItems] = useState([]);
+  const [availableProducts, setAvailableProducts] = useState([]);
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(null);
+
   // Custom fields
   const [customFields, setCustomFields] = useState([]);
   const [customFieldValues, setCustomFieldValues] = useState({});
+  const [validationErrors, setValidationErrors] = useState([]);
+  
+  // Categories
+  const [selectedCategories, setSelectedCategories] = useState([]);
+
+  // Helper function to convert HTML to plain text for SEO
+  const htmlToPlainText = (html) => {
+    if (!html) return '';
+    
+    // First, replace block elements with spaces to preserve word separation
+    let cleanHtml = html
+      .replace(/<\/?(div|p|br|h[1-6]|li|ul|ol)[^>]*>/gi, ' ')
+      .replace(/<[^>]*>/g, ''); // Remove all other HTML tags
+    
+    // Decode HTML entities
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = cleanHtml;
+    let text = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Clean up whitespace - replace multiple spaces/newlines with single space
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    return text;
+  };
 
   // Load custom fields and product data
   React.useEffect(() => {
     const loadCustomFields = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-        if (!token) return;
-        
-        apiService.setToken(token);
-        const result = await apiService.getCustomFields();
-        
-        if (result.success) {
-          setCustomFields(result.data || []);
-          
-          // Initialize custom field values
-          const initialValues = {};
-          (result.data || []).forEach(field => {
-            initialValues[field.name] = field.defaultValue || '';
-          });
-          setCustomFieldValues(initialValues);
+        const response = await apiService.get('/custom-fields');
+        if (response.success && response.data) {
+          setCustomFields(response.data);
         }
       } catch (error) {
         console.error('Error loading custom fields:', error);
@@ -82,11 +97,7 @@ const ProductFormPage = ({ productId = null }) => {
     const loadProductData = async () => {
       if (productId) {
         try {
-          const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-          if (!token) return;
-          
-          apiService.setToken(token);
-          const product = await apiService.getProduct(productId);
+          const product = await apiService.get(`/products/${productId}`);
           
           if (product) {
             setProductData({
@@ -98,31 +109,38 @@ const ProductFormPage = ({ productId = null }) => {
               comparePrice: product.comparePrice || '',
               costPrice: product.costPrice || '',
               trackInventory: product.trackInventory ?? true,
-              inventoryQuantity: product.inventoryQuantity || 0,
-              allowBackorder: product.allowBackorder || false,
+              inventoryQuantity: product.inventoryQuantity || '',
+              allowBackorder: product.allowBackorder ?? false,
+              lowStockThreshold: product.lowStockThreshold || '',
               weight: product.weight || '',
+              dimensions: product.dimensions || { length: '', width: '', height: '' },
               requiresShipping: product.requiresShipping ?? true,
-              isDigital: product.isDigital || false,
-              tags: product.tags ? JSON.parse(product.tags) : [],
-              category: product.categoryId || '',
+              isDigital: product.isDigital ?? false,
+              taxable: product.taxable ?? true,
+              tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
               seoTitle: product.seoTitle || '',
               seoDescription: product.seoDescription || '',
               publishedAt: product.publishedAt || ''
             });
             
-            if (product.media) {
-              setMedia(product.media);
-            }
-            
-            if (product.productOptions) {
-              setProductOptions(product.productOptions);
-            }
-            
-            if (product.variants) {
-              setVariants(product.variants);
-            }
-            
+            setProductType(product.type || 'SIMPLE');
             setIsDraft(product.status === 'DRAFT');
+            setProductImages(product.images || []);
+            setProductOptions(product.options || []);
+            setVariants(product.variants || []);
+            setBundleItems(product.bundleItems || []);
+
+            // Parse custom fields if they exist
+            if (product.customFields) {
+              try {
+                const parsedCustomFields = typeof product.customFields === 'string' 
+                  ? JSON.parse(product.customFields) 
+                  : product.customFields;
+                setCustomFieldValues(parsedCustomFields);
+              } catch (error) {
+                console.error('Error parsing custom fields:', error);
+              }
+            }
           }
         } catch (error) {
           console.error('Error loading product:', error);
@@ -134,228 +152,404 @@ const ProductFormPage = ({ productId = null }) => {
     loadProductData();
   }, [productId]);
 
-  // Load available products for bundle
-  React.useEffect(() => {
-    const loadAvailableProducts = async () => {
-      if (productType !== 'BUNDLE') return;
-      
-      try {
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-        const storeId = 1; // TODO: Get from context
-        
-        if (!token) return;
-        
-        apiService.setToken(token);
-        const result = await apiService.getProducts({ storeId });
-        
-        if (result.success) {
-          // Filter out bundle products to prevent circular references
-          const products = result.data.filter(p => p.type !== 'BUNDLE');
-          setAvailableProducts(products);
-        }
-      } catch (error) {
-        console.error('Error loading available products:', error);
-      }
-    };
-
-    loadAvailableProducts();
-  }, [productType]);
-
-  // Close dropdown when clicking outside
-  React.useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.product-search-container')) {
-        setShowProductDropdown(null);
-        setProductSearchTerm('');
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Media management
-  const [media, setMedia] = useState([]);
-  const [primaryVideo, setPrimaryVideo] = useState(null);
-
-  // Product options (for variants)
-  const [productOptions, setProductOptions] = useState([]);
-  const [variants, setVariants] = useState([]);
-
-  // Bundle items (for bundle products)
-  const [bundleItems, setBundleItems] = useState([]);
-  const [availableProducts, setAvailableProducts] = useState([]);
-  const [productSearchTerm, setProductSearchTerm] = useState('');
-  const [showProductDropdown, setShowProductDropdown] = useState(null);
-
-  // Available option types
-  const optionTypes = [
-    { value: 'COLOR', label: 'צבע', icon: Palette, description: 'בחירת צבע עם פלטה' },
-    { value: 'TEXT', label: 'טקסט', icon: Tag, description: 'טקסט חופשי (מידה, חומר וכו)' },
-    { value: 'IMAGE', label: 'תמונה', icon: ImageIcon, description: 'בחירה על בסיס תמונה' },
-    { value: 'BUTTON', label: 'כפתור', icon: Package, description: 'כפתורי בחירה' }
-  ];
-
-
-
+  // Option handlers
   const handleAddOption = () => {
     const newOption = {
       id: Date.now(),
       name: '',
-      type: 'TEXT',
-      displayType: 'DROPDOWN',
-      values: [{ id: Date.now(), value: '', colorCode: '', imageUrl: '', sortOrder: 0 }] // Start with one empty value
+      type: 'COLOR',
+      values: [{ id: Date.now(), value: '', colorCode: '' }]
     };
     setProductOptions([...productOptions, newOption]);
   };
 
-  const handleAddOptionValue = (optionId) => {
-    const newValue = {
-      id: Date.now() + Math.random(),
-      value: '',
-      colorCode: '',
-      imageUrl: '',
-      sortOrder: 0
-    };
-    
-    setProductOptions(prev => prev.map(option => 
-      option.id === optionId 
-        ? { ...option, values: [...option.values, newValue] }
-        : option
-    ));
+  const handleRemoveOption = (optionId) => {
+    setProductOptions(productOptions.filter(option => option.id !== optionId));
   };
 
-  const handleOptionValueChange = (optionId, valueId, newValue) => {
+  const handleAddOptionValue = (optionId) => {
     setProductOptions(prev => prev.map(option => 
       option.id === optionId 
-        ? { 
-            ...option, 
-            values: option.values.map(val => 
-              val.id === valueId ? { ...val, value: newValue } : val
-            )
-          }
+        ? { ...option, values: [...option.values, { id: Date.now(), value: '', colorCode: '' }] }
         : option
     ));
-
-    // Auto-add new empty input when user types in the last input
-    const option = productOptions.find(opt => opt.id === optionId);
-    if (option) {
-      const valueIndex = option.values.findIndex(val => val.id === valueId);
-      const isLastValue = valueIndex === option.values.length - 1;
-      const isNotEmpty = newValue.trim() !== '';
-      
-      if (isLastValue && isNotEmpty) {
-        handleAddOptionValue(optionId);
-      }
-    }
   };
 
   const handleRemoveOptionValue = (optionId, valueId) => {
     setProductOptions(prev => prev.map(option => 
       option.id === optionId 
-        ? { 
-            ...option, 
-            values: option.values.filter(val => val.id !== valueId)
-          }
+        ? { ...option, values: option.values.filter(value => value.id !== valueId) }
         : option
     ));
   };
 
-  // Bundle item management functions
-  const handleAddBundleItem = () => {
-    const newItem = {
-      id: Date.now(),
-      productId: '',
-      variantId: null,
-      quantity: 1,
-      isOptional: false,
-      discountType: null,
-      discountValue: null
+  // מאגר צבעים לזיהוי
+  const colorDatabase = [
+    { name: 'לבן', hex: '#FFFFFF' },
+    { name: 'שחור', hex: '#000000' },
+    { name: 'אדום', hex: '#FF0000' },
+    { name: 'כחול', hex: '#0000FF' },
+    { name: 'ירוק', hex: '#008000' },
+    { name: 'צהוב', hex: '#FFFF00' },
+    { name: 'כתום', hex: '#FFA500' },
+    { name: 'סגול', hex: '#800080' },
+    { name: 'ורוד', hex: '#FFC0CB' },
+    { name: 'חום', hex: '#A52A2A' },
+    { name: 'אפור', hex: '#808080' },
+    { name: 'כסף', hex: '#C0C0C0' },
+    { name: 'זהב', hex: '#FFD700' },
+    
+    // גוונים בהירים
+    { name: 'ירוק בהיר', hex: '#90EE90' },
+    { name: 'כחול בהיר', hex: '#ADD8E6' },
+    { name: 'אדום בהיר', hex: '#FF6B6B' },
+    { name: 'צהוב בהיר', hex: '#FFFF99' },
+    { name: 'ורוד בהיר', hex: '#FFB6C1' },
+    { name: 'סגול בהיר', hex: '#DDA0DD' },
+    
+    // גוונים כהים
+    { name: 'אדום כהה', hex: '#8B0000' },
+    { name: 'כחול כהה', hex: '#00008B' },
+    { name: 'ירוק כהה', hex: '#006400' },
+    { name: 'סגול כהה', hex: '#4B0082' },
+    { name: 'ורוד כהה', hex: '#C71585' },
+    { name: 'צהוב כהה', hex: '#B8860B' },
+    { name: 'כתום כהה', hex: '#FF8C00' },
+    
+    // צבעים מיוחדים
+    { name: 'טורקיז', hex: '#40E0D0' },
+    { name: 'ליים', hex: '#00FF00' },
+    { name: 'מגנטה', hex: '#FF00FF' },
+    { name: 'ציאן', hex: '#00FFFF' },
+    { name: 'נייבי', hex: '#000080' },
+    { name: 'מרון', hex: '#800000' },
+    { name: 'אוליב', hex: '#808000' },
+    { name: 'טיל', hex: '#008080' },
+    { name: 'אינדיגו', hex: '#4B0082' },
+    { name: 'חרדל', hex: '#FFDB58' },
+    { name: 'קורל', hex: '#FF7F50' },
+    { name: 'סלמון', hex: '#FA8072' },
+    { name: 'פוקסיה', hex: '#FF00FF' },
+    { name: 'אקווה', hex: '#00FFFF' },
+    
+    // צבעי תכשיטים ומתכות
+    { name: 'רוז גולד', hex: '#E8B4B8' },
+    { name: 'רוז-גולד', hex: '#E8B4B8' },
+    { name: 'זהב ורוד', hex: '#E8B4B8' },
+    { name: 'זהב לבן', hex: '#F5F5DC' },
+    { name: 'זהב צהוב', hex: '#FFD700' },
+    { name: 'פלטינה', hex: '#E5E4E2' },
+    { name: 'פלטינום', hex: '#E5E4E2' },
+    { name: 'כסף סטרלינג', hex: '#C0C0C0' },
+    { name: 'כסף עתיק', hex: '#C9C0BB' },
+    { name: 'נחושת', hex: '#B87333' },
+    { name: 'ברונזה', hex: '#CD7F32' },
+    { name: 'פליז', hex: '#B5A642' },
+    { name: 'טיטניום', hex: '#878681' },
+    { name: 'פלדה', hex: '#71797E' },
+    
+    // אבני חן וצבעים יקרים
+    { name: 'יהלום', hex: '#B9F2FF' },
+    { name: 'אמרלד', hex: '#50C878' },
+    { name: 'רובי', hex: '#E0115F' },
+    { name: 'ספיר', hex: '#0F52BA' },
+    { name: 'פנינה', hex: '#F8F6F0' },
+    { name: 'אוניקס', hex: '#353839' },
+    { name: 'אמטיסט', hex: '#9966CC' },
+    { name: 'טופז', hex: '#FFC87C' },
+    { name: 'אקוומרין', hex: '#7FFFD4' },
+    { name: 'גרנט', hex: '#733635' },
+    { name: 'פרידוט', hex: '#9ACD32' },
+    { name: 'ציטרין', hex: '#E4D00A' }
+  ];
+
+  // פונקציה לזיהוי צבע או דפוס
+  const detectColorOrPattern = (input) => {
+    if (!input) return null;
+    
+    const cleanInput = input.trim().toLowerCase();
+    
+    // זיהוי דפוסים
+    const patterns = {
+      'פסים': 'stripes',
+      'משובץ': 'checkered', 
+      'מנוקד': 'dots',
+      'נקודות': 'dots',
+      'מנומר': 'numbered',
+      'מנוחש': 'hashed',
+      'חלק': 'solid'
     };
-    setBundleItems([...bundleItems, newItem]);
-  };
-
-  const handleRemoveBundleItem = (itemId) => {
-    setBundleItems(prev => prev.filter(item => item.id !== itemId));
-  };
-
-  const handleBundleItemChange = (itemId, field, value) => {
-    setBundleItems(prev => prev.map(item => 
-      item.id === itemId ? { ...item, [field]: value } : item
-    ));
-  };
-
-  // Filter products based on search term
-  const getFilteredProducts = (searchTerm = '') => {
-    if (!searchTerm.trim()) return availableProducts;
     
-    return availableProducts.filter(product =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()))
+    // בדיקה אם יש דפוס בקלט
+    const foundPattern = Object.keys(patterns).find(pattern => 
+      cleanInput.includes(pattern)
     );
-  };
-
-  const handleProductSelect = (itemId, product) => {
-    handleBundleItemChange(itemId, 'productId', product.id);
-    setShowProductDropdown(null);
-    setProductSearchTerm('');
-  };
-
-  const generateVariants = () => {
-    if (productOptions.length === 0) return;
     
-    // Filter out empty values
-    const validOptions = productOptions.map(option => ({
-      ...option,
-      values: option.values.filter(val => val.value.trim() !== '')
-    })).filter(option => option.values.length > 0);
-
-    if (validOptions.length === 0) {
-      setVariants([]);
-      return;
+    if (foundPattern) {
+      // חילוץ הצבע מהטקסט
+      const colorPart = cleanInput.replace(foundPattern, '').trim();
+      const baseColor = detectColor(colorPart);
+      
+      return {
+        type: 'pattern',
+        pattern: patterns[foundPattern],
+        patternName: foundPattern,
+        color: baseColor,
+        fullName: input
+      };
     }
     
-    // Generate all possible combinations
-    const combinations = validOptions.reduce((acc, option) => {
-      if (acc.length === 0) {
-        return option.values.map(value => [{ optionId: option.id, valueId: value.id, value: value.value }]);
+    // אם לא נמצא דפוס, חפש צבע רגיל
+    return detectColor(input);
+  };
+
+  // פונקציה לזיהוי צבע (הפונקציה המקורית)
+  const detectColor = (colorName) => {
+    if (!colorName) return null;
+    
+    const cleanName = colorName.trim().toLowerCase();
+    
+    // זיהוי צבעים מעורבים (חצי-חצי)
+    const words = cleanName.split(/\s+/);
+    if (words.length === 2) {
+      const firstColor = findSingleColor(words[0]);
+      const secondColor = findSingleColor(words[1]);
+      
+      if (firstColor && secondColor) {
+        return {
+          name: `${firstColor.name} ${secondColor.name}`,
+          hex: createMixedColorGradient(firstColor.hex, secondColor.hex),
+          type: 'mixed',
+          colors: [firstColor, secondColor]
+        };
+      }
+    }
+    
+    // אם לא זוהו שני צבעים, חפש צבע יחיד
+    return findSingleColor(cleanName);
+  };
+
+  // פונקציה עזר לחיפוש צבע יחיד
+  const findSingleColor = (colorName) => {
+    if (!colorName) return null;
+    
+    const cleanName = colorName.trim().toLowerCase();
+    
+    // חיפוש מדויק קודם
+    let foundColor = colorDatabase.find(color => 
+      color.name.toLowerCase() === cleanName
+    );
+    
+    if (foundColor) return foundColor;
+    
+    // חיפוש חלקי - אם הקלט מכיל את שם הצבע
+    foundColor = colorDatabase.find(color => 
+      cleanName.includes(color.name.toLowerCase())
+    );
+    
+    if (foundColor) return foundColor;
+    
+    // חיפוש הפוך - אם שם הצבע מכיל את הקלט
+    foundColor = colorDatabase.find(color => 
+      color.name.toLowerCase().includes(cleanName)
+    );
+    
+    if (foundColor) return foundColor;
+    
+    // חיפוש מתקדם - מילים נפרדות
+    const inputWords = cleanName.split(/\s+/);
+    foundColor = colorDatabase.find(color => {
+      const colorWords = color.name.toLowerCase().split(/\s+/);
+      return inputWords.every(inputWord => 
+        colorWords.some(colorWord => 
+          colorWord.includes(inputWord) || inputWord.includes(colorWord)
+        )
+      );
+    });
+    
+    return foundColor;
+  };
+
+  // פונקציה ליצירת גרדיאנט לצבעים מעורבים
+  const createMixedColorGradient = (color1, color2) => {
+    return `linear-gradient(90deg, ${color1} 50%, ${color2} 50%)`;
+  };
+
+  const handleOptionValueChange = (optionId, valueId, newValue) => {
+    setProductOptions(prev => prev.map(option => {
+      if (option.id === optionId) {
+        const updatedOption = { ...option };
+        
+        // עדכון הערך
+        updatedOption.values = option.values.map(value => {
+          if (value.id === valueId) {
+            const updatedValue = { ...value, value: newValue };
+            
+            // זיהוי צבע או דפוס אוטומטי אם זה אפשרות צבע
+            if (option.type === 'COLOR') {
+              const detected = detectColorOrPattern(newValue);
+              
+              if (detected) {
+                if (detected.type === 'pattern') {
+                  // זוהה דפוס
+                  updatedValue.pattern = {
+                    type: detected.pattern,
+                    primaryColor: detected.color ? detected.color.hex : '#000000',
+                    secondaryColor: '#FFFFFF'
+                  };
+                  updatedValue.detectedPattern = {
+                    name: detected.fullName,
+                    pattern: detected.patternName,
+                    color: detected.color ? detected.color.name : 'שחור'
+                  };
+                  updatedValue.colorCode = detected.color ? detected.color.hex : '#000000';
+                } else {
+                  // זוהה צבע רגיל או מעורב - נקה דפוס קודם
+                  if (detected.type === 'mixed') {
+                    // צבע מעורב - שמור כגרדיאנט
+                    updatedValue.colorCode = detected.colors[0].hex; // צבע ראשי לקולור פיקר
+                    updatedValue.mixedColor = detected; // שמור את המידע המלא
+                    updatedValue.detectedColor = detected;
+                  } else {
+                    // צבע רגיל
+                    updatedValue.colorCode = detected.hex;
+                    updatedValue.detectedColor = detected;
+                    updatedValue.mixedColor = null;
+                  }
+                  updatedValue.pattern = null;
+                  updatedValue.detectedPattern = null;
+                }
+                
+                // הסרת החיווי אחרי 3 שניות
+                setTimeout(() => {
+                  setProductOptions(prev2 => prev2.map(o => 
+                    o.id === optionId 
+                      ? { ...o, values: o.values.map(v => 
+                          v.id === valueId ? { 
+                            ...v, 
+                            detectedColor: null,
+                            detectedPattern: null 
+                          } : v
+                        )}
+                      : o
+                  ));
+                }, 3000);
+              } else {
+                // לא זוהה כלום - נקה הכל
+                updatedValue.pattern = null;
+                updatedValue.detectedPattern = null;
+                updatedValue.detectedColor = null;
+              }
+            }
+            
+            return updatedValue;
+          }
+          return value;
+        });
+        
+        // אם זה הערך האחרון ויש בו תוכן, הוסף ערך ריק חדש
+        const lastValue = updatedOption.values[updatedOption.values.length - 1];
+        if (lastValue.id === valueId && newValue.trim() !== '' && updatedOption.values.length < 10) {
+          updatedOption.values.push({
+            id: Date.now() + Math.random(), // וודא שה-ID יהיה ייחודי
+            value: '',
+            colorCode: option.type === 'COLOR' ? '#000000' : undefined
+          });
+        }
+        
+        return updatedOption;
       }
       
-      const newCombinations = [];
-      acc.forEach(combination => {
-        option.values.forEach(value => {
-          newCombinations.push([...combination, { optionId: option.id, valueId: value.id, value: value.value }]);
-        });
-      });
-      return newCombinations;
-    }, []);
-
-    const newVariants = combinations.map((combination, index) => ({
-      id: Date.now() + index,
-      sku: `${productData.sku || 'PRODUCT'}-${index + 1}`,
-      price: productData.price || '',
-      comparePrice: productData.comparePrice || '',
-      costPrice: productData.costPrice || '',
-      inventoryQuantity: 0,
-      weight: productData.weight || '',
-      optionValues: combination,
-      isActive: true
+      return option;
     }));
-
-    setVariants(newVariants);
   };
 
-  // Auto-generate variants when options change
-  React.useEffect(() => {
-    if (productType === 'VARIABLE' && productOptions.length > 0) {
-      generateVariants();
-    }
-  }, [productOptions, productType, productData.sku, productData.price]);
+  // פונקציית אימות
+  const validateProduct = () => {
+    const errors = [];
 
+    // בדיקת שדות חובה
+    if (!productData.name || productData.name.trim() === '') {
+      errors.push('שם המוצר הוא שדה חובה');
+    }
+
+    if (!productData.sku || productData.sku.trim() === '') {
+      errors.push('מקט הוא שדה חובה');
+    }
+
+    // בדיקת מחיר למוצר פשוט
+    if (productType === 'SIMPLE') {
+      if (!productData.price || productData.price === '') {
+        errors.push('מחיר המוצר הוא שדה חובה');
+      } else if (parseFloat(productData.price) < 0) {
+        errors.push('מחיר המוצר לא יכול להיות שלילי');
+      } else if (parseFloat(productData.price) === 0) {
+        // מחיר 0 דורש אישור מיוחד
+        const confirmFree = window.confirm('האם אתה בטוח שהמוצר חינמי (מחיר 0)?');
+        if (!confirmFree) {
+          errors.push('אנא אשר שהמוצר אכן חינמי או הזן מחיר');
+        }
+      }
+    }
+
+    // בדיקת אפשרויות למוצר עם וריאציות
+    if (productType === 'VARIABLE') {
+      const validOptions = productOptions.filter(option => 
+        option.values && option.values.length > 0 && 
+        option.values.some(value => value.value && value.value.trim() !== '')
+      );
+      
+      if (validOptions.length === 0) {
+        errors.push('מוצר עם וריאציות חייב לכלול לפחות אפשרות אחת עם ערכים');
+      }
+
+      // בדיקת מחירי וריאציות
+      const emptyPriceVariants = variants.filter(variant => 
+        !variant.price || variant.price === ''
+      );
+      
+      const negativePriceVariants = variants.filter(variant => 
+        variant.price && parseFloat(variant.price) < 0
+      );
+
+      const zeroPriceVariants = variants.filter(variant => 
+        variant.price && parseFloat(variant.price) === 0
+      );
+      
+      if (emptyPriceVariants.length > 0) {
+        errors.push('כל הוריאציות חייבות לכלול מחיר');
+      }
+      
+      if (negativePriceVariants.length > 0) {
+        errors.push('מחיר הוריאציות לא יכול להיות שלילי');
+      }
+
+      if (zeroPriceVariants.length > 0) {
+        const confirmFreeVariants = window.confirm(`יש ${zeroPriceVariants.length} וריאציות עם מחיר 0. האם זה נכון?`);
+        if (!confirmFreeVariants) {
+          errors.push('אנא אשר שהוריאציות עם מחיר 0 אכן חינמיות');
+        }
+      }
+    }
+
+    return errors;
+  };
+
+  // Save product
   const handleSaveProduct = async () => {
     try {
+      // אימות לפני שמירה
+      const errors = validateProduct();
+      if (errors.length > 0) {
+        setValidationErrors(errors);
+        // גלילה לראש הדף כדי לראות את השגיאות
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      
+      // נקה שגיאות קודמות
+      setValidationErrors([]);
+
       const saveData = {
         storeId: 1, // TODO: Get from context
         name: productData.name,
@@ -366,1213 +560,211 @@ const ProductFormPage = ({ productId = null }) => {
         price: productData.price,
         comparePrice: productData.comparePrice,
         costPrice: productData.costPrice,
-        categoryId: productData.category,
         trackInventory: productData.trackInventory,
         inventoryQuantity: productData.inventoryQuantity,
         allowBackorder: productData.allowBackorder,
+        lowStockThreshold: productData.lowStockThreshold,
         weight: productData.weight,
+        dimensions: productData.dimensions,
         requiresShipping: productData.requiresShipping,
         isDigital: productData.isDigital,
+        taxable: productData.taxable,
+        tags: JSON.stringify(productData.tags),
+        status: isDraft ? 'DRAFT' : 'PUBLISHED',
         seoTitle: productData.seoTitle,
         seoDescription: productData.seoDescription,
-        tags: JSON.stringify(productData.tags),
-        customFields: customFieldValues,
-        media: media.map(item => ({
-          url: item.url,
-          type: item.type,
-          altText: item.altText,
-          isPrimary: item.isPrimary,
-          sortOrder: 0
-        })),
+        images: productImages,
+        options: productOptions,
         variants: variants,
-        productOptions: productOptions,
-        bundleItems: productType === 'BUNDLE' ? bundleItems.filter(item => item.productId) : []
+        bundleItems: bundleItems,
+        customFields: JSON.stringify(customFieldValues)
       };
 
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('No authentication token found');
+      let result;
+      if (productId) {
+        result = await apiService.put(`/products/${productId}`, saveData);
+      } else {
+        result = await apiService.post('/products', saveData);
       }
-      
-      apiService.setToken(token);
-      
-      const result = productId 
-        ? await apiService.updateProduct(productId, saveData)
-        : await apiService.createProduct(saveData);
-      alert(productId ? 'המוצר עודכן בהצלחה!' : 'המוצר נשמר בהצלחה!');
-      
-      // Redirect back to products list
+
+      if (result) {
+        alert('המוצר נשמר בהצלחה!');
+        if (!productId) {
       window.history.pushState({}, '', '/dashboard/products');
       window.dispatchEvent(new PopStateEvent('popstate'));
+        }
+      }
     } catch (error) {
-      console.error('Save product error:', error);
+      console.error('Error saving product:', error);
       alert('שגיאה בשמירת המוצר');
     }
   };
 
-  const handleMediaUpload = async (files) => {
-    try {
-      const formData = new FormData();
-      Array.from(files).forEach(file => {
-        formData.append('files', file);
-      });
-      formData.append('folder', 'products');
-
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      
-      apiService.setToken(token);
-      const result = await apiService.uploadMedia(files, 'products');
-      
-      const newMediaItems = result.data.map(uploadResult => ({
-        id: Date.now() + Math.random(),
-        url: uploadResult.url,
-        key: uploadResult.key,
-        type: uploadResult.mimeType.startsWith('video/') ? 'VIDEO' : 'IMAGE',
-        isPrimary: media.length === 0,
-        altText: '',
-        colorOptionValueId: null,
-        originalName: uploadResult.originalName,
-        size: uploadResult.size
-      }));
-
-      setMedia(prev => [...prev, ...newMediaItems]);
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('שגיאה בהעלאת הקבצים');
-    }
+  const handleBack = () => {
+    window.history.pushState({}, '', '/dashboard/products');
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
-
-  const ColorPicker = ({ value, onChange }) => {
-    const colors = [
-      '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
-      '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#FFC0CB', '#A52A2A',
-      '#808080', '#000080', '#008000', '#800000'
-    ];
-
-    return (
-      <div className="flex flex-wrap gap-2 mt-2">
-        {colors.map(color => (
-          <button
-            key={color}
-            type="button"
-            className={`w-8 h-8 rounded-full border-2 ${value === color ? 'border-gray-800' : 'border-gray-300'}`}
-            style={{ backgroundColor: color }}
-            onClick={() => onChange(color)}
-          />
-        ))}
-        <input
-          type="color"
-          value={value || '#000000'}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-8 h-8 rounded-full border-2 border-gray-300 cursor-pointer"
-        />
-      </div>
-    );
-  };
-
-  const OptionValueEditor = ({ option, value, onChange, onDelete }) => {
-    return (
-      <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <input
-            type="text"
-            placeholder="שם הערך"
-            value={value.value}
-            onChange={(e) => onChange({ ...value, value: e.target.value })}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-          <button
-            type="button"
-            onClick={onDelete}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg ml-2"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-
-        {option.type === 'COLOR' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">צבע</label>
-            <ColorPicker 
-              value={value.colorCode} 
-              onChange={(color) => onChange({ ...value, colorCode: color })}
-            />
-          </div>
-        )}
-
-        {option.type === 'IMAGE' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">תמונה</label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-              {value.imageUrl ? (
-                <img src={value.imageUrl} alt={value.value} className="w-16 h-16 mx-auto rounded-lg object-cover" />
-              ) : (
-                <div>
-                  <ImageIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">העלה תמונה</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderBasicTab = () => (
-    <div className="space-y-6">
-      {/* Product Type Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">סוג מוצר</label>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <label className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-            productType === 'SIMPLE' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-          }`}>
-            <input
-              type="radio"
-              name="productType"
-              value="SIMPLE"
-              checked={productType === 'SIMPLE'}
-              onChange={(e) => setProductType(e.target.value)}
-              className="sr-only"
-            />
-            <div className="flex items-center">
-              <Package className="w-4 h-4 text-blue-600 ml-2" />
-              <div>
-                <div className="text-sm font-medium text-gray-900">מוצר פשוט</div>
-                <div className="text-xs text-gray-500">ללא וריאציות</div>
-              </div>
-            </div>
-          </label>
-          
-          <label className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-            productType === 'VARIABLE' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-          }`}>
-            <input
-              type="radio"
-              name="productType"
-              value="VARIABLE"
-              checked={productType === 'VARIABLE'}
-              onChange={(e) => setProductType(e.target.value)}
-              className="sr-only"
-            />
-            <div className="flex items-center">
-              <Settings className="w-4 h-4 text-blue-600 ml-2" />
-              <div>
-                <div className="text-sm font-medium text-gray-900">עם וריאציות</div>
-                <div className="text-xs text-gray-500">צבע, מידה וכו'</div>
-              </div>
-            </div>
-          </label>
-
-          <label className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-            productType === 'BUNDLE' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-          }`}>
-            <input
-              type="radio"
-              name="productType"
-              value="BUNDLE"
-              checked={productType === 'BUNDLE'}
-              onChange={(e) => setProductType(e.target.value)}
-              className="sr-only"
-            />
-            <div className="flex items-center">
-              <Package className="w-4 h-4 text-blue-600 ml-2" />
-              <div>
-                <div className="text-sm font-medium text-gray-900">מוצר בנדל</div>
-                <div className="text-xs text-gray-500">מספר מוצרים</div>
-              </div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* Additional Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">SKU (יחידת מלאי)</label>
-          <input
-            type="text"
-            value={productData.sku}
-            onChange={(e) => setProductData({ ...productData, sku: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="קוד מוצר יחודי"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">ברקוד (ISBN, UPC, GTIN וכו')</label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="ברקוד המוצר"
-          />
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderMediaTab = () => (
-    <div className="space-y-6">
-      <MediaUploader
-        media={media}
-        onUpload={(newMediaItems) => {
-          setMedia(prev => [...prev, ...newMediaItems]);
-        }}
-        onDelete={(mediaId) => {
-          setMedia(prev => prev.filter(m => m.id !== mediaId));
-        }}
-        maxFiles={10}
-      />
-
-      {/* Video as Primary */}
-      {media.some(m => m.type === 'VIDEO') && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-center mb-2">
-            <AlertCircle className="w-5 h-5 text-yellow-600 ml-2" />
-            <h4 className="font-medium text-yellow-800">וידאו כתמונה ראשית</h4>
-          </div>
-          <p className="text-sm text-yellow-700 mb-3">
-            ניתן להגדיר וידאו כתמונה ראשית של המוצר. הוידאו יוצג במקום התמונה הראשית.
-          </p>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={primaryVideo !== null}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  const videoItem = media.find(m => m.type === 'VIDEO');
-                  setPrimaryVideo(videoItem?.id || null);
-                } else {
-                  setPrimaryVideo(null);
-                }
-              }}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 ml-2"
-            />
-            <span className="text-sm text-yellow-800">השתמש בוידאו כתמונה ראשית</span>
-          </label>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderVariantsTab = () => (
-    <div className="space-y-6">
-      {productType === 'SIMPLE' ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <Settings className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">מוצר פשוט</h3>
-          <p className="text-gray-500 mb-4">מוצר פשוט אינו תומך בוריאציות</p>
-          <button
-            type="button"
-            onClick={() => setProductType('VARIABLE')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            המר למוצר עם וריאציות
-          </button>
-        </div>
-      ) : productType === 'BUNDLE' ? (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium text-gray-900">רכיבי הבנדל</h3>
-            <button
-              type="button"
-              onClick={handleAddBundleItem}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              הוסף מוצר לבנדל
-            </button>
-          </div>
-
-          {bundleItems.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 mb-4">הוסף מוצרים לבנדל</p>
-              <button
-                type="button"
-                onClick={handleAddBundleItem}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                הוסף מוצר ראשון
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {bundleItems.map((item, index) => (
-                <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-medium text-gray-900">מוצר {index + 1}</h4>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveBundleItem(item.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="relative">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">מוצר</label>
-                      
-                      {/* Selected Product Display */}
-                      {item.productId ? (
-                        <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-between">
-                          <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                            {(() => {
-                              const selectedProduct = availableProducts.find(p => p.id == item.productId);
-                              return selectedProduct ? (
-                                <>
-                                  {selectedProduct.media && selectedProduct.media[0] && (
-                                    <img 
-                                      src={selectedProduct.media[0].media?.s3Url || selectedProduct.media[0].url} 
-                                      alt={selectedProduct.name}
-                                      className="w-8 h-8 rounded object-cover"
-                                    />
-                                  )}
-                                  <div>
-                                    <div className="font-medium text-sm">{selectedProduct.name}</div>
-                                    <div className="text-xs text-gray-500">₪{selectedProduct.price}</div>
-                                  </div>
-                                </>
-                              ) : (
-                                <span className="text-gray-500">מוצר לא נמצא</span>
-                              );
-                            })()}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleBundleItemChange(item.id, 'productId', '');
-                              setShowProductDropdown(null);
-                            }}
-                            className="text-gray-400 hover:text-red-500 p-1"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        /* Product Search Input */
-                        <div className="relative product-search-container">
-                          <input
-                            type="text"
-                            placeholder="חפש מוצר..."
-                            value={showProductDropdown === item.id ? productSearchTerm : ''}
-                            onChange={(e) => {
-                              setProductSearchTerm(e.target.value);
-                              setShowProductDropdown(item.id);
-                            }}
-                            onFocus={() => setShowProductDropdown(item.id)}
-                            className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                            <Package className="w-4 h-4 text-gray-400" />
-                          </div>
-                          
-                          {/* Search Results Dropdown */}
-                          {showProductDropdown === item.id && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                              {getFilteredProducts(productSearchTerm).length === 0 ? (
-                                <div className="px-4 py-3 text-gray-500 text-center">
-                                  {productSearchTerm ? 'לא נמצאו מוצרים' : 'התחל להקליד לחיפוש'}
-                                </div>
-                              ) : (
-                                getFilteredProducts(productSearchTerm).map(product => (
-                                  <div
-                                    key={product.id}
-                                    onClick={() => handleProductSelect(item.id, product)}
-                                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                                  >
-                                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                                      {product.media && product.media[0] && (
-                                        <img 
-                                          src={product.media[0].media?.s3Url || product.media[0].url} 
-                                          alt={product.name}
-                                          className="w-10 h-10 rounded object-cover"
-                                        />
-                                      )}
-                                      <div className="flex-1 min-w-0">
-                                        <div className="font-medium text-sm text-gray-900 truncate">
-                                          {product.name}
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                          SKU: {product.sku || 'N/A'} • ₪{product.price}
-                                        </div>
-                                        <div className="text-xs text-blue-600">
-                                          מלאי: {product.inventoryQuantity || 0} יחידות
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">כמות</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => handleBundleItemChange(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div className="flex items-end">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={item.isOptional}
-                          onChange={(e) => handleBundleItemChange(item.id, 'isOptional', e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 ml-2"
-                        />
-                        <span className="text-sm text-gray-700">אופציונלי</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <>
-          {/* Product Options */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-gray-900">אפשרויות מוצר</h3>
-              <button
-                type="button"
-                onClick={handleAddOption}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                הוסף אפשרות
-              </button>
-            </div>
-
-            {productOptions.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-lg">
-                <Tag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 mb-4">הוסף אפשרויות כמו צבע, מידה או חומר</p>
-                <button
-                  type="button"
-                  onClick={handleAddOption}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  הוסף אפשרות ראשונה
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {productOptions.map((option, optionIndex) => (
-                  <div key={option.id} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium text-gray-900">אפשרות {optionIndex + 1}</h4>
-                      <button
-                        type="button"
-                        onClick={() => setProductOptions(prev => prev.filter(o => o.id !== option.id))}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">שם האפשרות</label>
-                        <input
-                          type="text"
-                          value={option.name}
-                          onChange={(e) => {
-                            setProductOptions(prev => prev.map(o => 
-                              o.id === option.id ? { ...o, name: e.target.value } : o
-                            ));
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="למשל: צבע, מידה, חומר"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">סוג האפשרות</label>
-                        <select
-                          value={option.type}
-                          onChange={(e) => {
-                            setProductOptions(prev => prev.map(o => 
-                              o.id === option.id ? { ...o, type: e.target.value } : o
-                            ));
-                          }}
-                          className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
-                          style={{
-                            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                            backgroundPosition: 'right 0.5rem center',
-                            backgroundRepeat: 'no-repeat',
-                            backgroundSize: '1.5em 1.5em'
-                          }}
-                        >
-                          {optionTypes.map(type => (
-                            <option key={type.value} value={type.value}>{type.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Option Values */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="block text-sm font-medium text-gray-700">ערכים</label>
-                        <button
-                          type="button"
-                          onClick={() => handleAddOptionValue(option.id)}
-                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-1 text-sm"
-                        >
-                          <Plus className="w-3 h-3" />
-                          הוסף ערך
-                        </button>
-                      </div>
-
-                      <div className="space-y-3">
-                        {option.values.map((value, valueIndex) => (
-                          <div key={value.id} className="flex items-center gap-3">
-                            <input
-                              type="text"
-                              value={value.value}
-                              onChange={(e) => handleOptionValueChange(option.id, value.id, e.target.value)}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder={`ערך ${valueIndex + 1}`}
-                            />
-                            {option.type === 'COLOR' && (
-                              <input
-                                type="color"
-                                value={value.colorCode || '#000000'}
-                                onChange={(e) => {
-                                  setProductOptions(prev => prev.map(o => 
-                                    o.id === option.id 
-                                      ? { ...o, values: o.values.map(v => v.id === value.id ? { ...v, colorCode: e.target.value } : v) }
-                                      : o
-                                  ));
-                                }}
-                                className="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer"
-                              />
-                            )}
-                            {option.values.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveOptionValue(option.id, value.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Auto-generated variants info */}
-                {variants.length > 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <CheckCircle2 className="w-5 h-5 text-green-600 ml-2" />
-                      <span className="text-green-800 font-medium">
-                        נוצרו {variants.length} וריאציות אוטומטית
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Generated Variants */}
-          {variants.length > 0 && (
-            <div>
-              <h3 className="font-medium text-gray-900 mb-4">וריאציות שנוצרו</h3>
-              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        וריאציה
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        SKU
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        מחיר
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        מלאי
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        פעיל
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {variants.map((variant) => (
-                      <tr key={variant.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {variant.optionValues.map(ov => ov.value).join(' / ')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="text"
-                            value={variant.sku}
-                            onChange={(e) => {
-                              setVariants(prev => prev.map(v => 
-                                v.id === variant.id ? { ...v, sku: e.target.value } : v
-                              ));
-                            }}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={variant.price}
-                            onChange={(e) => {
-                              setVariants(prev => prev.map(v => 
-                                v.id === variant.id ? { ...v, price: e.target.value } : v
-                              ));
-                            }}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="number"
-                            value={variant.inventoryQuantity}
-                            onChange={(e) => {
-                              setVariants(prev => prev.map(v => 
-                                v.id === variant.id ? { ...v, inventoryQuantity: parseInt(e.target.value) || 0 } : v
-                              ));
-                            }}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={variant.isActive}
-                            onChange={(e) => {
-                              setVariants(prev => prev.map(v => 
-                                v.id === variant.id ? { ...v, isActive: e.target.checked } : v
-                              ));
-                            }}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-
-  const renderInventoryTab = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h4 className="font-medium text-gray-900">מעקב מלאי</h4>
-          <p className="text-sm text-gray-500">עקוב אחר כמות המוצרים במלאי</p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={productData.trackInventory}
-            onChange={(e) => setProductData({ ...productData, trackInventory: e.target.checked })}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-        </label>
-      </div>
-
-      {productData.trackInventory && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">כמות במלאי</label>
-          <input
-            type="number"
-            value={productData.inventoryQuantity}
-            onChange={(e) => setProductData({ ...productData, inventoryQuantity: parseInt(e.target.value) || 0 })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="0"
-          />
-        </div>
-      )}
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">משקל (ק"ג)</label>
-        <input
-          type="number"
-          step="0.01"
-          value={productData.weight}
-          onChange={(e) => setProductData({ ...productData, weight: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="0.00"
-        />
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h4 className="font-medium text-gray-900">אפשר הזמנות ללא מלאי</h4>
-          <p className="text-sm text-gray-500">אפשר ללקוחות להזמין גם כשאין במלאי</p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={productData.allowBackorder}
-            onChange={(e) => setProductData({ ...productData, allowBackorder: e.target.checked })}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-        </label>
-      </div>
-
-
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h4 className="font-medium text-gray-900">מוצר דיגיטלי</h4>
-          <p className="text-sm text-gray-500">המוצר הוא קובץ דיגיטלי</p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={productData.isDigital}
-            onChange={(e) => setProductData({ ...productData, isDigital: e.target.checked })}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-        </label>
-      </div>
-    </div>
-  );
-
-  const renderSeoTab = () => (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">כותרת SEO</label>
-        <input
-          type="text"
-          value={productData.seoTitle}
-          onChange={(e) => setProductData({ ...productData, seoTitle: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="כותרת למנועי חיפוש"
-        />
-        <p className="text-xs text-gray-500 mt-1">מומלץ עד 60 תווים</p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">תיאור SEO</label>
-        <textarea
-          value={productData.seoDescription}
-          onChange={(e) => setProductData({ ...productData, seoDescription: e.target.value })}
-          rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="תיאור למנועי חיפוש"
-        />
-        <p className="text-xs text-gray-500 mt-1">מומלץ עד 160 תווים</p>
-      </div>
-
-      {/* Preview */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <h4 className="font-medium text-gray-900 mb-3 text-sm">תצוגה מקדימה בגוגל</h4>
-        <div className="space-y-1">
-          <div className="text-blue-600 text-sm hover:underline cursor-pointer">
-            {productData.seoTitle || productData.name || 'כותרת המוצר'}
-          </div>
-          <div className="text-green-700 text-xs">
-            yourstore.com/products/{productData.name?.toLowerCase().replace(/\s+/g, '-') || 'product-name'}
-          </div>
-          <div className="text-gray-600 text-xs">
-            {productData.seoDescription || productData.shortDescription || 'תיאור המוצר יופיע כאן...'}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderCustomFieldsTab = () => (
-    <div className="space-y-6">
-      {customFields.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <Info className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <p>אין שדות מותאמים אישית מוגדרים</p>
-          <p className="text-sm mt-2">ניתן להוסיף שדות מותאמים אישית בהגדרות החנות</p>
-        </div>
-      ) : (
-        customFields.map((field) => (
-          <div key={field.id}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {field.label}
-              {field.isRequired && <span className="text-red-500 mr-1">*</span>}
-            </label>
-            
-            {field.type === 'TEXT' && (
-              <input
-                type="text"
-                value={customFieldValues[field.name] || ''}
-                onChange={(e) => setCustomFieldValues({
-                  ...customFieldValues,
-                  [field.name]: e.target.value
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={field.placeholder}
-                required={field.isRequired}
-              />
-            )}
-            
-            {field.type === 'TEXTAREA' && (
-              <textarea
-                value={customFieldValues[field.name] || ''}
-                onChange={(e) => setCustomFieldValues({
-                  ...customFieldValues,
-                  [field.name]: e.target.value
-                })}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={field.placeholder}
-                required={field.isRequired}
-              />
-            )}
-            
-            {field.type === 'NUMBER' && (
-              <input
-                type="number"
-                value={customFieldValues[field.name] || ''}
-                onChange={(e) => setCustomFieldValues({
-                  ...customFieldValues,
-                  [field.name]: e.target.value
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={field.placeholder}
-                required={field.isRequired}
-              />
-            )}
-            
-            {field.type === 'CHECKBOX' && (
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={customFieldValues[field.name] === 'true'}
-                  onChange={(e) => setCustomFieldValues({
-                    ...customFieldValues,
-                    [field.name]: e.target.checked ? 'true' : 'false'
-                  })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span className="mr-2 text-sm text-gray-700">{field.placeholder}</span>
-              </div>
-            )}
-            
-            {field.helpText && (
-              <p className="text-xs text-gray-500 mt-1">{field.helpText}</p>
-            )}
-          </div>
-        ))
-      )}
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center">
-            <button 
-              onClick={() => {
-                window.history.pushState({}, '', '/dashboard/products');
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }}
-              className="p-2 hover:bg-gray-100 rounded-lg ml-3"
-            >
-              <ArrowRight className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">
+      <div className="border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={handleBack}
+                className="flex items-center text-gray-600 hover:text-gray-800"
+              >
+                <ArrowRight className="w-4 h-4 ml-2" />
+                חזרה למוצרים
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900">
                 {productId ? 'עריכת מוצר' : 'הוסף מוצר'}
               </h1>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
-              תצוגה מקדימה
-            </button>
-            <button 
-              onClick={handleSaveProduct}
-              className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
-            >
-              שמור
-            </button>
+            <div className="flex items-center gap-2">
+              <button className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                <Eye className="w-4 h-4 ml-2" />
+                תצוגה מקדימה
+              </button>
+              <button 
+                onClick={handleSaveProduct}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <Save className="w-4 h-4 ml-2" />
+                שמור
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Validation Errors */}
+      {validationErrors.length > 0 && (
+        <div className="max-w-7xl mx-auto px-6 pt-4 pb-2">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="mr-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  יש לתקן את השגיאות הבאות:
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <ul className="list-disc list-inside space-y-1">
+                    {validationErrors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Title and Description */}
+            {/* Basic Info */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">כותרת</label>
-                    <input
-                      type="text"
-                      value={productData.name}
-                      onChange={(e) => setProductData({ ...productData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="חולצת טי קצרה"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">תיאור</label>
-                    <textarea
-                      value={productData.description}
-                      onChange={(e) => setProductData({ ...productData, description: e.target.value })}
-                      rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="תיאור המוצר..."
-                    />
-                  </div>
-                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">מידע בסיסי</h3>
+                <ProductBasicInfo
+                  productType={productType}
+                  setProductType={setProductType}
+                  productData={productData}
+                  setProductData={setProductData}
+                />
               </div>
             </div>
+
+            {/* Pricing & Inventory - Only for Simple Products */}
+            {productType === 'SIMPLE' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-6">
+                  <ProductPricing
+                    productData={productData}
+                    setProductData={setProductData}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Media */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">מדיה</h3>
-                {renderMediaTab()}
+                <ProductMedia
+                  productImages={productImages}
+                  setProductImages={setProductImages}
+                  fileInputRef={fileInputRef}
+                />
               </div>
             </div>
 
-            {/* Product Type & Variants/Bundle */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  {productType === 'BUNDLE' ? 'רכיבי בנדל' : productType === 'VARIABLE' ? 'וריאציות' : 'סוג מוצר'}
-                </h3>
-                {renderBasicTab()}
-                {productType !== 'SIMPLE' && (
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    {renderVariantsTab()}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Pricing */}
-            {(productType === 'SIMPLE' || productType === 'BUNDLE') && (
+            {/* Options (for VARIABLE products) */}
+            {productType === 'VARIABLE' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">תמחור</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">מחיר</label>
-                      <div className="relative">
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">₪</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={productData.price}
-                          onChange={(e) => setProductData({ ...productData, price: e.target.value })}
-                          className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">השווה במחיר</label>
-                      <div className="relative">
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">₪</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={productData.comparePrice}
-                          onChange={(e) => setProductData({ ...productData, comparePrice: e.target.value })}
-                          className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">מחיר עלות</label>
-                      <div className="relative">
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">₪</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={productData.costPrice}
-                          onChange={(e) => setProductData({ ...productData, costPrice: e.target.value })}
-                          className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <ProductOptions
+                    productOptions={productOptions}
+                    setProductOptions={setProductOptions}
+                    handleAddOption={handleAddOption}
+                    handleRemoveOption={handleRemoveOption}
+                    handleAddOptionValue={handleAddOptionValue}
+                    handleRemoveOptionValue={handleRemoveOptionValue}
+                    handleOptionValueChange={handleOptionValueChange}
+                  />
                 </div>
               </div>
             )}
 
-            {/* SEO */}
+            {/* Variants (for VARIABLE products) */}
+            {productType === 'VARIABLE' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-6">
+                  <ProductVariants
+                    productOptions={productOptions}
+                    variants={variants}
+                    setVariants={setVariants}
+                    productData={productData}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Custom Fields */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">אופטימיזציה למנועי חיפוש</h3>
-                {renderSeoTab()}
+                <h3 className="text-lg font-medium text-gray-900 mb-4">שדות מותאמים אישית</h3>
+                <CustomFieldsTab
+                  customFields={customFields}
+                  customFieldValues={customFieldValues}
+                  setCustomFieldValues={setCustomFieldValues}
+                />
               </div>
             </div>
-          </div>
+
+            </div>
 
           {/* Right Column - Sidebar */}
-          <div className="space-y-6">
-            
-            {/* Status */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">סטטוס</h3>
-                <div className="space-y-4">
-                  <div>
-                    <select 
-                      value={isDraft ? 'draft' : 'active'}
-                      onChange={(e) => setIsDraft(e.target.value === 'draft')}
-                      className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                        backgroundPosition: 'left 0.5rem center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '1.5em 1.5em'
-                      }}
-                    >
-                      <option value="active">פעיל</option>
-                      <option value="draft">טיוטה</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Product Organization */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">ארגון מוצר</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">קטגוריית מוצר</label>
-                    <select 
-                      value={productData.category}
-                      onChange={(e) => setProductData({ ...productData, category: e.target.value })}
-                      className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                        backgroundPosition: 'left 0.5rem center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '1.5em 1.5em'
-                      }}
-                    >
-                      <option value="">חפש או צור קטגוריה</option>
-                      <option value="בגדים">בגדים</option>
-                      <option value="נעליים">נעליים</option>
-                      <option value="אביזרים">אביזרים</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">סוג מוצר</label>
-                    <input
-                      type="text"
-                      value={productType === 'SIMPLE' ? 'מוצר פשוט' : productType === 'VARIABLE' ? 'מוצר עם וריאציות' : 'מוצר בנדל'}
-                      readOnly
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">ספק</label>
-                    <input
-                      type="text"
-                      placeholder="ספק המוצר"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Inventory */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">מלאי</h3>
-                {renderInventoryTab()}
-              </div>
-            </div>
-
-            {/* Shipping */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">משלוח</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-gray-900">זהו מוצר פיזי</div>
-                      <div className="text-sm text-gray-500">הלקוחות יקבלו מוצר פיזי</div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={productData.requiresShipping}
-                        onChange={(e) => setProductData({ ...productData, requiresShipping: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-                  
-                  {productData.requiresShipping && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">משקל</label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={productData.weight}
-                          onChange={(e) => setProductData({ ...productData, weight: e.target.value })}
-                          className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="0.0"
-                        />
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">ק"ג</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <ProductSidebar
+            productData={productData}
+            setProductData={setProductData}
+            selectedCategories={selectedCategories}
+            setSelectedCategories={setSelectedCategories}
+            isDraft={isDraft}
+            setIsDraft={setIsDraft}
+            htmlToPlainText={htmlToPlainText}
+          />
         </div>
       </div>
     </div>

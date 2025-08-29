@@ -29,7 +29,10 @@ router.get('/', authenticateToken, async (req, res) => {
       }
     });
 
-    res.json(customFields);
+    res.json({
+      success: true,
+      data: customFields
+    });
   } catch (error) {
     console.error('Error fetching custom fields:', error);
     res.status(500).json({ error: 'Internal server error' });

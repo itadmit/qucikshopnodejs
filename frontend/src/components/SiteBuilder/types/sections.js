@@ -3,7 +3,14 @@
  * מערכת הסקשנים החדשה בהשראת שופיפיי ו-Minimog
  */
 
-import { SETTING_TYPES, SETTING_GROUPS } from './settingTypes.js';
+import { 
+  SETTING_TYPES, 
+  SETTING_GROUPS, 
+  createSetting, 
+  createResponsiveSetting, 
+  createSettingGroup, 
+  createConditionalSetting 
+} from './settingTypes.js';
 
 // קטגוריות הסקשנים מורחבות
 export const SECTION_CATEGORIES = {

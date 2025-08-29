@@ -16,7 +16,8 @@ const BuilderCanvas = ({
   previewMode,
   isPreviewMode,
   onUpdateSection,
-  onUpdateGlobalSection
+  onUpdateGlobalSection,
+  onSectionClick
 }) => {
   if (isLoading) {
     return (
@@ -59,6 +60,7 @@ const BuilderCanvas = ({
                 isPreviewMode={isPreviewMode}
                 previewMode={previewMode}
                 onUpdateSection={onUpdateSection}
+                onSectionClick={onSectionClick}
               />
             )}
           </div>
@@ -215,7 +217,8 @@ const PageSectionsCanvas = ({
   pageStructure,
   isPreviewMode,
   previewMode,
-  onUpdateSection
+  onUpdateSection,
+  onSectionClick
 }) => {
   return (
     <div className="space-y-4">
@@ -223,7 +226,12 @@ const PageSectionsCanvas = ({
         const sectionSchema = getSectionById(section.type);
         
         return (
-          <div key={section.id} className="relative group">
+          <div 
+            key={section.id} 
+            data-section-id={section.id}
+            className="relative group cursor-pointer"
+            onClick={() => onSectionClick && onSectionClick(section.id, section.type)}
+          >
             <SectionRenderer
               section={section}
               sectionSchema={sectionSchema}

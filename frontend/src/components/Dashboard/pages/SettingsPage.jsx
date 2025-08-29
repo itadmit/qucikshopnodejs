@@ -20,7 +20,8 @@ import {
   Save,
   AlertCircle,
   CheckCircle,
-  Mail
+  Mail,
+  Type
 } from 'lucide-react';
 import PixelsPage from './PixelsPage';
 import EmailTemplatesPage from './EmailTemplatesPage';
@@ -142,6 +143,14 @@ const SettingsPage = ({ userStore }) => {
       icon: Target,
       color: 'text-rose-600',
       bgColor: 'bg-rose-50'
+    },
+    {
+      id: 'custom-fields',
+      name: 'שדות מותאמים אישית',
+      description: 'הוסף שדות נוספים למוצרים שלך',
+      icon: Type,
+      color: 'text-cyan-600',
+      bgColor: 'bg-cyan-50'
     }
   ];
 
@@ -188,6 +197,11 @@ const SettingsPage = ({ userStore }) => {
         return <DeveloperSettings />;
       case 'pixels':
         return <PixelsSettings userStore={userStore} />;
+      case 'custom-fields':
+        // Navigate to custom fields page
+        window.history.pushState({}, '', '/dashboard/settings/custom-fields');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        return <GeneralSettings />;
       default:
         return <GeneralSettings />;
     }

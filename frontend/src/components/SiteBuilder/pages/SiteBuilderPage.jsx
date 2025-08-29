@@ -328,7 +328,20 @@ const SiteBuilderPage = ({ user, onBack }) => {
       setPageStructure(newStructure);
       saveToHistory(newStructure);
     
-    setSelectedElement({ type: 'section', id: newSection.id });
+    setSelectedElement({ type: 'section', id: newSection.id, sectionType: sectionType });
+    setRightSidebarOpen(true);
+    setEditingGlobal(null);
+    
+    // גלילה אוטומטית לסקשן החדש
+    setTimeout(() => {
+      const sectionElement = document.querySelector(`[data-section-id="${newSection.id}"]`);
+      if (sectionElement) {
+        sectionElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+    }, 100);
   };
 
   // Remove section
@@ -599,11 +612,22 @@ const SiteBuilderPage = ({ user, onBack }) => {
                 [globalType]: { ...prev[globalType], ...updates }
               }));
             }}
+            onSectionClick={(sectionId, sectionType) => {
+              console.log('🎯 Section clicked:', { sectionId, sectionType });
+              setSelectedElement({ 
+                type: 'section', 
+                id: sectionId, 
+                sectionType: sectionType 
+              });
+              setRightSidebarOpen(true);
+              setEditingGlobal(null);
+            }}
           />
 
           {/* Settings Panel */}
           {!isPreviewMode && rightSidebarOpen && (selectedElement || editingGlobal) && (
-            <SettingsPanel
+            <div className="animate-slide-in-left">
+              <SettingsPanel
               isOpen={true}
           onClose={() => {
             setSelectedElement(null);
@@ -621,7 +645,9 @@ const SiteBuilderPage = ({ user, onBack }) => {
             ? pageStructure.settings || {}
             : editingGlobal 
               ? globalStructure[editingGlobal]?.settings || {}
-              : selectedElement?.settings || {}
+              : selectedElement?.type === 'section' 
+                ? pageStructure.sections.find(s => s.id === selectedElement.id)?.settings || {}
+                : selectedElement?.settings || {}
           }
           onSettingChange={(settingId, value) => {
             if (editingGlobal === 'general') {
@@ -683,6 +709,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
               : 'הגדרות כלליות'
           }
             />
+            </div>
           )}
         </div>
 

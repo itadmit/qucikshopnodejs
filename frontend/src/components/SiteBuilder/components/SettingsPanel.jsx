@@ -23,6 +23,8 @@ import {
   MenuPicker, 
   IconPicker 
 } from './SettingInputs';
+import ColorPicker from './ui/ColorPicker';
+import RangeSlider from './ui/RangeSlider';
 import { SETTING_TYPES } from '../types/settingTypes';
 
 // Custom Toggle Component like Shopify - RTL Compatible
@@ -64,6 +66,8 @@ const SettingsPanel = ({
   title = "הגדרות סקשן"
 }) => {
   const [expandedGroups, setExpandedGroups] = useState({});
+  
+  // Debug props (removed for production)
   const [menus, setMenus] = useState([]);
   const [loadingMenus, setLoadingMenus] = useState(false);
 
@@ -232,51 +236,30 @@ const SettingsPanel = ({
 
       case 'color':
         return (
-          <div className="flex items-center space-x-3 space-x-reverse">
-            <div className="relative">
-              <input
-                type="color"
-                value={value}
-                onChange={(e) => onSettingChange(setting.id, e.target.value)}
-                className="w-10 h-10 border-2 border-gray-200 rounded-lg cursor-pointer bg-white shadow-sm hover:border-gray-300 transition-colors"
-              />
-              <div className="absolute inset-0 rounded-lg border border-gray-300 pointer-events-none"></div>
-            </div>
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => onSettingChange(setting.id, e.target.value)}
-              placeholder="#000000"
-              className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white hover:border-gray-400 font-mono"
-              dir="ltr"
-            />
-          </div>
+          <ColorPicker
+            value={value}
+            onChange={(newValue) => onSettingChange(setting.id, newValue)}
+            label=""
+            showPresets={true}
+            showPrimarySecondary={true}
+            showTransparent={setting.allowTransparent !== false}
+            showClear={setting.allowClear !== false}
+            allowEmpty={setting.allowEmpty === true}
+          />
         );
 
       case 'range':
         return (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">{setting.min}</span>
-              <span className="text-xs text-gray-500">{setting.max}</span>
-            </div>
-            <input
-              type="range"
-              min={setting.min}
-              max={setting.max}
-              step={setting.step || 1}
-              value={value}
-              onChange={(e) => onSettingChange(setting.id, parseInt(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-            />
-            <div className="flex items-center justify-center">
-              <div className="px-3 py-1.5 bg-gray-100 rounded-lg border">
-                <span className="text-sm font-semibold text-gray-900">
-                  {value}{setting.unit && ` ${setting.unit}`}
-                </span>
-              </div>
-            </div>
-          </div>
+          <RangeSlider
+            value={value}
+            min={setting.min || 0}
+            max={setting.max || 100}
+            step={setting.step || 1}
+            onChange={(newValue) => onSettingChange(setting.id, newValue)}
+            label=""
+            showValue={true}
+            unit={setting.unit || ''}
+          />
         );
 
       case 'image':
@@ -320,10 +303,10 @@ const SettingsPanel = ({
               value={value}
               onChange={(e) => onSettingChange(setting.id, e.target.value)}
               placeholder={setting.placeholder || 'https://example.com'}
-              className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-right"
+              className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-right"
               dir="rtl"
             />
-            <LinkIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <LinkIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           </div>
         );
 
@@ -335,7 +318,7 @@ const SettingsPanel = ({
               value={value || ''}
               onChange={(e) => onSettingChange(setting.id, e.target.value)}
               disabled={loadingMenus}
-              className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none text-right bg-white"
+              className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none text-right bg-white"
               dir="rtl"
             >
               <option value="">בחר תפריט</option>
@@ -430,6 +413,8 @@ const SettingsPanel = ({
   // Handle general settings
   const isGeneralSettings = section?.id === 'general';
   const allSettings = isGeneralSettings ? getGeneralSettings() : (section?.settings || []);
+  
+  // Debug logging (removed for production)
 
   // Group settings by their group property - Shopify style
   const renderSettingsGroups = (settings) => {
@@ -471,22 +456,65 @@ const SettingsPanel = ({
   // General settings configuration
   function getGeneralSettings() {
     return [
+      // צבעי ערכת נושא
+      {
+        id: 'themeColors',
+        type: 'header',
+        label: 'צבעי ערכת נושא',
+        group: 'design'
+      },
       {
         id: 'primaryColor',
         type: 'color',
         label: 'צבע ראשי',
-        default: '#3b82f6'
+        default: '#3b82f6',
+        info: 'צבע זה ישמש לכפתורים, קישורים ואלמנטים מרכזיים',
+        group: 'design'
       },
       {
         id: 'secondaryColor', 
         type: 'color',
         label: 'צבע משני',
-        default: '#8b5cf6'
+        default: '#8b5cf6',
+        info: 'צבע זה ישמש לאלמנטים משניים והדגשות',
+        group: 'design'
+      },
+      {
+        id: 'accentColor',
+        type: 'color',
+        label: 'צבע הדגשה',
+        default: '#10b981',
+        info: 'צבע זה ישמש להדגשות מיוחדות ומבצעים',
+        group: 'design'
+      },
+      {
+        id: 'backgroundColor',
+        type: 'color',
+        label: 'צבע רקע כללי',
+        default: '#ffffff',
+        info: 'צבע הרקע הכללי של האתר',
+        group: 'design'
+      },
+      {
+        id: 'textColor',
+        type: 'color',
+        label: 'צבע טקסט ראשי',
+        default: '#1f2937',
+        info: 'צבע הטקסט הראשי באתר',
+        group: 'design'
+      },
+
+      // טיפוגרפיה
+      {
+        id: 'typography',
+        type: 'header',
+        label: 'טיפוגרפיה',
+        group: 'design'
       },
       {
         id: 'fontFamily',
         type: 'select',
-        label: 'גופן',
+        label: 'גופן ראשי',
         options: [
           { value: 'Inter', label: 'Inter (אנגלית)' },
           { value: 'Heebo', label: 'Heebo (עברית + אנגלית)' },
@@ -494,15 +522,95 @@ const SettingsPanel = ({
           { value: 'Rubik', label: 'Rubik (עברית + אנגלית)' },
           { value: 'Noto Sans Hebrew', label: 'Noto Sans Hebrew (עברית + אנגלית)' },
           { value: 'Open Sans', label: 'Open Sans (אנגלית)' },
-          { value: 'Roboto', label: 'Roboto (אנגלית)' }
+          { value: 'Roboto', label: 'Roboto (אנגלית)' },
+          { value: 'Poppins', label: 'Poppins (אנגלית)' },
+          { value: 'Montserrat', label: 'Montserrat (אנגלית)' }
         ],
-        default: 'Noto Sans Hebrew'
+        default: 'Noto Sans Hebrew',
+        info: 'גופן זה ישמש לכל הטקסטים באתר',
+        group: 'design'
+      },
+      {
+        id: 'headingFontFamily',
+        type: 'select',
+        label: 'גופן כותרות',
+        options: [
+          { value: 'inherit', label: 'זהה לגופן הראשי' },
+          { value: 'Inter', label: 'Inter (אנגלית)' },
+          { value: 'Heebo', label: 'Heebo (עברית + אנגלית)' },
+          { value: 'Assistant', label: 'Assistant (עברית + אנגלית)' },
+          { value: 'Rubik', label: 'Rubik (עברית + אנגלית)' },
+          { value: 'Noto Sans Hebrew', label: 'Noto Sans Hebrew (עברית + אנגלית)' },
+          { value: 'Playfair Display', label: 'Playfair Display (אנגלית)' },
+          { value: 'Merriweather', label: 'Merriweather (אנגלית)' }
+        ],
+        default: 'inherit',
+        info: 'גופן זה ישמש לכותרות בלבד',
+        group: 'design'
+      },
+      {
+        id: 'fontSize',
+        type: 'range',
+        label: 'גודל גופן בסיסי',
+        min: 14,
+        max: 18,
+        step: 1,
+        unit: 'px',
+        default: 16,
+        info: 'גודל הגופן הבסיסי לטקסט רגיל',
+        group: 'design'
+      },
+
+      // הגדרות כלליות
+      {
+        id: 'general',
+        type: 'header',
+        label: 'הגדרות כלליות',
+        group: 'general'
       },
       {
         id: 'rtl',
         type: 'checkbox',
         label: 'תמיכה ב-RTL (עברית)',
-        default: true
+        default: true,
+        info: 'הפעלת תמיכה בכיוון כתיבה מימין לשמאל',
+        group: 'general'
+      },
+      {
+        id: 'containerWidth',
+        type: 'select',
+        label: 'רוחב מכולה מקסימלי',
+        options: [
+          { value: 'sm', label: 'קטן (640px)' },
+          { value: 'md', label: 'בינוני (768px)' },
+          { value: 'lg', label: 'גדול (1024px)' },
+          { value: 'xl', label: 'גדול מאוד (1280px)' },
+          { value: '2xl', label: 'ענק (1536px)' },
+          { value: 'full', label: 'מלא (100%)' }
+        ],
+        default: 'xl',
+        info: 'רוחב מקסימלי לתוכן האתר',
+        group: 'general'
+      },
+      {
+        id: 'borderRadius',
+        type: 'range',
+        label: 'עיגול פינות כללי',
+        min: 0,
+        max: 20,
+        step: 1,
+        unit: 'px',
+        default: 8,
+        info: 'רמת עיגול הפינות לכפתורים וקופסאות',
+        group: 'general'
+      },
+
+      // פעולות
+      {
+        id: 'actions',
+        type: 'header',
+        label: 'פעולות',
+        group: 'actions'
       },
       {
         id: 'resetPage',
@@ -510,7 +618,8 @@ const SettingsPanel = ({
         label: 'אפס דף למצב דיפולטיבי',
         buttonText: 'אפס דף',
         buttonStyle: 'danger',
-        info: 'פעולה זו תמחק את כל השינויים ותחזיר את הדף למצב הדיפולטיבי'
+        info: 'פעולה זו תמחק את כל השינויים ותחזיר את הדף למצב הדיפולטיבי',
+        group: 'actions'
       }
     ];
   }

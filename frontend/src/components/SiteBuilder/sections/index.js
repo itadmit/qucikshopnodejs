@@ -5,10 +5,15 @@
 
 import { 
   SECTION_CATEGORIES, 
-  SETTING_TYPES, 
-  createSectionSchema, 
-  createSetting 
+  createSectionSchema 
 } from '../types/sections.js';
+import { 
+  SETTING_TYPES, 
+  createSetting,
+  createResponsiveSetting,
+  createSettingGroup,
+  createConditionalSetting
+} from '../types/settingTypes.js';
 import { 
   Megaphone, 
   Target, 
@@ -2883,6 +2888,8 @@ export const socialProofSection = createSectionSchema({
   }]
 });
 
+// All sections are now fully implemented above
+
 // רישום כל הסקשנים
 export const ALL_SECTIONS = [
   headerSection,
@@ -2906,6 +2913,8 @@ export const ALL_SECTIONS = [
   countdownSection,
   socialProofSection
 ];
+
+// Debug logging (removed for production)
 
 // קבלת סקשן לפי ID
 export const getSectionById = (id) => {

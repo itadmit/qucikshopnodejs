@@ -39,6 +39,7 @@ import AutomaticDiscountFormPage from './pages/AutomaticDiscountFormPage.jsx';
 import SiteBuilderPage from '../SiteBuilder/pages/SiteBuilderPage.jsx';
 import AdvancedTemplateEditor from './pages/AdvancedTemplateEditor.jsx';
 import OnboardingTour from './components/OnboardingTour.jsx';
+import CustomFieldsPage from './pages/CustomFieldsPage.jsx';
 
 const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
   const { t } = useTranslation();
@@ -270,6 +271,10 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
     // Check for advanced template editor
     if (currentPath.includes('/dashboard/design/editor/')) {
       return <AdvancedTemplateEditor />;
+    }
+    // Check for custom fields page
+    if (currentPath === '/dashboard/settings/custom-fields') {
+      return <CustomFieldsPage />;
     }
     
     switch (activeTab) {

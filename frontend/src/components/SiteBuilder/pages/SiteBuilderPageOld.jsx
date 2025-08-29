@@ -763,7 +763,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
                     placeholder="חפש סקשנים..."
                     value={sectionSearchTerm}
                     onChange={(e) => setSectionSearchTerm(e.target.value)}
-                    className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pr-4 pl-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
