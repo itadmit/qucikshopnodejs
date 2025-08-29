@@ -9,7 +9,7 @@ set -e  # Exit on any error
 EC2_HOST="3.64.187.151"
 EC2_USER="ubuntu"
 SSH_KEY="~/.ssh/quickshop3key.pem"
-REPO_URL="https://github.com/YOUR_USERNAME/quickshop.git"  # Update this!
+REPO_URL="https://github.com/itadmit/qucikshopnodejs.git"
 REMOTE_DIR="/home/ubuntu/quickshop-backend"
 
 echo "🚀 QuickShop Git-based Deployment Starting..."
