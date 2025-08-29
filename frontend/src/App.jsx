@@ -49,8 +49,8 @@ function App() {
     // Check if it's a subdomain (e.g., mystore.quickshop.com or mystore.localhost)
     else if (hostname.includes('.') && !hostname.startsWith('www')) {
       const subdomain = hostname.split('.')[0]
-      // Don't treat 'admin', 'api', 'www' as store slugs
-      if (!['admin', 'api', 'www', 'localhost'].includes(subdomain)) {
+      // Don't treat 'admin', 'api', 'www', 'my-quickshop' as store slugs
+      if (!['admin', 'api', 'www', 'localhost', 'my-quickshop'].includes(subdomain)) {
         detectedStoreSlug = subdomain
       }
     }
