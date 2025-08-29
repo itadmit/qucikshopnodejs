@@ -11,8 +11,23 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['@remixicon/react', 'lucide-react'],
+        },
       },
     },
+    // Production optimizations
+    minify: 'terser',
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
+  },
+  // Environment variables
+  define: {
+    __API_URL__: JSON.stringify(process.env.NODE_ENV === 'production' 
+      ? 'https://my-quickshop.com/api' 
+      : 'http://localhost:3001/api'
+    ),
   },
 })
