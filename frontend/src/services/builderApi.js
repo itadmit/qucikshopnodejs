@@ -3,7 +3,7 @@
  * שירותי API לבילדר האתרים עם חיבור לבקאנד
  */
 
-const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 // Helper function for API calls
 const apiCall = async (endpoint, options = {}) => {

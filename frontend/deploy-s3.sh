@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration
-S3_BUCKET="quickshop-frontend-bucket"
+S3_BUCKET="quickshop3"
 AWS_REGION="eu-central-1"
 CLOUDFRONT_DISTRIBUTION_ID=""  # Add if using CloudFront
 

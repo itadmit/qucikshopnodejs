@@ -103,7 +103,7 @@ const AuthPage = ({ onClose, onSuccess, mode: initialMode = 'login' }) => {
     
     try {
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const response = await fetch(`http://localhost:3001${endpoint}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
