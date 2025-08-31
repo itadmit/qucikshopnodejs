@@ -35,7 +35,7 @@ const TransferStore = ({ store, onClose, onSuccess }) => {
 
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`http://localhost:3001/api/partners/stores/${store.id}/transfer`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/stores/${store.id}/transfer`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

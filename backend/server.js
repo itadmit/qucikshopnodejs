@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import prisma from './lib/prisma.js';
 import { EventHandlers } from './services/EventHandlers.js';
 
@@ -29,6 +31,7 @@ import emailTemplatesRoutes from './routes/email-templates.js';
 import customPagesRoutes from './routes/custom-pages.js';
 import globalSettingsRoutes from './routes/global-settings.js';
 import menusRoutes from './routes/menus.js';
+import pagesRoutes from './routes/pages.js';
 
 // Load environment variables
 dotenv.config();
@@ -44,8 +47,18 @@ if (process.env.NODE_ENV === 'production') {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Get directory path for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: false,
+  originAgentCluster: false,
+  contentSecurityPolicy: false,
+  hsts: false
+}));
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -56,13 +69,54 @@ app.use(cors({
     'http://yogevstore.localhost:5175',
     /^http:\/\/.*\.localhost:5173$/,
     /^http:\/\/.*\.localhost:5174$/,
-    /^http:\/\/.*\.localhost:5175$/
+    /^http:\/\/.*\.localhost:5175$/,
+    // Development server IP access
+    'http://3.64.187.151:5173',
+    'http://3.64.187.151:5174',
+    'http://3.64.187.151:5175',
+    'http://172.31.43.52:5173',
+    'http://172.31.43.52:5174',
+    'http://172.31.43.52:5175',
+    // Production domains
+    'https://my-quickshop.com',
+    'http://my-quickshop.com',
+    'https://www.my-quickshop.com',
+    'http://www.my-quickshop.com',
+    /^https?:\/\/.*\.my-quickshop\.com$/,
+    // API subdomain
+    'https://api.my-quickshop.com',
+    'http://api.my-quickshop.com',
+    // S3 static website hosting
+    'http://quickshop-frontend-bucket.s3-website-us-east-1.amazonaws.com',
+    'https://quickshop-frontend-bucket.s3-website-us-east-1.amazonaws.com'
   ],
   credentials: true
 }));
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Middleware to detect API subdomain
+app.use((req, res, next) => {
+  const host = req.get('host');
+  const isApiSubdomain = host && host.startsWith('api.');
+  req.isApiRequest = isApiSubdomain;
+  next();
+});
+
+// Custom headers to prevent HTTPS redirects and mixed content issues
+app.use((req, res, next) => {
+  // Remove any headers that might cause HTTPS redirects
+  res.removeHeader('Strict-Transport-Security');
+  res.removeHeader('Upgrade-Insecure-Requests');
+  
+  // Set headers to allow HTTP content
+  res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: http: https:;");
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  
+  next();
+});
 
 // Routes
 app.get('/api/health', (req, res) => {
@@ -97,6 +151,22 @@ app.use('/api/email-templates', emailTemplatesRoutes);
 app.use('/api/custom-pages', customPagesRoutes);
 app.use('/api/global-settings', globalSettingsRoutes);
 app.use('/api/menus', menusRoutes);
+app.use('/api/pages', pagesRoutes);
+
+// Serve static files from frontend build
+if (process.env.NODE_ENV === 'production') {
+  const frontendDistPath = path.join(__dirname, '../frontend/dist');
+  app.use(express.static(frontendDistPath));
+  
+  // Handle React Router - serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'API route not found' });
+    }
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -107,12 +177,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 Server accessible at: http://0.0.0.0:${PORT}`);
 });

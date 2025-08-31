@@ -36,8 +36,8 @@ const CouponFormPage = () => {
   useEffect(() => {
     const fetchStoreData = async () => {
       try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/dashboard/user-store', {
+        const token = localStorage.getItem('authToken')
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/dashboard/user-store`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         
@@ -63,8 +63,8 @@ const CouponFormPage = () => {
 
   const loadInfluencers = async (storeId) => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:3001/api/influencers?storeId=${storeId}`, {
+      const token = localStorage.getItem('authToken')
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencers?storeId=${storeId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -80,8 +80,8 @@ const CouponFormPage = () => {
   const loadCoupon = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:3001/api/coupons/${id}`, {
+      const token = localStorage.getItem('authToken')
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/coupons/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -147,10 +147,10 @@ const CouponFormPage = () => {
     
     setSaving(true)
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('authToken')
       const url = isEditMode 
-        ? `http://localhost:3001/api/coupons/${id}`
-        : 'http://localhost:3001/api/coupons'
+        ? `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/coupons/${id}`
+        : `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/coupons`
       
       const method = isEditMode ? 'PUT' : 'POST'
       

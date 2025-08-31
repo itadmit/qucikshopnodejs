@@ -27,6 +27,7 @@ const DataTable = ({
   sortable = true,
   actions = [],
   bulkActions = [],
+  rowActions = [], // פעולות לכל שורה
   onRowClick = null,
   loading = false,
   emptyState = null,
@@ -371,33 +372,60 @@ const DataTable = ({
                 ))}
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Handle view action
-                      }}
-                      className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Handle edit action
-                      }}
-                      className="text-gray-600 hover:text-gray-900 p-1 hover:bg-gray-50 rounded"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Handle more actions
-                      }}
-                      className="text-gray-600 hover:text-gray-900 p-1 hover:bg-gray-50 rounded"
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
+                    {rowActions.length > 0 ? (
+                      rowActions.map((action, actionIndex) => (
+                        <button
+                          key={actionIndex}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            action.onClick(item);
+                          }}
+                          className={`p-1 rounded transition-colors ${
+                            action.variant === 'danger' 
+                              ? 'text-red-600 hover:text-red-900 hover:bg-red-50'
+                              : action.variant === 'primary'
+                              ? 'text-blue-600 hover:text-blue-900 hover:bg-blue-50'
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                          }`}
+                          title={action.label}
+                        >
+                          <action.icon className="w-4 h-4" />
+                        </button>
+                      ))
+                    ) : (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Handle view action
+                          }}
+                          className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded"
+                          title="צפה"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Handle edit action
+                          }}
+                          className="text-gray-600 hover:text-gray-900 p-1 hover:bg-gray-50 rounded"
+                          title="ערוך"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Handle more actions
+                          }}
+                          className="text-gray-600 hover:text-gray-900 p-1 hover:bg-gray-50 rounded"
+                          title="עוד פעולות"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>

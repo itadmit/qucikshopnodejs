@@ -8,6 +8,9 @@ export default {
     extend: {
       fontFamily: {
         'noto-hebrew': ['Noto Sans Hebrew', 'sans-serif'],
+        'heebo': ['Heebo', 'sans-serif'],
+        'assistant': ['Assistant', 'sans-serif'],
+        'rubik': ['Rubik', 'sans-serif'],
       },
       colors: {
         // צבעי המערכת החדשים

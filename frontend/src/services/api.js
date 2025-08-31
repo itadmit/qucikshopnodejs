@@ -1,10 +1,16 @@
 // API Service for QuickShop Frontend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Detect development environment and use appropriate API URL
+const isDevelopment = window.location.port === '5173';
+const API_BASE_URL = isDevelopment 
+  ? 'http://3.64.187.151:3001/api'
+  : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
 
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
     this.token = localStorage.getItem('authToken');
+    
+
   }
 
   // Set authentication token
@@ -37,6 +43,8 @@ class ApiService {
       headers: this.getHeaders(),
       ...options,
     };
+    
+
 
     try {
       const response = await fetch(url, config);
@@ -187,6 +195,8 @@ class ApiService {
 
   // Products APIs
   async getProducts(params = {}) {
+    // Add cache busting parameter
+    params._t = Date.now();
     const queryString = new URLSearchParams(params).toString();
     return this.get(`/products${queryString ? `?${queryString}` : ''}`);
   }

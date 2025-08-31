@@ -58,7 +58,7 @@ const CustomFieldsPage = () => {
   const loadCustomFields = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       if (!token) return;
       
       apiService.setToken(token);
@@ -81,7 +81,7 @@ const CustomFieldsPage = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       if (!token) return;
       
       apiService.setToken(token);
@@ -141,7 +141,7 @@ const CustomFieldsPage = () => {
     }
     
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       if (!token) return;
       
       apiService.setToken(token);

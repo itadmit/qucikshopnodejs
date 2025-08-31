@@ -30,7 +30,7 @@ const PartnerAnalytics = ({ partner }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`http://localhost:3001/api/partners/analytics?range=${timeRange}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/analytics?range=${timeRange}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

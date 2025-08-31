@@ -34,7 +34,7 @@ const StoreSwitcher = ({ currentStore, onStoreChange }) => {
   const fetchUserStores = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       if (!token) return;
       
       apiService.setToken(token);
@@ -50,7 +50,7 @@ const StoreSwitcher = ({ currentStore, onStoreChange }) => {
   const handleStoreSelect = async (store) => {
     try {
       // Fetch full store data with permissions
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       if (!token) return;
       
       apiService.setToken(token);

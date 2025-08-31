@@ -1,5 +1,6 @@
 import { X, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import logo from "../../../assets/logo.png";
 import { useNavigate } from 'react-router-dom';
 
 const DashboardSidebar = ({ 
@@ -23,7 +24,7 @@ const DashboardSidebar = ({
         <div className="flex items-center justify-between">
           <div className="flex justify-center w-full">
             <img 
-              src="/src/assets/logo.png" 
+              src={logo} 
               alt="QuickShop Logo" 
               className="h-10 w-auto"
             />

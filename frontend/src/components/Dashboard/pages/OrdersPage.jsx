@@ -120,8 +120,7 @@ const OrdersPage = () => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-        const storeId = localStorage.getItem('currentStoreId') || '1';
+        const token = localStorage.getItem('authToken');
         
         if (!token) {
           console.log('No token found for orders');
@@ -130,7 +129,31 @@ const OrdersPage = () => {
         }
         
         apiService.setToken(token);
-        const result = await apiService.getOrders({ storeId });
+        
+        // Get user's stores first
+        const userStores = await apiService.getUserStores();
+        if (!userStores || userStores.length === 0) {
+          console.log('No stores found for user');
+          setOrders([]);
+          return;
+        }
+        
+        // Use selected store or first available store
+        const selectedStoreId = localStorage.getItem('selectedStoreId');
+        const currentStore = selectedStoreId 
+          ? userStores.find(store => store.id.toString() === selectedStoreId)
+          : userStores[0];
+        
+        if (!currentStore) {
+          console.log('No valid store found');
+          setOrders([]);
+          return;
+        }
+        
+        // Save current store for future use
+        localStorage.setItem('selectedStoreId', currentStore.id.toString());
+        
+        const result = await apiService.getOrders({ storeId: currentStore.id });
         
         if (result.success) {
           setOrders(result.data);
@@ -372,6 +395,40 @@ const OrdersPage = () => {
           onRowClick={(order) => {
             navigate(`/dashboard/orders/${order.id}`);
           }}
+          rowActions={[
+            {
+              label: 'צפה בהזמנה',
+              icon: Eye,
+              variant: 'primary',
+              onClick: (order) => {
+                navigate(`/dashboard/orders/${order.id}`);
+              }
+            },
+            {
+              label: 'עדכן סטטוס',
+              icon: Edit,
+              onClick: (order) => {
+                console.log('Update order status:', order.id);
+              }
+            },
+            {
+              label: 'הדפס הזמנה',
+              icon: Printer,
+              onClick: (order) => {
+                console.log('Print order:', order.id);
+              }
+            },
+            {
+              label: 'בטל הזמנה',
+              icon: XCircle,
+              variant: 'danger',
+              onClick: (order) => {
+                if (confirm(`האם אתה בטוח שברצונך לבטל את ההזמנה ${order.orderNumber}?`)) {
+                  console.log('Cancel order:', order.id);
+                }
+              }
+            }
+          ]}
           pagination={true}
           itemsPerPage={10}
           className="shadow-sm"

@@ -13,17 +13,27 @@ router.get('/', authenticateToken, async (req, res) => {
     const { storeId } = req.query;
     const userId = req.user.id;
 
-    // Verify user has access to this store
-    const storeUser = await prisma.storeUser.findFirst({
+    // Verify user has access to this store (either as owner or store user)
+    const store = await prisma.store.findFirst({
       where: {
-        storeId: parseInt(storeId),
-        userId: userId,
-        isActive: true
+        id: parseInt(storeId),
+        userId: userId // Check if user is owner
       }
     });
 
-    if (!storeUser) {
-      return res.status(403).json({ error: 'Access denied' });
+    if (!store) {
+      // If not owner, check if user is a store user
+      const storeUser = await prisma.storeUser.findFirst({
+        where: {
+          storeId: parseInt(storeId),
+          userId: userId,
+          isActive: true
+        }
+      });
+
+      if (!storeUser) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
     }
 
     const orders = await prisma.order.findMany({

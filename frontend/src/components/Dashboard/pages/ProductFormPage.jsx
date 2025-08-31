@@ -15,6 +15,8 @@ const ProductFormPage = ({ productId = null }) => {
   const [productType, setProductType] = useState('SIMPLE');
   const [isDraft, setIsDraft] = useState(true);
   const fileInputRef = useRef(null);
+  const [currentStore, setCurrentStore] = useState(null);
+  const [isLoading, setIsLoading] = useState(!!productId);
   
   // Product basic info
   const [productData, setProductData] = useState({
@@ -85,6 +87,14 @@ const ProductFormPage = ({ productId = null }) => {
   React.useEffect(() => {
     const loadCustomFields = async () => {
       try {
+        // Set token before API call
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          console.error('No token found for loading custom fields');
+          return;
+        }
+        
+        apiService.setToken(token);
         const response = await apiService.get('/custom-fields');
         if (response.success && response.data) {
           setCustomFields(response.data);
@@ -97,9 +107,20 @@ const ProductFormPage = ({ productId = null }) => {
     const loadProductData = async () => {
       if (productId) {
         try {
-          const product = await apiService.get(`/products/${productId}`);
+          setIsLoading(true);
+          // Set token before API call
+          const token = localStorage.getItem('authToken');
+          if (!token) {
+            console.error('No token found for loading product');
+            setIsLoading(false);
+            return;
+          }
           
-          if (product) {
+          apiService.setToken(token);
+          const response = await apiService.get(`/products/${productId}`);
+          
+          if (response.success && response.data) {
+            const product = response.data;
             setProductData({
               name: product.name || '',
               description: product.description || '',
@@ -125,7 +146,29 @@ const ProductFormPage = ({ productId = null }) => {
             
             setProductType(product.type || 'SIMPLE');
             setIsDraft(product.status === 'DRAFT');
-            setProductImages(product.images || []);
+            
+            // Load categories
+            if (product.category) {
+              setSelectedCategories([{
+                id: product.category.id,
+                name: product.category.name
+              }]);
+            } else {
+              setSelectedCategories([]);
+            }
+            // Add uniqueId to existing product images for drag & drop
+            const imagesWithUniqueId = (product.media || []).map((mediaItem, index) => ({
+              id: mediaItem.id,
+              url: mediaItem.media.s3Url,
+              key: mediaItem.media.s3Key,
+              type: mediaItem.type,
+              isPrimary: mediaItem.isPrimary,
+              altText: mediaItem.altText,
+              originalName: mediaItem.media.originalFilename,
+              size: mediaItem.media.fileSize,
+              uniqueId: `product-media-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${performance.now()}-${index}`
+            }));
+            setProductImages(imagesWithUniqueId);
             setProductOptions(product.options || []);
             setVariants(product.variants || []);
             setBundleItems(product.bundleItems || []);
@@ -144,6 +187,8 @@ const ProductFormPage = ({ productId = null }) => {
           }
         } catch (error) {
           console.error('Error loading product:', error);
+        } finally {
+          setIsLoading(false);
         }
       }
     };
@@ -420,20 +465,8 @@ const ProductFormPage = ({ productId = null }) => {
                   updatedValue.detectedPattern = null;
                 }
                 
-                // הסרת החיווי אחרי 3 שניות
-                setTimeout(() => {
-                  setProductOptions(prev2 => prev2.map(o => 
-                    o.id === optionId 
-                      ? { ...o, values: o.values.map(v => 
-                          v.id === valueId ? { 
-                            ...v, 
-                            detectedColor: null,
-                            detectedPattern: null 
-                          } : v
-                        )}
-                      : o
-                  ));
-                }, 3000);
+                // הסרת החיווי מיידית (ללא השהיה)
+                // setTimeout removed to improve performance
               } else {
                 // לא זוהה כלום - נקה הכל
                 updatedValue.pattern = null;
@@ -550,13 +583,42 @@ const ProductFormPage = ({ productId = null }) => {
       // נקה שגיאות קודמות
       setValidationErrors([]);
 
+      // Get current store dynamically
+      const token = localStorage.getItem('authToken');
+      console.log('🔑 Token for save:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+      if (!token) {
+        alert('שגיאה: לא נמצא טוקן אימות');
+        return;
+      }
+      
+      apiService.setToken(token);
+      const userStores = await apiService.getUserStores();
+      if (!userStores || userStores.length === 0) {
+        alert('שגיאה: לא נמצאו חנויות');
+        return;
+      }
+      
+      const selectedStoreId = localStorage.getItem('selectedStoreId');
+      const currentStore = selectedStoreId 
+        ? userStores.find(store => store.id.toString() === selectedStoreId)
+        : userStores[0];
+      
+      if (!currentStore) {
+        alert('שגיאה: לא נמצאה חנות תקינה');
+        return;
+      }
+
+      // Save current store for component use
+      setCurrentStore(currentStore);
+
       const saveData = {
-        storeId: 1, // TODO: Get from context
+        storeId: currentStore.id,
         name: productData.name,
         description: productData.description,
         shortDescription: productData.shortDescription,
         sku: productData.sku,
         type: productType,
+        categoryId: selectedCategories.length > 0 ? selectedCategories[0].id : null,
         price: productData.price,
         comparePrice: productData.comparePrice,
         costPrice: productData.costPrice,
@@ -570,7 +632,7 @@ const ProductFormPage = ({ productId = null }) => {
         isDigital: productData.isDigital,
         taxable: productData.taxable,
         tags: JSON.stringify(productData.tags),
-        status: isDraft ? 'DRAFT' : 'PUBLISHED',
+        status: isDraft ? 'DRAFT' : 'ACTIVE',
         seoTitle: productData.seoTitle,
         seoDescription: productData.seoDescription,
         images: productImages,
@@ -588,11 +650,12 @@ const ProductFormPage = ({ productId = null }) => {
       }
 
       if (result) {
-        alert('המוצר נשמר בהצלחה!');
-        if (!productId) {
-      window.history.pushState({}, '', '/dashboard/products');
-      window.dispatchEvent(new PopStateEvent('popstate'));
-        }
+        // Store success message for the products page
+        localStorage.setItem('productSaveSuccess', 'המוצר נשמר בהצלחה!');
+        
+        // Navigate back to products page
+        window.history.pushState({}, '', '/dashboard/products');
+        window.dispatchEvent(new PopStateEvent('popstate'));
       }
     } catch (error) {
       console.error('Error saving product:', error);
@@ -604,6 +667,18 @@ const ProductFormPage = ({ productId = null }) => {
     window.history.pushState({}, '', '/dashboard/products');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir="rtl">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">טוען נתוני מוצר...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -706,6 +781,7 @@ const ProductFormPage = ({ productId = null }) => {
                   productImages={productImages}
                   setProductImages={setProductImages}
                   fileInputRef={fileInputRef}
+                  storeId={currentStore?.id}
                 />
               </div>
             </div>

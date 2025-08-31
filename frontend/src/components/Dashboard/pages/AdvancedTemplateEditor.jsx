@@ -56,7 +56,7 @@ const AdvancedTemplateEditor = () => {
       const currentTemplateName = templateName || 'jupiter';
       
       // Load template from server
-      const response = await fetch(`http://localhost:3001/api/templates/${currentTemplateName}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/templates/${currentTemplateName}`);
       if (!response.ok) {
         throw new Error('Template not found');
       }
@@ -132,7 +132,7 @@ const AdvancedTemplateEditor = () => {
   };
 
   const validateCode = (newCode) => {
-    console.log('🔍 Validating code:', newCode?.length, 'characters');
+
     const newErrors = [];
     const newWarnings = [];
 
@@ -258,11 +258,11 @@ const AdvancedTemplateEditor = () => {
       updatedFiles[selectedFile.category][selectedFile.name] = code;
 
       // Save to server
-      const response = await fetch(`http://localhost:3001/api/templates/${template.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/templates/${template.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           files: updatedFiles
@@ -296,7 +296,7 @@ const AdvancedTemplateEditor = () => {
 
   const handlePreview = () => {
     // Open store preview in new tab
-    const previewUrl = `http://localhost:5173/store-preview?template=${template.name}`;
+    const previewUrl = `https://my-quickshop.com/store-preview?template=${template.name}`;
     window.open(previewUrl, '_blank');
   };
 

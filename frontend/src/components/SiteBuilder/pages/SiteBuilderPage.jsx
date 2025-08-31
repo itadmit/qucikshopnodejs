@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import '../SiteBuilder.css';
 
 // Import our new sections system
@@ -24,6 +25,7 @@ import { useFonts } from '../../../hooks/useFonts.js';
 
 const SiteBuilderPage = ({ user, onBack }) => {
   const { t } = useTranslation();
+  const location = useLocation();
   
   // Global styles management
   const { updateSetting: updateGlobalStyle, globalSettings } = useGlobalStyles();
@@ -36,8 +38,15 @@ const SiteBuilderPage = ({ user, onBack }) => {
     }
   }, [globalSettings.fontFamily, loadAndApplyFont]);
   
+  // Parse URL parameters
+  const urlParams = new URLSearchParams(location.search);
+  const pageIdFromUrl = urlParams.get('pageId');
+  const typeFromUrl = urlParams.get('type');
+  
   // State management
   const [selectedPage, setSelectedPage] = useState('home');
+  const [currentPageData, setCurrentPageData] = useState(null);
+  const [pages, setPages] = useState([]);
   const [previewMode, setPreviewMode] = useState('desktop');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [selectedElement, setSelectedElement] = useState(null);
@@ -89,13 +98,26 @@ const SiteBuilderPage = ({ user, onBack }) => {
   const [toastType, setToastType] = useState('success');
   const saveTimeoutRef = useRef(null);
 
+  // Load page from URL parameters on mount
+  useEffect(() => {
+    console.log('🔍 URL Params Check:', { pageIdFromUrl, typeFromUrl, user: !!user });
+    if (pageIdFromUrl && typeFromUrl === 'content' && user) {
+      console.log('📄 Loading page from URL:', pageIdFromUrl);
+      loadPageFromId(pageIdFromUrl);
+    }
+  }, [pageIdFromUrl, typeFromUrl, user]);
+
     // Load page structure and global settings when component mounts
   useEffect(() => {
-    if (user) {
+    if (user && !pageIdFromUrl) {
     loadPageStructure();
       loadGlobalSettings();
     }
-  }, [selectedPage, user?.id]);
+    // טען את רשימת העמודים
+    if (user?.stores?.[0]?.id) {
+      loadPages();
+    }
+  }, [selectedPage, user?.id, pageIdFromUrl]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -106,6 +128,100 @@ const SiteBuilderPage = ({ user, onBack }) => {
     };
   }, []);
 
+  // Load specific page by ID from URL parameter
+  const loadPageFromId = async (pageId) => {
+    console.log('🚀 loadPageFromId called with pageId:', pageId);
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const isDevelopment = window.location.port === '5173';
+      const baseUrl = isDevelopment 
+        ? 'http://3.64.187.151:3001/api'
+        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      
+      // First, get the page data to know its slug
+      const pageResponse = await fetch(`${baseUrl}/pages/${pageId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (pageResponse.ok) {
+        const pageData = await pageResponse.json();
+        setCurrentPageData(pageData);
+        setSelectedPage(pageData.slug);
+        
+        // Try to load existing page structure
+        const storeSlug = user?.stores?.[0]?.slug || localStorage.getItem('currentStoreSlug');
+        const structureResponse = await fetch(`${baseUrl}/custom-pages/${storeSlug}/${pageData.slug}`);
+        
+        if (structureResponse.ok) {
+          const data = await structureResponse.json();
+          const pageStructureData = {
+            sections: data.structure?.sections || [],
+            settings: data.settings || {}
+          };
+          setPageStructure(pageStructureData);
+          saveToHistory(pageStructureData);
+          console.log(`📄 Loaded ${pageData.slug} page structure:`, data);
+        } else {
+          // Create default content page structure (not home page)
+          console.log(`📄 No existing ${pageData.slug} page found, creating default content structure`);
+          const defaultContentStructure = createDefaultContentPageStructure(pageData.title);
+          setPageStructure(defaultContentStructure);
+          saveToHistory(defaultContentStructure);
+        }
+      } else {
+        console.error('Failed to load page data');
+        // Fallback to home page
+        setSelectedPage('home');
+        loadPageStructure();
+      }
+    } catch (error) {
+      console.error('Error loading page:', error);
+      // Fallback to home page
+      setSelectedPage('home');
+      loadPageStructure();
+    } finally {
+      setIsLoading(false);
+      loadingRef.current = false;
+    }
+  };
+
+  // Load pages list from server
+  const loadPages = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const storeId = user?.stores?.[0]?.id;
+      
+      if (!storeId) return;
+      
+      const isDevelopment = window.location.port === '5173';
+      const baseUrl = isDevelopment 
+        ? 'http://3.64.187.151:3001/api'
+        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      
+      const response = await fetch(`${baseUrl}/pages/store/${storeId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📋 Loaded pages:', data);
+        setPages(data);
+      }
+    } catch (error) {
+      console.error('שגיאה בטעינת העמודים:', error);
+    }
+  };
+
   const loadPageStructure = async () => {
     if (loadingRef.current) return;
     loadingRef.current = true;
@@ -114,8 +230,8 @@ const SiteBuilderPage = ({ user, onBack }) => {
     let pageLoaded = false;
     try {
       const storeSlug = user?.stores?.[0]?.slug || localStorage.getItem('currentStoreSlug');
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${baseUrl}/api/custom-pages/${storeSlug}/${selectedPage}`);
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const response = await fetch(`${baseUrl}/custom-pages/${storeSlug}/${selectedPage}`);
       
           if (response.ok) {
         const data = await response.json();
@@ -135,20 +251,61 @@ const SiteBuilderPage = ({ user, onBack }) => {
       console.log(`📄 No existing ${selectedPage} page found, creating default structure`);
     }
 
-    // Create default Jupiter-inspired home page structure (without header/footer) - ONLY if page wasn't loaded
-    if (selectedPage === 'home' && !pageLoaded) {
-      console.log('🏗️ Creating default home page structure because no saved page found');
-      const defaultStructure = createDefaultHomePageStructure();
+    // Create default structures for different page types - ONLY if page wasn't loaded
+    if (!pageLoaded) {
+      let defaultStructure;
+      
+      if (selectedPage === 'home') {
+        console.log('🏗️ Creating default home page structure because no saved page found');
+        defaultStructure = createDefaultHomePageStructure();
+      } else if (selectedPage === 'product') {
+        console.log('🏗️ Creating default product page structure because no saved page found');
+        defaultStructure = createDefaultProductPageStructure();
+      } else {
+        console.log('🏗️ Creating default content page structure because no saved page found');
+        defaultStructure = createDefaultContentPageStructure();
+      }
+      
       setPageStructure(defaultStructure);
       saveToHistory(defaultStructure);
       
-      // Also create default global structure if not exists
-      const defaultGlobal = createDefaultGlobalStructure();
-      setGlobalStructure(defaultGlobal);
+      // Also create default global structure if not exists (for home page)
+      if (selectedPage === 'home') {
+        const defaultGlobal = createDefaultGlobalStructure();
+        setGlobalStructure(defaultGlobal);
+      }
     }
     
     setIsLoading(false);
     loadingRef.current = false;
+  };
+
+  // Create default content page structure (simple content page)
+  const createDefaultContentPageStructure = (pageTitle = 'עמוד תוכן') => {
+    return {
+      sections: [
+        {
+          id: 'content_text_' + Date.now(),
+          type: 'rich_text',
+          settings: {
+            content: `<h1 style="text-align: center;">${pageTitle}</h1><p style="text-align: center;">כאן יופיע התוכן</p>`,
+            container: 'container',
+            text_align: 'center',
+            max_width: 800,
+            padding_top: 60,
+            padding_bottom: 60,
+            background_color: '#ffffff',
+            text_color: '#1f2937',
+            border_radius: 0,
+            add_shadow: false
+          }
+        }
+      ],
+      settings: {
+        seo_title: pageTitle,
+        seo_description: `עמוד ${pageTitle} באתר`
+      }
+    };
   };
 
   // Load global settings (header & footer)
@@ -161,10 +318,10 @@ const SiteBuilderPage = ({ user, onBack }) => {
     }
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
       const [headerResponse, footerResponse] = await Promise.all([
-        fetch(`${baseUrl}/api/global-settings/${storeSlug}/header`),
-        fetch(`${baseUrl}/api/global-settings/${storeSlug}/footer`)
+        fetch(`${baseUrl}/global-settings/${storeSlug}/header`),
+        fetch(`${baseUrl}/global-settings/${storeSlug}/footer`)
       ]);
 
       const headerData = headerResponse.ok ? await headerResponse.json() : null;
@@ -199,8 +356,8 @@ const SiteBuilderPage = ({ user, onBack }) => {
     }
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${baseUrl}/api/global-settings/${storeSlug}/${type}`, {
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const response = await fetch(`${baseUrl}/global-settings/${storeSlug}/${type}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -283,7 +440,70 @@ const SiteBuilderPage = ({ user, onBack }) => {
     };
   };
 
-
+  // Create default product page structure
+  const createDefaultProductPageStructure = () => {
+    return {
+      sections: [
+        {
+          id: `product_images_${Date.now()}`,
+          type: 'product_images',
+          settings: {
+            layout: 'gallery',
+            show_thumbnails: true,
+            image_aspect_ratio: 'square',
+            zoom_enabled: true
+          }
+        },
+        {
+          id: `product_title_${Date.now() + 1}`,
+          type: 'product_title',
+          settings: {
+            show_vendor: false,
+            title_size: 'text-3xl',
+            title_weight: 'font-bold',
+            alignment: 'text-right'
+          }
+        },
+        {
+          id: `product_price_${Date.now() + 2}`,
+          type: 'product_price',
+          settings: {
+            show_compare_price: true,
+            show_unit_price: false,
+            price_size: 'text-2xl',
+            alignment: 'text-right'
+          }
+        },
+        {
+          id: `product_options_${Date.now() + 3}`,
+          type: 'product_options',
+          settings: {
+            show_labels: true,
+            option_style: 'buttons',
+            show_selected_value: true
+          }
+        },
+        {
+          id: `add_to_cart_${Date.now() + 4}`,
+          type: 'add_to_cart',
+          settings: {
+            show_quantity_selector: true,
+            button_style: 'primary',
+            button_size: 'large',
+            show_buy_now: false
+          }
+        }
+      ],
+      settings: {
+        templateName: 'Jupiter',
+        pageType: 'product',
+        rtl: true,
+        fontFamily: 'Inter',
+        primaryColor: '#3b82f6',
+        secondaryColor: '#8b5cf6'
+      }
+    };
+  };
 
   // Save current state to history
   const saveToHistory = (newStructure) => {
@@ -379,10 +599,10 @@ const SiteBuilderPage = ({ user, onBack }) => {
     // Delete the page from server first
     try {
       const storeSlug = user?.stores?.[0]?.slug || localStorage.getItem('currentStoreSlug');
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const token = localStorage.getItem('authToken');
       
-      const response = await fetch(`${baseUrl}/api/custom-pages/${storeSlug}/${selectedPage}`, {
+      const response = await fetch(`${baseUrl}/custom-pages/${storeSlug}/${selectedPage}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -412,6 +632,20 @@ const SiteBuilderPage = ({ user, onBack }) => {
   const handleGeneralSettings = () => {
     setEditingGlobal(editingGlobal === 'general' ? null : 'general');
     setSelectedElement(null);
+  };
+
+  // Reset page to default content
+  const resetToDefaultContent = () => {
+    if (confirm('האם אתה בטוח שברצונך לאפס את העמוד לתוכן ברירת מחדל? פעולה זו תמחק את כל התוכן הקיים.')) {
+      const pageTitle = currentPageData?.title || selectedPage;
+      const defaultStructure = createDefaultContentPageStructure(pageTitle);
+      setPageStructure(defaultStructure);
+      saveToHistory(defaultStructure);
+      
+      setToastMessage('העמוד אופס לתוכן ברירת מחדל!');
+      setToastType('success');
+      setShowToast(true);
+    }
   };
 
   // Duplicate section
@@ -475,8 +709,8 @@ const SiteBuilderPage = ({ user, onBack }) => {
   const savePageStructure = async (structureToSave = pageStructure) => {
     try {
       const storeSlug = user?.stores?.[0]?.slug || localStorage.getItem('currentStoreSlug');
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const token = localStorage.getItem('authToken');
       
       const dataToSend = {
         structure: {
@@ -499,7 +733,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
       // אם אין סקשנים, נמחק את הדף מהשרת
       if (!structureToSave.sections || structureToSave.sections.length === 0) {
         console.log('🗑️ Deleting empty page from server');
-        const response = await fetch(`${baseUrl}/api/custom-pages/${storeSlug}/${selectedPage}`, {
+        const response = await fetch(`${baseUrl}/custom-pages/${storeSlug}/${selectedPage}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -517,7 +751,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
         return;
       }
       
-      const response = await fetch(`${baseUrl}/api/custom-pages/${storeSlug}/${selectedPage}`, {
+      const response = await fetch(`${baseUrl}/custom-pages/${storeSlug}/${selectedPage}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -554,8 +788,34 @@ const SiteBuilderPage = ({ user, onBack }) => {
         canRedo={historyIndex < history.length - 1}
         onClose={onBack}
         onPageChange={({ editingGlobal: newEditingGlobal, selectedPage: newSelectedPage }) => {
+          console.log('🔄 Page change requested:', { newEditingGlobal, newSelectedPage, currentPage: selectedPage });
+          
           setEditingGlobal(newEditingGlobal);
           setSelectedPage(newSelectedPage);
+          
+          // אם זה לא עריכה גלובלית, טען את התוכן של העמוד החדש
+          if (!newEditingGlobal && newSelectedPage !== selectedPage) {
+            console.log('📄 Loading new page content:', newSelectedPage);
+            
+            // נקה את הנתונים הקיימים
+            setCurrentPageData(null);
+            
+            // בדוק אם זה עמוד תוכן דינמי
+            const isDynamicPage = pages.some(page => page.slug === newSelectedPage);
+            
+            if (isDynamicPage) {
+              // מצא את העמוד ב-pages array
+              const pageData = pages.find(page => page.slug === newSelectedPage);
+              if (pageData) {
+                console.log('🔍 Found dynamic page data:', pageData);
+                loadPageFromId(pageData.id);
+              }
+            } else {
+              // עמוד סטטי - טען את המבנה הרגיל
+              console.log('📋 Loading static page structure for:', newSelectedPage);
+              loadPageStructure();
+            }
+          }
         }}
         onPreviewToggle={() => setIsPreviewMode(!isPreviewMode)}
         onPreviewModeChange={setPreviewMode}
@@ -565,6 +825,10 @@ const SiteBuilderPage = ({ user, onBack }) => {
           console.log('💾 Manual save clicked, current pageStructure:', pageStructure.sections?.length || 0, 'sections');
           savePageStructure(pageStructure);
         }}
+        onResetToDefault={resetToDefaultContent}
+        userStore={user?.stores?.[0]}
+        currentPageData={currentPageData}
+        pages={pages}
       />
 
       {/* Main Content */}

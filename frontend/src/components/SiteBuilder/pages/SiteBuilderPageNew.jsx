@@ -54,7 +54,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
     setIsLoading(true);
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
       const response = await fetch(`${baseUrl}/api/custom-pages/${user.store}/${selectedPage}`);
       
       if (response.ok) {
@@ -273,8 +273,8 @@ const SiteBuilderPage = ({ user, onBack }) => {
   // Save page structure to server
   const savePageStructure = async () => {
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`${baseUrl}/api/custom-pages/${user.store}/${selectedPage}`, {
         method: 'POST',
         headers: {
@@ -320,6 +320,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
         onUndo={undo}
         onRedo={redo}
         onSave={savePageStructure}
+        userStore={user?.stores?.[0]}
       />
 
       {/* Main Content */}

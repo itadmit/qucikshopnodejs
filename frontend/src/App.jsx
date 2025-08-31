@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { 
   RiShoppingCartLine, 
@@ -40,30 +40,45 @@ function App() {
     const pathname = location.pathname
     const urlParams = new URLSearchParams(window.location.search)
     
+
+    
     let detectedStoreSlug = null
     
     // Check if preview=store parameter is present (for design preview)
     if (urlParams.get('preview') === 'store') {
-      detectedStoreSlug = 'yogevstore' // Default store for preview
+      detectedStoreSlug = urlParams.get('store') || 'yogevstore' // Allow custom store or default
+
+    }
+    // Check for development store parameter
+    else if (urlParams.get('store')) {
+      detectedStoreSlug = urlParams.get('store')
+
     }
     // Check if it's a subdomain (e.g., mystore.quickshop.com or mystore.localhost)
-    else if (hostname.includes('.') && !hostname.startsWith('www')) {
+    // But exclude IP addresses
+    else if (hostname.includes('.') && !hostname.startsWith('www') && !hostname.match(/^\d+\.\d+\.\d+\.\d+/)) {
       const subdomain = hostname.split('.')[0]
-      // Don't treat 'admin', 'api', 'www' as store slugs
-      if (!['admin', 'api', 'www', 'localhost'].includes(subdomain)) {
+
+      // Don't treat 'admin', 'api', 'www', 'my-quickshop' as store slugs
+      if (!['admin', 'api', 'www', 'localhost', 'my-quickshop'].includes(subdomain)) {
         detectedStoreSlug = subdomain
+
+      } else {
+
       }
     }
     // Or check if it's a path (e.g., quickshop.com/stores/mystore)
     else if (pathname.startsWith('/stores/')) {
       detectedStoreSlug = pathname.split('/')[2]
+
     }
     
+
     setStoreSlug(detectedStoreSlug)
     
     // Only check user auth if this is the main app (not a store)
     if (!detectedStoreSlug) {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken')
+      const token = localStorage.getItem('authToken')
       const userData = localStorage.getItem('user')
       
       if (token && userData) {
@@ -79,23 +94,62 @@ function App() {
           setUser(parsedUser)
         } catch (error) {
           console.error('Error parsing user data:', error)
-          localStorage.removeItem('token')
+          localStorage.removeItem('authToken')
           localStorage.removeItem('authToken')
           localStorage.removeItem('user')
         }
       } else if (token && !userData) {
         // If we have a token but no user data, try to fetch it
-        console.log('Token found but no user data, this might cause issues')
+
       }
     }
     
     setIsLoading(false)
   }, [location.pathname, navigate])
 
+  // Add another useEffect to handle route changes
+  useEffect(() => {
+    const pathname = location.pathname
+    const hostname = window.location.hostname
+    const urlParams = new URLSearchParams(window.location.search)
+
+    
+    let detectedStoreSlug = null
+    
+    // First check URL parameters (highest priority)
+    if (urlParams.get('preview') === 'store') {
+      detectedStoreSlug = urlParams.get('store') || 'yogevstore'
+
+    }
+    else if (urlParams.get('store')) {
+      detectedStoreSlug = urlParams.get('store')
+
+    }
+    // Then check if we're on a subdomain
+    // But exclude IP addresses
+    else if (hostname.includes('.') && !hostname.startsWith('www') && !hostname.match(/^\d+\.\d+\.\d+\.\d+/)) {
+      const subdomain = hostname.split('.')[0]
+      if (!['admin', 'api', 'www', 'localhost', 'my-quickshop'].includes(subdomain)) {
+        detectedStoreSlug = subdomain
+
+      }
+    }
+    // Only check path if no subdomain detected
+    else if (pathname.startsWith('/stores/')) {
+      detectedStoreSlug = pathname.split('/')[2]
+
+    }
+    
+    if (detectedStoreSlug !== storeSlug) {
+
+      setStoreSlug(detectedStoreSlug)
+    }
+  }, [location.pathname, location.search, storeSlug])
+
   // No automatic navigation - let Routes handle it
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
+    localStorage.removeItem('authToken')
     localStorage.removeItem('authToken')
     localStorage.removeItem('user')
     setUser(null)
@@ -103,7 +157,7 @@ function App() {
   }
 
   const handleAuthSuccess = (userData, token) => {
-    localStorage.setItem('token', token)
+    localStorage.setItem('authToken', token)
     localStorage.setItem('authToken', token)
     localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData)
@@ -158,6 +212,7 @@ function App() {
 
   // If this is a store subdomain, show the store app
   if (storeSlug) {
+
     return <StoreApp storeSlug={storeSlug} />
   }
 
@@ -226,7 +281,10 @@ function App() {
           />
         )
       } />
-      <Route path="/stores/:slug" element={<StoreApp />} />
+      <Route path="/stores/:slug" element={<StoreWrapper />} />
+      {/* Redirect old product URLs to new format */}
+      <Route path="/product/:id" element={<ProductRedirect />} />
+      <Route path="/products/:slug" element={<ProductRedirect />} />
       <Route path="/influencer/login" element={<InfluencerLogin />} />
       <Route path="/influencer/dashboard" element={<InfluencerDashboard />} />
       <Route path="/partners" element={<PartnersLandingPage />} />
@@ -236,6 +294,32 @@ function App() {
       <Route path="/" element={<HomePage />} />
     </Routes>
   )
+
+  function ProductRedirect() {
+    const { id, slug } = useParams()
+    const productIdentifier = id || slug
+    
+    useEffect(() => {
+      // Redirect to the store with the product
+      // For now, redirect to yogevstore as default
+      window.location.href = `https://yogevstore.my-quickshop.com/products/${productIdentifier}`
+    }, [productIdentifier])
+    
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">מפנה לעמוד המוצר...</p>
+        </div>
+      </div>
+    )
+  }
+
+  function StoreWrapper() {
+    const { slug } = useParams()
+
+    return <StoreApp storeSlug={slug} />
+  }
 
   function HomePage() {
 

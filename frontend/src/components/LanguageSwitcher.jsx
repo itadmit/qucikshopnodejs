@@ -20,9 +20,9 @@ const LanguageSwitcher = () => {
 
   return (
     <div className="relative group">
-      <button className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors">
-        <RiGlobalLine className="h-5 w-5" />
-        <span className="text-sm font-medium">{currentLanguage.flag} {currentLanguage.name}</span>
+      <button className="flex items-center space-x-1 px-1 py-1 text-gray-700 hover:text-blue-600 transition-colors">
+        <RiGlobalLine className="h-4 w-4" />
+        <span className="text-xs font-medium">{currentLanguage.flag} {currentLanguage.name}</span>
       </button>
       
       <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">

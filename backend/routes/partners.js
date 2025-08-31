@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
+import { setupNewStore } from '../services/storeSetup.js';
 
 const router = express.Router();
 
@@ -482,6 +483,9 @@ router.post('/stores/create', authenticatePartner, async (req, res) => {
         }
       }
     });
+
+    // Setup default store data (menus, pages, settings)
+    await setupNewStore(store.id);
 
     res.status(201).json({
       store,

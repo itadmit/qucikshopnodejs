@@ -83,8 +83,8 @@ const AuthModal = ({ isOpen, onClose, onSuccess, mode: initialMode = 'login' }) 
     setLoading(true);
     
     try {
-      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const response = await fetch(`http://localhost:3001${endpoint}`, {
+      const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -100,7 +100,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, mode: initialMode = 'login' }) 
           onSuccess(data.user, data.token);
         } else {
           // Fallback - store in localStorage and close
-          localStorage.setItem('token', data.token);
+          localStorage.setItem('authToken', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
           onClose();
         }

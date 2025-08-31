@@ -54,7 +54,7 @@ const DesignAndCustomizationPage = () => {
   useEffect(() => {
     const fetchUserStore = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+        const token = localStorage.getItem('authToken');
         if (!token) return;
         
         apiService.setToken(token);
@@ -83,8 +83,8 @@ const DesignAndCustomizationPage = () => {
       }
 
       // Save template selection to backend using new API
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:3001/api/templates/store/${userStore.id}/template`, {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/templates/store/${userStore.id}/template`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -124,8 +124,8 @@ const DesignAndCustomizationPage = () => {
   const handlePreview = () => {
     try {
       const storeUrl = userStore?.slug 
-        ? `http://${userStore.slug}.localhost:5173`
-        : 'http://localhost:5174/?preview=store';
+                        ? `https://${userStore.slug}.my-quickshop.com`
+        : 'https://my-quickshop.com/?preview=store';
       
       const previewWindow = window.open(storeUrl, '_blank');
       if (!previewWindow) {

@@ -72,7 +72,7 @@ const DashboardHeader = ({
   // Copy store URL to clipboard
   const copyStoreUrl = async () => {
     if (userStore) {
-      const url = `http://${userStore.slug}.localhost:5173`;
+      const url = `https://${userStore.slug}.my-quickshop.com`;
       try {
         await navigator.clipboard.writeText(url);
         setCopiedUrl(true);
@@ -155,7 +155,7 @@ const DashboardHeader = ({
             {/* Store Icon - Direct Link */}
             {userStore && (
               <a
-                href={`http://${userStore.slug}.localhost:5173`}
+                href={`https://${userStore.slug}.my-quickshop.com`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
@@ -243,7 +243,7 @@ const DashboardHeader = ({
                   {userStore && (
                     <div className="py-1">
                       <a
-                        href={`http://${userStore.slug}.localhost:5173`}
+                        href={`https://${userStore.slug}.my-quickshop.com`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"

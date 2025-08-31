@@ -53,7 +53,7 @@ const SectionRenderer = ({
       console.log('🔄 Setting isLoadingMenus to true');
       setIsLoadingMenus(true);
       const storeSlug = localStorage.getItem('currentStoreSlug') || 'yogevstore';
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
       
       // Load menus that are referenced in settings
       const menuPromises = [];
@@ -146,6 +146,8 @@ const SectionRenderer = ({
         return renderCountdownSection();
       case 'social_proof':
         return renderSocialProofSection();
+      case 'rich_text':
+        return renderRichTextSection();
       default:
         return renderDefaultSection();
     }
@@ -931,7 +933,7 @@ const SectionRenderer = ({
 
           {/* Language Switcher */}
           {showLanguageSwitcher && (
-            <select className="text-sm border-0 bg-transparent cursor-pointer">
+            <select className="text-xs border-0 bg-transparent cursor-pointer pr-1 pl-5">
               <option value="he">עברית</option>
               <option value="en">English</option>
             </select>
@@ -939,7 +941,7 @@ const SectionRenderer = ({
 
           {/* Currency Switcher */}
           {showCurrencySwitcher && (
-            <select className="text-sm border-0 bg-transparent cursor-pointer">
+            <select className="text-xs border-0 bg-transparent cursor-pointer pr-1 pl-5">
               <option value="ILS">₪ ILS</option>
               <option value="USD">$ USD</option>
               <option value="EUR">€ EUR</option>
@@ -948,7 +950,7 @@ const SectionRenderer = ({
 
           {/* Country Selector */}
           {showCountrySelector && (
-            <select className="text-sm border-0 bg-transparent cursor-pointer">
+            <select className="text-xs border-0 bg-transparent cursor-pointer pr-1 pl-5">
               <option value="IL">🇮🇱 ישראל</option>
               <option value="US">🇺🇸 USA</option>
             </select>
@@ -1455,6 +1457,59 @@ const SectionRenderer = ({
               <p>אין תכונות להצגה</p>
             </div>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  // 📝 Rich Text Section
+  const renderRichTextSection = () => {
+    const content = getSetting('content', '<h1 style="text-align: center;">כותרת</h1><p style="text-align: center;">כאן יופיע התוכן</p>');
+    const backgroundColor = getSetting('background_color', '#ffffff');
+    const textColor = getSetting('text_color', '#1f2937');
+    const paddingTop = getSetting('padding_top', 60);
+    const paddingBottom = getSetting('padding_bottom', 60);
+    const container = getSetting('container', 'container');
+    const textAlign = getSetting('text_align', 'right');
+    const maxWidth = getSetting('max_width', 800);
+    const borderRadius = getSetting('border_radius', 0);
+    const addShadow = getSetting('add_shadow', false);
+
+    const containerClasses = {
+      'container': 'max-w-7xl mx-auto px-6',
+      'container-fluid': 'w-full px-6',
+      'full-width': 'w-full'
+    };
+
+    const textAlignClasses = {
+      'right': 'text-right',
+      'center': 'text-center', 
+      'left': 'text-left',
+      'justify': 'text-justify'
+    };
+
+    return (
+      <div 
+        className="rich-text-section"
+        style={{
+          backgroundColor,
+          paddingTop: `${paddingTop}px`,
+          paddingBottom: `${paddingBottom}px`
+        }}
+      >
+        <div className={containerClasses[container] || containerClasses.container}>
+          <div 
+            className={`rich-text-content prose prose-lg max-w-none ${textAlignClasses[textAlign] || textAlignClasses.right} ${addShadow ? 'shadow-lg' : ''}`}
+            style={{
+              maxWidth: `${maxWidth}px`,
+              margin: '0 auto',
+              color: textColor,
+              borderRadius: `${borderRadius}px`,
+              padding: addShadow ? '20px' : '0',
+              backgroundColor: addShadow ? 'rgba(255, 255, 255, 0.8)' : 'transparent'
+            }}
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
         </div>
       </div>
     );

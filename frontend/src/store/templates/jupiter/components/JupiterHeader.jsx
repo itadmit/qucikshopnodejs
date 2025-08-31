@@ -19,6 +19,15 @@ const JupiterHeader = ({ storeData }) => {
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
+  // Helper function to preserve URL parameters when navigating
+  const getUrlWithParams = (path) => {
+    const currentParams = new URLSearchParams(window.location.search)
+    if (currentParams.toString()) {
+      return `${path}?${currentParams.toString()}`
+    }
+    return path
+  }
+
   useEffect(() => {
     // Load cart items count from localStorage
     const updateCartCount = () => {
@@ -50,7 +59,9 @@ const JupiterHeader = ({ storeData }) => {
   const handleSearch = (e) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      const currentParams = new URLSearchParams(window.location.search)
+      currentParams.set('search', searchQuery.trim())
+      navigate(`/products?${currentParams.toString()}`)
       setSearchQuery('')
       setIsSearchOpen(false)
     }
@@ -113,7 +124,7 @@ const JupiterHeader = ({ storeData }) => {
             <div className="flex items-center space-x-4 rtl:space-x-reverse">
               {isOwner && (
                 <a 
-                  href="http://localhost:5173" 
+                  href="https://my-quickshop.com" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center border border-white/20"
@@ -122,16 +133,16 @@ const JupiterHeader = ({ storeData }) => {
                   נהל חנות
                 </a>
               )}
-              <div className="flex items-center space-x-3 rtl:space-x-reverse">
+              <div className="flex items-center space-x-0.5 rtl:space-x-reverse">
                 <LanguageSwitcher />
-                <div className="w-px h-4 bg-white/20"></div>
-                <a href="#" className="hover:text-gray-300 transition-colors">
+                <div className="w-px h-4 bg-white/20 mx-0.5"></div>
+                <a href="#" className="hover:text-gray-300 transition-colors p-0.5">
                   <Facebook className="w-4 h-4" />
                 </a>
-                <a href="#" className="hover:text-gray-300 transition-colors">
+                <a href="#" className="hover:text-gray-300 transition-colors p-0.5">
                   <Instagram className="w-4 h-4" />
                 </a>
-                <a href="#" className="hover:text-gray-300 transition-colors">
+                <a href="#" className="hover:text-gray-300 transition-colors p-0.5">
                   <MessageCircle className="w-4 h-4" />
                 </a>
               </div>
@@ -142,68 +153,59 @@ const JupiterHeader = ({ storeData }) => {
 
       {/* Main Header */}
       <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 rtl:space-x-reverse">
-            {storeData.logoUrl ? (
-              <img 
-                src={storeData.logoUrl} 
-                alt={storeData.name}
-                className="h-10 w-auto"
-              />
-            ) : (
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">
-                  {storeData.name?.charAt(0) || 'ח'}
-                </span>
-              </div>
-            )}
-            <span className="text-xl font-bold text-gray-900">
-              {storeData.name}
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-8 rtl:space-x-reverse">
+        <div className="grid grid-cols-3 items-center">
+          {/* Left Side - Navigation (Desktop) */}
+          <nav className="hidden lg:flex items-center space-x-6 rtl:space-x-reverse justify-start">
             <Link 
-              to="/" 
+              to={getUrlWithParams("/")} 
               className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
             >
               {t('nav.home')}
             </Link>
             <Link 
-              to="/categories" 
+              to={getUrlWithParams("/collections")} 
               className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
             >
-              {t('nav.categories')}
+              קולקציות
             </Link>
             <Link 
-              to="/products" 
+              to={getUrlWithParams("/products")} 
               className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
             >
-              {t('nav.products')}
-            </Link>
-            <Link 
-              to="/about" 
-              className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
-            >
-              {t('nav.about')}
-            </Link>
-            <Link 
-              to="/contact" 
-              className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
-            >
-              {t('nav.contact')}
+              מוצרים
             </Link>
           </nav>
+          
+          {/* Mobile: Empty div for grid alignment */}
+          <div className="lg:hidden"></div>
 
-          {/* Right Side Actions */}
-          <div className="flex items-center space-x-4 rtl:space-x-reverse">
+          {/* Center - Logo */}
+          <Link to={getUrlWithParams("/")} className="flex items-center justify-center space-x-3 rtl:space-x-reverse">
+            {storeData.logoUrl ? (
+              <img 
+                src={storeData.logoUrl} 
+                alt={storeData.name}
+                className="h-12 w-auto"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xl">
+                  {storeData.name?.charAt(0) || 'ח'}
+                </span>
+              </div>
+            )}
+            <span className="text-2xl font-bold text-gray-900 hidden sm:block">
+              {storeData.name}
+            </span>
+          </Link>
+
+          {/* Right Side - Actions */}
+          <div className="flex items-center justify-end space-x-0.5 rtl:space-x-reverse">
             {/* Search */}
             <div className="relative">
               <button
                 onClick={toggleSearch}
-                className="p-2 text-gray-600 hover:text-primary-600 transition-colors"
+                className="p-1 text-gray-600 hover:text-primary-600 transition-colors"
                 aria-label={t('nav.search')}
               >
                 <Search className="w-5 h-5" />
@@ -231,7 +233,7 @@ const JupiterHeader = ({ storeData }) => {
             {/* Wishlist */}
             <Link 
               to="/wishlist" 
-              className="p-2 text-gray-600 hover:text-primary-600 transition-colors relative"
+              className="p-1 text-gray-600 hover:text-primary-600 transition-colors relative"
               aria-label="רשימת משאלות"
             >
               <Heart className="w-5 h-5" />
@@ -241,7 +243,7 @@ const JupiterHeader = ({ storeData }) => {
             {/* Account */}
             <Link 
               to="/account" 
-              className="p-2 text-gray-600 hover:text-primary-600 transition-colors"
+              className="p-1 text-gray-600 hover:text-primary-600 transition-colors"
               aria-label={t('nav.account')}
             >
               <User className="w-5 h-5" />
@@ -256,7 +258,7 @@ const JupiterHeader = ({ storeData }) => {
             {/* Mobile Menu Button */}
             <button
               onClick={toggleMenu}
-              className="lg:hidden p-2 text-gray-600 hover:text-primary-600 transition-colors"
+              className="lg:hidden p-1 text-gray-600 hover:text-primary-600 transition-colors"
               aria-label="תפריט"
             >
               {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -270,7 +272,7 @@ const JupiterHeader = ({ storeData }) => {
             <div className="flex flex-col space-y-4">
               {isOwner && (
                 <a 
-                  href="http://localhost:5173" 
+                  href="https://my-quickshop.com" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="bg-primary-50 text-primary-600 px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center border border-primary-200"
@@ -281,25 +283,25 @@ const JupiterHeader = ({ storeData }) => {
                 </a>
               )}
               <Link 
-                to="/" 
+                to={getUrlWithParams("/")} 
                 className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 {t('nav.home')}
               </Link>
               <Link 
-                to="/categories" 
+                to={getUrlWithParams("/collections")} 
                 className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {t('nav.categories')}
+                קולקציות
               </Link>
               <Link 
-                to="/products" 
+                to={getUrlWithParams("/products")} 
                 className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {t('nav.products')}
+                מוצרים
               </Link>
               <Link 
                 to="/about" 

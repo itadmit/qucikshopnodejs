@@ -23,6 +23,7 @@ import {
   MenuPicker, 
   IconPicker 
 } from './SettingInputs';
+import RichTextEditor from '../../ui/RichTextEditor';
 import ColorPicker from './ui/ColorPicker';
 import RangeSlider from './ui/RangeSlider';
 import { SETTING_TYPES } from '../types/settingTypes';
@@ -82,8 +83,8 @@ const SettingsPanel = ({
     setLoadingMenus(true);
     try {
       const storeSlug = localStorage.getItem('currentStoreSlug') || 'yogevstore';
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${baseUrl}/api/menus/${storeSlug}`);
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const response = await fetch(`${baseUrl}/menus/${storeSlug}`);
       
       if (response.ok) {
         const menusData = await response.json();
@@ -129,6 +130,22 @@ const SettingsPanel = ({
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200 bg-white hover:border-gray-400 resize-none"
             dir="rtl"
           />
+        );
+
+      case 'richtext':
+      case SETTING_TYPES.RICHTEXT:
+        return (
+          <div className="w-full">
+            <RichTextEditor
+              value={value || ''}
+              onChange={(content) => onSettingChange(setting.id, content)}
+              placeholder={setting.placeholder || 'הכנס תוכן עשיר...'}
+              minHeight="150px"
+              maxHeight="400px"
+              dir="rtl"
+              className="text-sm"
+            />
+          </div>
         );
 
       case 'select':

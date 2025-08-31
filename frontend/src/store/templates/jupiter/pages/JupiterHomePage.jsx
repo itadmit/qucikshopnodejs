@@ -33,6 +33,15 @@ const JupiterHomePage = ({ storeData }) => {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Helper function to preserve URL parameters when navigating
+  const getUrlWithParams = (path) => {
+    const currentParams = new URLSearchParams(window.location.search)
+    if (currentParams.toString()) {
+      return `${path}?${currentParams.toString()}`
+    }
+    return path
+  }
+
   useEffect(() => {
     if (storeData) {
       fetchStoreContent()
@@ -45,8 +54,8 @@ const JupiterHomePage = ({ storeData }) => {
       
       // Fetch categories and products for this store
       const [categoriesResponse, productsResponse] = await Promise.all([
-        fetch(`http://localhost:3001/api/stores/${storeData.slug}/categories`),
-        fetch(`http://localhost:3001/api/stores/${storeData.slug}/products/featured`)
+        fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/categories`),
+        fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/products/featured`)
       ])
       
       if (categoriesResponse.ok) {
@@ -182,14 +191,14 @@ const JupiterHomePage = ({ storeData }) => {
               
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                 <Link
-                  to="/products"
+                  to={getUrlWithParams("/products")}
                   className="bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors duration-300 flex items-center gap-2 text-sm"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   קנו עכשיו
                 </Link>
                 <Link
-                  to="/collections"
+                  to={getUrlWithParams("/collections")}
                   className="border-2 border-gray-900 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-900 hover:text-white transition-colors duration-300 flex items-center gap-2 text-sm"
                 >
                   <ArrowRight className="w-4 h-4" />
@@ -262,16 +271,23 @@ const JupiterHomePage = ({ storeData }) => {
             <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">
               קנו לפי קטגוריות
             </h2>
-            <p className="text-base text-gray-600 max-w-2xl mx-auto">
+            <p className="text-base text-gray-600 max-w-2xl mx-auto mb-4">
               מצאו בדיוק מה שאתם מחפשים בקטגוריות המובחרות שלנו
             </p>
+            <Link
+              to={getUrlWithParams("/collections")}
+              className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium text-sm gap-2"
+            >
+              צפו בכל הקטגוריות
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {categories.map((category, index) => (
               <Link
                 key={category.id}
-                to={`/category/${category.slug}`}
+                to={getUrlWithParams(`/categories/${category.slug}`)}
                 className="group relative aspect-square bg-gray-100 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300"
               >
                 <img
@@ -303,7 +319,7 @@ const JupiterHomePage = ({ storeData }) => {
               </p>
             </div>
             <Link
-              to="/products"
+              to={getUrlWithParams("/products")}
               className="hidden lg:inline-flex items-center px-6 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors duration-300"
             >
               צפו בהכל
@@ -351,7 +367,7 @@ const JupiterHomePage = ({ storeData }) => {
           
           <div className="text-center mt-12 lg:hidden">
             <Link
-              to="/products"
+              to={getUrlWithParams("/products")}
               className="inline-flex items-center px-8 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors duration-300"
             >
               צפו בכל המוצרים

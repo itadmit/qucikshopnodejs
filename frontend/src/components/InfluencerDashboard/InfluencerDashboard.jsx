@@ -43,7 +43,7 @@ const InfluencerDashboard = () => {
       const token = localStorage.getItem('influencerToken');
       
       // Load stats
-      const statsResponse = await fetch('http://localhost:3001/api/influencer-dashboard/stats', {
+      const statsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencer-dashboard/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -55,7 +55,7 @@ const InfluencerDashboard = () => {
       }
       
       // Load coupons
-      const couponsResponse = await fetch('http://localhost:3001/api/influencer-dashboard/coupons', {
+      const couponsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencer-dashboard/coupons`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -67,7 +67,7 @@ const InfluencerDashboard = () => {
       }
       
       // Load recent orders
-      const ordersResponse = await fetch('http://localhost:3001/api/influencer-dashboard/recent-orders', {
+      const ordersResponse = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencer-dashboard/recent-orders`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

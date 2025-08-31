@@ -21,7 +21,9 @@ import {
   AlertCircle,
   CheckCircle,
   Mail,
-  Type
+  Type,
+  RotateCcw,
+  Trash2
 } from 'lucide-react';
 import PixelsPage from './PixelsPage';
 import EmailTemplatesPage from './EmailTemplatesPage';
@@ -170,7 +172,7 @@ const SettingsPage = ({ userStore }) => {
   const renderCategoryContent = () => {
     switch (activeCategory) {
       case 'general':
-        return <GeneralSettings />;
+        return <GeneralSettings userStore={userStore} />;
       case 'payments':
         return <PaymentSettings />;
       case 'shipping':
@@ -201,9 +203,9 @@ const SettingsPage = ({ userStore }) => {
         // Navigate to custom fields page
         window.history.pushState({}, '', '/dashboard/settings/custom-fields');
         window.dispatchEvent(new PopStateEvent('popstate'));
-        return <GeneralSettings />;
+        return <GeneralSettings userStore={userStore} />;
       default:
-        return <GeneralSettings />;
+        return <GeneralSettings userStore={userStore} />;
     }
   };
 
@@ -303,67 +305,176 @@ const SettingsPage = ({ userStore }) => {
 };
 
 // Placeholder components for each settings category
-const GeneralSettings = () => (
-  <div className="p-6">
-    <h3 className="text-lg font-semibold text-gray-900 mb-4">הגדרות כלליות</h3>
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">שם החנות</label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="הכנס שם החנות"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">אימייל יצירת קשר</label>
-          <input
-            type="email"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="contact@store.com"
-          />
-        </div>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">תיאור החנות</label>
-        <textarea
-          rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="תאר את החנות שלך..."
-        />
-      </div>
+const GeneralSettings = ({ userStore }) => {
+  const [isResetting, setIsResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">אזור זמן</label>
-          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="Asia/Jerusalem">ישראל (UTC+2/+3)</option>
-            <option value="Europe/London">לונדון (UTC+0/+1)</option>
-            <option value="America/New_York">ניו יורק (UTC-5/-4)</option>
-          </select>
+  const handleResetToDefaults = async () => {
+    if (!userStore?.id) return;
+    
+    setIsResetting(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      // Use local development server if running on port 5173 (Vite dev server)
+      const isDevelopment = window.location.port === '5173';
+      const baseUrl = isDevelopment 
+        ? 'http://3.64.187.151:3001/api'
+        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      
+
+      
+      const response = await fetch(`${baseUrl}/stores/${userStore.id}/reset-to-defaults`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // Show success message
+        alert('החנות אופסה לברירת מחדל בהצלחה! העמוד יתרענן כעת.');
+        // Refresh the page to show updated data
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(`שגיאה באיפוס החנות: ${error.message || error.error}`);
+      }
+    } catch (error) {
+      console.error('Error resetting store:', error);
+      alert('שגיאה באיפוס החנות. אנא נסה שוב.');
+    } finally {
+      setIsResetting(false);
+      setShowResetConfirm(false);
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">הגדרות כלליות</h3>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">שם החנות</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="הכנס שם החנות"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">אימייל יצירת קשר</label>
+            <input
+              type="email"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="contact@store.com"
+            />
+          </div>
         </div>
+        
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">מטבע</label>
-          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="ILS">שקל ישראלי (₪)</option>
-            <option value="USD">דולר אמריקאי ($)</option>
-            <option value="EUR">יורו (€)</option>
-          </select>
+          <label className="block text-sm font-medium text-gray-700 mb-2">תיאור החנות</label>
+          <textarea
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="תאר את החנות שלך..."
+          />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">יחידת משקל</label>
-          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="kg">קילוגרם</option>
-            <option value="g">גרם</option>
-            <option value="lb">פאונד</option>
-          </select>
+
+        {/* Reset to Defaults Section */}
+        <div className="border-t border-gray-200 pt-6 mt-8">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <RotateCcw className="h-5 w-5 text-orange-600" />
+              </div>
+              <div className="mr-3 flex-1">
+                <h4 className="text-sm font-medium text-orange-800 mb-2">
+                  איפוס לברירת מחדל
+                </h4>
+                <p className="text-sm text-orange-700 mb-4">
+                  פעולה זו תמחק את כל התפריטים, העמודים וההגדרות הקיימים ותחזיר את החנות לברירת המחדל. 
+                  הפעולה כוללת:
+                </p>
+                <ul className="text-sm text-orange-700 mb-4 list-disc list-inside space-y-1">
+                  <li>תפריט ראשי חדש (בית, חנות, אודות, צור קשר)</li>
+                  <li>תפריט פוטר חדש (מדיניות פרטיות, תנאי שימוש, החזרות, משלוחים)</li>
+                  <li>עמודים בסיסיים עם תוכן מוכן</li>
+                  <li>הגדרות הדר ופוטר חדשות</li>
+                </ul>
+                <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                  {!showResetConfirm ? (
+                    <button
+                      onClick={() => setShowResetConfirm(true)}
+                      className="inline-flex items-center px-3 py-2 border border-orange-300 shadow-sm text-sm leading-4 font-medium rounded-md text-orange-700 bg-white hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                    >
+                      <RotateCcw className="h-4 w-4 ml-2 rtl:ml-0 rtl:mr-2" />
+                      איפוס לברירת מחדל
+                    </button>
+                  ) : (
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                      <button
+                        onClick={handleResetToDefaults}
+                        disabled={isResetting}
+                        className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isResetting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 ml-2 rtl:ml-0 rtl:mr-2"></div>
+                            מאפס...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4 ml-2 rtl:ml-0 rtl:mr-2" />
+                            אישור איפוס
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setShowResetConfirm(false)}
+                        disabled={isResetting}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                      >
+                        ביטול
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">אזור זמן</label>
+            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="Asia/Jerusalem">ישראל (UTC+2/+3)</option>
+              <option value="Europe/London">לונדון (UTC+0/+1)</option>
+              <option value="America/New_York">ניו יורק (UTC-5/-4)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">מטבע</label>
+            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="ILS">שקל ישראלי (₪)</option>
+              <option value="USD">דולר אמריקאי ($)</option>
+              <option value="EUR">יורו (€)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">יחידת משקל</label>
+            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="kg">קילוגרם</option>
+              <option value="g">גרם</option>
+              <option value="lb">פאונד</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const PaymentSettings = () => (
   <div className="p-6">

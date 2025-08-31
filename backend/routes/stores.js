@@ -4,6 +4,76 @@ import { authenticateToken, requireActiveSubscription } from '../middleware/auth
 
 const router = express.Router()
 
+// Reset store to defaults - MUST be before /:slug route
+router.post('/:storeId/reset-to-defaults', authenticateToken, async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const userId = req.user.id;
+
+    console.log(`🔄 Resetting store ${storeId} to defaults for user ${userId}`);
+
+    // Verify store ownership
+    const store = await prisma.store.findFirst({
+      where: {
+        id: parseInt(storeId),
+        userId: userId
+      }
+    });
+
+    if (!store) {
+      return res.status(404).json({ error: 'Store not found or access denied' });
+    }
+
+    // Start transaction to reset everything
+    await prisma.$transaction(async (tx) => {
+      console.log(`🗑️ Deleting existing data for store ${storeId}`);
+
+      // Delete existing menus
+      await tx.menu.deleteMany({
+        where: { storeId: parseInt(storeId) }
+      });
+
+      // Delete existing pages
+      await tx.page.deleteMany({
+        where: { storeId: parseInt(storeId) }
+      });
+
+      // Delete existing global settings (note: GlobalSettings not GlobalSetting)
+      await tx.globalSettings.deleteMany({
+        where: { storeId: parseInt(storeId) }
+      });
+
+      // Delete existing custom pages (from builder)
+      await tx.customPage.deleteMany({
+        where: { storeId: parseInt(storeId) }
+      });
+
+      console.log(`✅ Deleted existing data for store ${storeId}`);
+    });
+
+    // Import the setup function
+    const { setupNewStore } = await import('../services/storeSetup.js');
+    
+    // Setup default data
+    await setupNewStore(storeId);
+
+    console.log(`🎉 Successfully reset store ${storeId} to defaults`);
+
+    res.json({
+      success: true,
+      message: 'Store has been reset to defaults successfully',
+      storeId: parseInt(storeId)
+    });
+
+  } catch (error) {
+    console.error('Error resetting store to defaults:', error);
+    res.status(500).json({ 
+      error: 'Failed to reset store to defaults',
+      message: error.message 
+    });
+  }
+});
+
 // Get store by slug
 router.get('/:slug', async (req, res) => {
   try {
@@ -215,6 +285,132 @@ router.get('/:storeSlug/categories/:categorySlug/products', async (req, res) => 
   }
 })
 
+// Get all products for store
+router.get('/:slug/products', async (req, res) => {
+  try {
+    const { slug } = req.params
+    const { search, category, minPrice, maxPrice, sortBy, status } = req.query
+    
+    // Get store first
+    const store = await prisma.store.findUnique({
+      where: { slug: slug, isActive: true }
+    })
+    
+    if (!store) {
+      return res.status(404).json({ error: 'Store not found' })
+    }
+    
+    // Build where clause
+    const whereClause = {
+      storeId: store.id,
+      status: 'ACTIVE'
+    }
+    
+    // Add search filter
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { shortDescription: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+    
+    // Add category filter
+    if (category) {
+      const categoryRecord = await prisma.category.findFirst({
+        where: {
+          slug: category,
+          storeId: store.id,
+          isActive: true
+        }
+      })
+      if (categoryRecord) {
+        whereClause.categoryId = categoryRecord.id
+      }
+    }
+    
+    // Add price filters
+    if (minPrice || maxPrice) {
+      whereClause.price = {}
+      if (minPrice) whereClause.price.gte = parseFloat(minPrice)
+      if (maxPrice) whereClause.price.lte = parseFloat(maxPrice)
+    }
+    
+    // Add status filter
+    if (status) {
+      whereClause.status = status
+    }
+    
+    // Build order clause
+    let orderBy = { sortOrder: 'asc' }
+    if (sortBy) {
+      switch (sortBy) {
+        case 'price-asc':
+          orderBy = { price: 'asc' }
+          break
+        case 'price-desc':
+          orderBy = { price: 'desc' }
+          break
+        case 'name-asc':
+          orderBy = { name: 'asc' }
+          break
+        case 'name-desc':
+          orderBy = { name: 'desc' }
+          break
+        case 'newest':
+          orderBy = { createdAt: 'desc' }
+          break
+        case 'oldest':
+          orderBy = { createdAt: 'asc' }
+          break
+      }
+    }
+    
+    const products = await prisma.product.findMany({
+      where: whereClause,
+      include: {
+        category: true,
+        media: {
+          include: {
+            media: true
+          },
+          where: {
+            type: 'IMAGE'
+          },
+          orderBy: {
+            sortOrder: 'asc'
+          },
+          take: 1
+        }
+      },
+      orderBy
+    })
+    
+    // Transform products data
+    const transformedProducts = products.map(product => ({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      description: product.shortDescription || product.description,
+      price: parseFloat(product.price),
+      originalPrice: product.comparePrice ? parseFloat(product.comparePrice) : null,
+      imageUrl: product.media[0]?.media?.s3Url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400',
+      category: product.category?.name || 'כללי',
+      categorySlug: product.category?.slug || 'general',
+      inStock: product.trackInventory ? product.inventoryQuantity > 0 : true,
+      rating: 4.5, // Mock rating for now
+      reviewCount: 128, // Mock review count for now
+      status: product.status,
+      createdAt: product.createdAt
+    }))
+    
+    res.json(transformedProducts)
+  } catch (error) {
+    console.error('Error fetching products:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 // Get featured products for store
 router.get('/:slug/products/featured', async (req, res) => {
   try {
@@ -413,10 +609,7 @@ router.get('/:storeSlug/products/:productSlug', async (req, res) => {
       })) : []
     }
     
-    // If no images, add a default one
-    if (transformedProduct.images.length === 0) {
-      transformedProduct.images = ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600']
-    }
+    // Let the frontend handle empty images with placeholder
     
     res.json(transformedProduct)
   } catch (error) {

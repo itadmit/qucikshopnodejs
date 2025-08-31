@@ -100,13 +100,74 @@ class S3Service {
   }
 
   /**
-   * Generate unique file key
+   * Generate unique file key with store organization
    */
-  generateKey(originalName, prefix = 'uploads') {
+  generateKey(originalName, storeSlug, folder = 'media') {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2);
     const extension = originalName.split('.').pop();
-    return `${prefix}/${timestamp}-${random}.${extension}`;
+    // Organize by store: stores/{storeSlug}/{folder}/{timestamp}-{random}.{extension}
+    return `stores/${storeSlug}/${folder}/${timestamp}-${random}.${extension}`;
+  }
+
+  /**
+   * Upload file with store organization and WebP conversion
+   */
+  async uploadFileForStore(file, storeSlug, folder = 'media', options = {}) {
+    try {
+      const key = this.generateKey(file.originalname || file.name, storeSlug, folder);
+      
+      let buffer = file.buffer;
+      let contentType = file.mimetype;
+      let finalKey = key;
+
+      // Convert images to WebP for optimization (except SVG)
+      if (file.mimetype.startsWith('image/') && !file.mimetype.includes('svg')) {
+        console.log(`🔄 Converting ${file.originalname} to WebP...`);
+        
+        buffer = await sharp(file.buffer)
+          .webp({ 
+            quality: 85,
+            effort: 6 // Better compression
+          })
+          .toBuffer();
+        
+        contentType = 'image/webp';
+        // Update key to have .webp extension
+        finalKey = key.replace(/\.[^/.]+$/, '.webp');
+        
+        console.log(`✅ Converted to WebP: ${finalKey}`);
+      }
+
+      const command = new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: finalKey,
+        Body: buffer,
+        ContentType: contentType,
+        // Removed ACL - bucket should be configured for public access via bucket policy
+        ...options,
+      });
+
+      const result = await this.client.send(command);
+      
+      return {
+        success: true,
+        key: finalKey,
+        originalKey: key,
+        url: `https://${this.bucket}.s3.${process.env.AWS_REGION || 'eu-central-1'}.amazonaws.com/${finalKey}`,
+        etag: result.ETag,
+        originalName: file.originalname || file.name,
+        mimeType: contentType,
+        size: buffer.length,
+        convertedToWebP: contentType === 'image/webp' && file.mimetype !== 'image/webp'
+      };
+    } catch (error) {
+      console.error('S3 Upload Error:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
   }
 }
 

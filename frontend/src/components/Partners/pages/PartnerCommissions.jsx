@@ -41,7 +41,7 @@ const PartnerCommissions = ({ partner }) => {
       if (filterStatus !== 'all') params.append('status', filterStatus);
       if (filterPeriod !== 'all') params.append('period', filterPeriod);
       
-      const response = await fetch(`http://localhost:3001/api/partners/commissions?${params}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/commissions?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -108,7 +108,7 @@ const PartnerCommissions = ({ partner }) => {
   const requestPayout = async () => {
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch('http://localhost:3001/api/partners/payouts/request', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/payouts/request`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

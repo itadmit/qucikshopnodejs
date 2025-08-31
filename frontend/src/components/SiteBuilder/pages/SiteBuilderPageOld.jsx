@@ -62,7 +62,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
       
       if (storeSlug) {
         try {
-          const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+          const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
           const response = await fetch(`${baseUrl}/api/custom-pages/${storeSlug}/${selectedPage}`);
           if (response.ok) {
             const pageData = await response.json();
@@ -311,12 +311,12 @@ const SiteBuilderPage = ({ user, onBack }) => {
         return;
       }
 
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
       const response = await fetch(`${baseUrl}/api/custom-pages/${storeSlug}/${selectedPage}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           structure: pageStructure,

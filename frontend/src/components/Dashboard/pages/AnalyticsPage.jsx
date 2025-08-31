@@ -11,6 +11,7 @@ import {
   Clock
 } from 'lucide-react';
 import api from '../../../services/api';
+import { DashboardPageSkeleton, StatsSkeleton } from '../components/Skeleton';
 
 const AnalyticsPage = ({ userStore }) => {
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -212,19 +213,7 @@ const AnalyticsPage = ({ userStore }) => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">אנליטיקה</h1>
-            <p className="text-gray-600">צפה בנתונים ובדוחות</p>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg border border-gray-100 p-8">
-          <div className="text-center py-12">
-            <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-500">טוען נתונים...</p>
-          </div>
-        </div>
+        <DashboardPageSkeleton hasStats={true} hasTable={false} />
       </div>
     );
   }

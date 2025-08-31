@@ -8,89 +8,82 @@ datasource db {
 }
 
 model User {
-  id                 Int                @id @default(autoincrement())
-  email              String             @unique
-  passwordHash       String             @map("password_hash")
-  firstName          String             @map("first_name")
-  lastName           String             @map("last_name")
-  phone              String?
-  planType           PlanType           @default(BASIC) @map("plan_type")
-  subscriptionStatus SubscriptionStatus @default(TRIAL) @map("subscription_status")
-  trialEndsAt        DateTime?          @map("trial_ends_at")
-  subscriptionEndsAt DateTime?          @map("subscription_ends_at")
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
-  lastLoginAt        DateTime?          @map("last_login_at")
-  hasCompletedOnboarding Boolean        @default(false) @map("has_completed_onboarding")
-  billingHistory     BillingHistory[]
-  notifications      Notification[]
-  invitedStoreUsers  StoreUser[]        @relation("StoreInviter")
-  storeUsers         StoreUser[]
-  stores             Store[]
+  id                     Int                @id @default(autoincrement())
+  email                  String             @unique
+  passwordHash           String             @map("password_hash")
+  firstName              String             @map("first_name")
+  lastName               String             @map("last_name")
+  phone                  String?
+  planType               PlanType           @default(BASIC) @map("plan_type")
+  subscriptionStatus     SubscriptionStatus @default(TRIAL) @map("subscription_status")
+  trialEndsAt            DateTime?          @map("trial_ends_at")
+  subscriptionEndsAt     DateTime?          @map("subscription_ends_at")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+  lastLoginAt            DateTime?          @map("last_login_at")
+  hasCompletedOnboarding Boolean            @default(false) @map("has_completed_onboarding")
+  billingHistory         BillingHistory[]
+  notifications          Notification[]
+  invitedStoreUsers      StoreUser[]        @relation("StoreInviter")
+  storeUsers             StoreUser[]
+  stores                 Store[]
 
   @@map("users")
 }
 
 model Store {
-  id                 Int                     @id @default(autoincrement())
-  userId             Int                     @map("user_id")
-  name               String
-  slug               String                  @unique
-  domain             String?                 @unique
-  logoUrl            String?                 @map("logo_url")
-  faviconUrl         String?                 @map("favicon_url")
-  description        String?
-  templateName       String                  @default("jupiter") @map("template_name")
-  templateId         String?                 @map("template_id")
-  template           Template?               @relation("StoreTemplate", fields: [templateId], references: [id])
-  templateCustomizations Json?               @map("template_customizations") // התאמות אישיות לתבנית
-  settings           Json?
-  isActive           Boolean                 @default(true) @map("is_active")
-  planType           StorePlanType           @default(BASIC) @map("plan_type")
-  subscriptionStatus StoreSubscriptionStatus @default(TRIAL) @map("subscription_status")
-  trialEndsAt        DateTime?               @map("trial_ends_at")
-  subscriptionEndsAt DateTime?               @map("subscription_ends_at")
-  monthlyRevenue     Float                   @default(0) @map("monthly_revenue")
-  transactionFeeRate Float                   @default(0.005) @map("transaction_fee_rate")
-  orderSequence      Int                     @default(0) @map("order_sequence") // מונה הזמנות לחנות
-  
-  // Pixel and tracking settings
-  facebookPixelId    String?                 @map("facebook_pixel_id")
-  facebookAccessToken String?                @map("facebook_access_token")
-  googleTagManagerId String?                 @map("google_tag_manager_id")
-  googleAnalyticsId  String?                 @map("google_analytics_id")
-  pixelSettings      Json?                   @map("pixel_settings") // Additional settings
-  
-  createdAt          DateTime                @default(now()) @map("created_at")
-  updatedAt          DateTime                @updatedAt @map("updated_at")
-  analyticsEvents    AnalyticsEvent[]
-  automaticDiscounts AutomaticDiscount[]
-  cartSessions       CartSession[]
-  categories         Category[]
-  coupons            Coupon[]
-  customFields       CustomField[]
-  customPages        CustomPage[]
-  globalSettings     GlobalSettings[]
-  menus              Menu[]
-  customers          Customer[]
-  influencers        Influencer[]
-  media              Media[]
-  orders             Order[]
-  pages              Page[]
-  products           Product[]
-  storeUsers         StoreUser[]
-  partnerStores      PartnerStore[]
-  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Analytics relations
-  activeSessions     ActiveSession[]
-  dailyAnalytics     DailyAnalytics[]
-  hourlyAnalytics    HourlyAnalytics[]
-  performanceMetrics PerformanceMetric[]
-  
-  // Email relations
-  emailTemplates     EmailTemplate[]
-  emailLogs          EmailLog[]
+  id                     Int                     @id @default(autoincrement())
+  userId                 Int                     @map("user_id")
+  name                   String
+  slug                   String                  @unique
+  domain                 String?                 @unique
+  logoUrl                String?                 @map("logo_url")
+  faviconUrl             String?                 @map("favicon_url")
+  description            String?
+  templateName           String                  @default("jupiter") @map("template_name")
+  templateId             String?                 @map("template_id")
+  templateCustomizations Json?                   @map("template_customizations")
+  settings               Json?
+  isActive               Boolean                 @default(true) @map("is_active")
+  planType               StorePlanType           @default(BASIC) @map("plan_type")
+  subscriptionStatus     StoreSubscriptionStatus @default(TRIAL) @map("subscription_status")
+  trialEndsAt            DateTime?               @map("trial_ends_at")
+  subscriptionEndsAt     DateTime?               @map("subscription_ends_at")
+  monthlyRevenue         Float                   @default(0) @map("monthly_revenue")
+  transactionFeeRate     Float                   @default(0.005) @map("transaction_fee_rate")
+  orderSequence          Int                     @default(0) @map("order_sequence")
+  facebookPixelId        String?                 @map("facebook_pixel_id")
+  facebookAccessToken    String?                 @map("facebook_access_token")
+  googleTagManagerId     String?                 @map("google_tag_manager_id")
+  googleAnalyticsId      String?                 @map("google_analytics_id")
+  pixelSettings          Json?                   @map("pixel_settings")
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
+  activeSessions         ActiveSession[]
+  analyticsEvents        AnalyticsEvent[]
+  automaticDiscounts     AutomaticDiscount[]
+  cartSessions           CartSession[]
+  categories             Category[]
+  coupons                Coupon[]
+  customFields           CustomField[]
+  customPages            CustomPage[]
+  customers              Customer[]
+  dailyAnalytics         DailyAnalytics[]
+  emailLogs              EmailLog[]
+  emailTemplates         EmailTemplate[]
+  globalSettings         GlobalSettings[]
+  hourlyAnalytics        HourlyAnalytics[]
+  influencers            Influencer[]
+  media                  Media[]
+  menus                  Menu[]
+  orders                 Order[]
+  pages                  Page[]
+  partnerStores          PartnerStore[]
+  performanceMetrics     PerformanceMetric[]
+  products               Product[]
+  storeUsers             StoreUser[]
+  template               Template?               @relation("StoreTemplate", fields: [templateId], references: [id])
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("stores")
 }
@@ -103,77 +96,62 @@ model Template {
   version     String   @default("1.0.0")
   isActive    Boolean  @default(true) @map("is_active")
   isPremium   Boolean  @default(false) @map("is_premium")
-  
-  // Template files and configuration
-  files       Json     // מבנה הקבצים והתוכן
-  config      Json     // הגדרות התבנית
-  
-  // Metadata
+  files       Json
+  config      Json
   author      String?
   thumbnail   String?
   tags        String[]
-  category    String?  // מודרני, עסקי, אופנה וכו'
-  
-  // Pricing (for premium templates)
+  category    String?
   price       Float?   @default(0)
-  
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  
-  // Relations
   stores      Store[]  @relation("StoreTemplate")
-  
+
   @@map("templates")
 }
 
 model CustomPage {
-  id          String      @id @default(cuid())
-  storeId     Int         @map("store_id")
-  pageType    PageType    @map("page_type")
-  structure   Json        // מבנה העמוד מהבילדר
-  settings    Json        @default("{}") // הגדרות נוספות
-  isPublished Boolean     @default(false) @map("is_published")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
-  
-  // Relations
-  store       Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  
+  id          String   @id @default(cuid())
+  storeId     Int      @map("store_id")
+  pageType    PageType @map("page_type")
+  structure   Json
+  settings    Json     @default("{}")
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
   @@unique([storeId, pageType])
   @@map("custom_pages")
 }
 
 model GlobalSettings {
-  id          String      @id @default(cuid())
-  storeId     Int         @map("store_id")
-  type        GlobalSettingsType @map("type") // HEADER, FOOTER, THEME
-  settings    Json        @default("{}") // הגדרות הסקשן הגלובלי
-  blocks      Json        @default("[]") // בלוקים של הסקשן (תפריטים, קישורים וכו')
-  isActive    Boolean     @default(true) @map("is_active")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
-  
-  // Relations
-  store       Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  
+  id        String             @id @default(cuid())
+  storeId   Int                @map("store_id")
+  type      GlobalSettingsType @map("type")
+  settings  Json               @default("{}")
+  blocks    Json               @default("[]")
+  isActive  Boolean            @default(true) @map("is_active")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+  store     Store              @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
   @@unique([storeId, type])
   @@map("global_settings")
 }
 
 model Menu {
-  id          String      @id @default(cuid())
-  storeId     Int         @map("store_id")
-  name        String      // שם התפריט (תפריט ראשי, תפריט פוטר וכו')
-  handle      String      // מזהה ייחודי (main-menu, footer-menu)
-  items       Json        @default("[]") // פריטי התפריט
-  isActive    Boolean     @default(true) @map("is_active")
-  sortOrder   Int         @default(0) @map("sort_order")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
-  
-  // Relations
-  store       Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  storeId   Int      @map("store_id")
+  name      String
+  handle    String
+  items     Json     @default("[]")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
   @@unique([storeId, handle])
   @@map("menus")
 }
@@ -249,50 +227,48 @@ model Product {
   sortOrder         Int              @default(0) @map("sort_order")
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
+  bundleItems       BundleItem[]     @relation("BundleProduct")
+  bundleParents     BundleItem[]     @relation("BundleItemProduct")
   orderItems        OrderItem[]
   media             ProductMedia[]
   options           ProductOption[]
   variants          ProductVariant[]
   category          Category?        @relation(fields: [categoryId], references: [id])
   store             Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  
-  // Bundle relationships
-  bundleItems       BundleItem[]     @relation("BundleProduct")
-  bundleParents     BundleItem[]     @relation("BundleItemProduct")
 
   @@unique([storeId, slug])
   @@map("products")
 }
 
 model ProductOption {
-  id          Int                  @id @default(autoincrement())
-  productId   Int                  @map("product_id")
-  name        String
-  type        ProductOptionType    @default(TEXT)
-  displayType ProductOptionDisplay @default(DROPDOWN) @map("display_type")
-  position    Int                  @default(0)
-  createdAt   DateTime             @default(now()) @map("created_at")
-  values      ProductOptionValue[]
+  id                  Int                         @id @default(autoincrement())
+  productId           Int                         @map("product_id")
+  name                String
+  type                ProductOptionType           @default(TEXT)
+  displayType         ProductOptionDisplay        @default(DROPDOWN) @map("display_type")
+  position            Int                         @default(0)
+  createdAt           DateTime                    @default(now()) @map("created_at")
+  values              ProductOptionValue[]
+  product             Product                     @relation(fields: [productId], references: [id], onDelete: Cascade)
   variantOptionValues ProductVariantOptionValue[]
-  product     Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, name])
   @@map("product_options")
 }
 
 model ProductOptionValue {
-  id           Int            @id @default(autoincrement())
-  optionId     Int            @map("option_id")
-  value        String
-  colorCode    String?        @map("color_code")
-  imageUrl     String?        @map("image_url")
-  patternData  Json?          @map("pattern_data")
-  mixedColorData Json?        @map("mixed_color_data")
-  sortOrder    Int            @default(0) @map("sort_order")
-  createdAt    DateTime       @default(now()) @map("created_at")
-  productMedia ProductMedia[]
+  id                  Int                         @id @default(autoincrement())
+  optionId            Int                         @map("option_id")
+  value               String
+  colorCode           String?                     @map("color_code")
+  imageUrl            String?                     @map("image_url")
+  patternData         Json?                       @map("pattern_data")
+  mixedColorData      Json?                       @map("mixed_color_data")
+  sortOrder           Int                         @default(0) @map("sort_order")
+  createdAt           DateTime                    @default(now()) @map("created_at")
+  productMedia        ProductMedia[]
+  option              ProductOption               @relation(fields: [optionId], references: [id], onDelete: Cascade)
   variantOptionValues ProductVariantOptionValue[]
-  option       ProductOption  @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
   @@map("product_option_values")
 }
@@ -320,57 +296,56 @@ model CustomField {
 }
 
 model ProductVariant {
-  id                Int            @id @default(autoincrement())
-  productId         Int            @map("product_id")
+  id                Int                         @id @default(autoincrement())
+  productId         Int                         @map("product_id")
   sku               String?
   price             Float?
-  comparePrice      Float?         @map("compare_price")
-  costPrice         Float?         @map("cost_price")
-  inventoryQuantity Int            @default(0) @map("inventory_quantity")
+  comparePrice      Float?                      @map("compare_price")
+  costPrice         Float?                      @map("cost_price")
+  inventoryQuantity Int                         @default(0) @map("inventory_quantity")
   weight            Float?
-  isActive          Boolean                   @default(true) @map("is_active")
-  createdAt         DateTime                  @default(now()) @map("created_at")
-  updatedAt         DateTime                  @updatedAt @map("updated_at")
+  isActive          Boolean                     @default(true) @map("is_active")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+  bundleItems       BundleItem[]
   orderItems        OrderItem[]
   media             ProductMedia[]
   optionValues      ProductVariantOptionValue[]
-  bundleItems       BundleItem[]
-  product           Product                   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product           Product                     @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_variants")
 }
 
 model ProductVariantOptionValue {
-  id              Int                @id @default(autoincrement())
-  variantId       Int                @map("variant_id")
-  optionId        Int                @map("option_id")
-  optionValueId   Int                @map("option_value_id")
-  value           String
-  createdAt       DateTime           @default(now()) @map("created_at")
-  variant         ProductVariant     @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  option          ProductOption      @relation(fields: [optionId], references: [id], onDelete: Cascade)
-  optionValue     ProductOptionValue @relation(fields: [optionValueId], references: [id], onDelete: Cascade)
+  id            Int                @id @default(autoincrement())
+  variantId     Int                @map("variant_id")
+  optionId      Int                @map("option_id")
+  optionValueId Int                @map("option_value_id")
+  value         String
+  createdAt     DateTime           @default(now()) @map("created_at")
+  option        ProductOption      @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  optionValue   ProductOptionValue @relation(fields: [optionValueId], references: [id], onDelete: Cascade)
+  variant       ProductVariant     @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   @@unique([variantId, optionId])
   @@map("product_variant_option_values")
 }
 
 model BundleItem {
-  id              Int             @id @default(autoincrement())
-  bundleId        Int             @map("bundle_id")
-  productId       Int             @map("product_id")
-  variantId       Int?            @map("variant_id")
-  quantity        Int             @default(1)
-  sortOrder       Int             @default(0) @map("sort_order")
-  isOptional      Boolean         @default(false) @map("is_optional")
-  discountType    BundleDiscountType? @map("discount_type")
-  discountValue   Float?          @map("discount_value")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
-  
-  bundle          Product         @relation("BundleProduct", fields: [bundleId], references: [id], onDelete: Cascade)
-  product         Product         @relation("BundleItemProduct", fields: [productId], references: [id], onDelete: Cascade)
-  variant         ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  id            Int                 @id @default(autoincrement())
+  bundleId      Int                 @map("bundle_id")
+  productId     Int                 @map("product_id")
+  variantId     Int?                @map("variant_id")
+  quantity      Int                 @default(1)
+  sortOrder     Int                 @default(0) @map("sort_order")
+  isOptional    Boolean             @default(false) @map("is_optional")
+  discountType  BundleDiscountType? @map("discount_type")
+  discountValue Float?              @map("discount_value")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  bundle        Product             @relation("BundleProduct", fields: [bundleId], references: [id], onDelete: Cascade)
+  product       Product             @relation("BundleItemProduct", fields: [productId], references: [id], onDelete: Cascade)
+  variant       ProductVariant?     @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   @@unique([bundleId, productId, variantId])
   @@map("bundle_items")
@@ -414,8 +389,6 @@ model ProductMedia {
   @@map("product_media")
 }
 
-
-
 model Customer {
   id               Int               @id @default(autoincrement())
   storeId          Int               @map("store_id")
@@ -435,14 +408,14 @@ model Customer {
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
   lastLoginAt      DateTime?         @map("last_login_at")
+  activeSessions   ActiveSession[]
   analyticsEvents  AnalyticsEvent[]
   cartSessions     CartSession[]
+  couponUsages     CouponUsage[]
   addresses        CustomerAddress[]
   store            Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  orders           Order[]
-  activeSessions   ActiveSession[]
-  couponUsages     CouponUsage[]
   emailLogs        EmailLog[]
+  orders           Order[]
 
   @@unique([storeId, email])
   @@map("customers")
@@ -474,7 +447,7 @@ model Order {
   id                Int               @id @default(autoincrement())
   storeId           Int               @map("store_id")
   customerId        Int?              @map("customer_id")
-  orderNumber       Int               @map("order_number") // מספר הזמנה לפי חנות (1,2,3...)
+  orderNumber       Int               @map("order_number")
   status            OrderStatus       @default(PENDING)
   paymentStatus     PaymentStatus     @default(PENDING) @map("payment_status")
   fulfillmentStatus FulfillmentStatus @default(UNFULFILLED) @map("fulfillment_status")
@@ -496,11 +469,11 @@ model Order {
   trackingNumber    String?           @map("tracking_number")
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
+  couponUsages      CouponUsage[]
+  emailLogs         EmailLog[]
   items             OrderItem[]
   customer          Customer?         @relation(fields: [customerId], references: [id])
   store             Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  couponUsages      CouponUsage[]
-  emailLogs         EmailLog[]
 
   @@unique([storeId, orderNumber])
   @@map("orders")
@@ -607,6 +580,330 @@ model Notification {
   user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model ActiveSession {
+  id           String    @id
+  storeId      Int       @map("store_id")
+  customerId   Int?      @map("customer_id")
+  userAgent    String?   @map("user_agent")
+  ipAddress    String?   @map("ip_address")
+  lastActivity DateTime  @default(now()) @map("last_activity")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  expiresAt    DateTime  @map("expires_at")
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  store        Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@map("active_sessions")
+}
+
+model DailyAnalytics {
+  id                 Int      @id @default(autoincrement())
+  storeId            Int      @map("store_id")
+  date               DateTime @db.Date
+  uniqueVisitors     Int      @default(0) @map("unique_visitors")
+  pageViews          Int      @default(0) @map("page_views")
+  sessions           Int      @default(0)
+  orders             Int      @default(0)
+  revenue            Float    @default(0)
+  conversionRate     Float    @default(0) @map("conversion_rate")
+  avgSessionDuration Int      @default(0) @map("avg_session_duration")
+  bounceRate         Float    @default(0) @map("bounce_rate")
+  topPages           Json     @default("[]") @map("top_pages")
+  topProducts        Json     @default("[]") @map("top_products")
+  trafficSources     Json     @default("{}") @map("traffic_sources")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, date])
+  @@map("daily_analytics")
+}
+
+model HourlyAnalytics {
+  id          Int      @id @default(autoincrement())
+  storeId     Int      @map("store_id")
+  date        DateTime
+  hour        Int
+  activeUsers Int      @default(0) @map("active_users")
+  pageViews   Int      @default(0) @map("page_views")
+  newSessions Int      @default(0) @map("new_sessions")
+  orders      Int      @default(0)
+  revenue     Float    @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, date, hour])
+  @@map("hourly_analytics")
+}
+
+model PerformanceMetric {
+  id         Int      @id @default(autoincrement())
+  storeId    Int      @map("store_id")
+  metricType String   @map("metric_type")
+  value      Float
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@map("performance_metrics")
+}
+
+model Influencer {
+  id                 Int                 @id @default(autoincrement())
+  storeId            Int                 @map("store_id")
+  name               String
+  email              String
+  password           String
+  phone              String?
+  code               String              @unique
+  commissionRate     Float               @default(0.1) @map("commission_rate")
+  status             InfluencerStatus    @default(PENDING)
+  totalEarnings      Float               @default(0) @map("total_earnings")
+  totalOrders        Int                 @default(0) @map("total_orders")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  automaticDiscounts AutomaticDiscount[]
+  coupons            Coupon[]
+  influencerStats    InfluencerStats[]
+  store              Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, email])
+  @@unique([storeId, code])
+  @@map("influencers")
+}
+
+model Coupon {
+  id                   Int            @id @default(autoincrement())
+  storeId              Int            @map("store_id")
+  influencerId         Int?           @map("influencer_id")
+  code                 String         @unique
+  name                 String
+  description          String?
+  type                 CouponType     @default(MULTIPLE_USE)
+  discountType         DiscountType
+  discountValue        Float          @map("discount_value")
+  minimumAmount        Float?         @map("minimum_amount")
+  maximumDiscount      Float?         @map("maximum_discount")
+  usageLimit           Int?           @map("usage_limit")
+  usageCount           Int            @default(0) @map("usage_count")
+  customerLimit        Int?           @map("customer_limit")
+  startsAt             DateTime?      @map("starts_at")
+  expiresAt            DateTime?      @map("expires_at")
+  status               DiscountStatus @default(ACTIVE)
+  applicableProducts   Json?          @map("applicable_products")
+  applicableCategories Json?          @map("applicable_categories")
+  excludedProducts     Json?          @map("excluded_products")
+  excludedCategories   Json?          @map("excluded_categories")
+  customerSegments     Json?          @map("customer_segments")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+  usages               CouponUsage[]
+  influencer           Influencer?    @relation(fields: [influencerId], references: [id])
+  store                Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, code])
+  @@map("coupons")
+}
+
+model AutomaticDiscount {
+  id                   Int            @id @default(autoincrement())
+  storeId              Int            @map("store_id")
+  influencerId         Int?           @map("influencer_id")
+  name                 String
+  description          String?
+  discountType         DiscountType
+  discountValue        Float          @map("discount_value")
+  minimumAmount        Float?         @map("minimum_amount")
+  maximumDiscount      Float?         @map("maximum_discount")
+  priority             Int            @default(0)
+  stackable            Boolean        @default(false)
+  startsAt             DateTime?      @map("starts_at")
+  expiresAt            DateTime?      @map("expires_at")
+  status               DiscountStatus @default(ACTIVE)
+  applicableProducts   Json?          @map("applicable_products")
+  applicableCategories Json?          @map("applicable_categories")
+  excludedProducts     Json?          @map("excluded_products")
+  excludedCategories   Json?          @map("excluded_categories")
+  customerSegments     Json?          @map("customer_segments")
+  buyQuantity          Int?           @map("buy_quantity")
+  getQuantity          Int?           @map("get_quantity")
+  tieredRules          Json?          @map("tiered_rules")
+  buyProducts          Json?          @map("buy_products")
+  buyCategories        Json?          @map("buy_categories")
+  getProducts          Json?          @map("get_products")
+  getCategories        Json?          @map("get_categories")
+  getDiscountType      String?        @map("get_discount_type")
+  getDiscountValue     Float?         @map("get_discount_value")
+  usageCount           Int            @default(0) @map("usage_count")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+  influencer           Influencer?    @relation(fields: [influencerId], references: [id])
+  store                Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@map("automatic_discounts")
+}
+
+model CouponUsage {
+  id             Int       @id @default(autoincrement())
+  couponId       Int       @map("coupon_id")
+  orderId        Int?      @map("order_id")
+  customerId     Int?      @map("customer_id")
+  sessionId      String?   @map("session_id")
+  discountAmount Float     @map("discount_amount")
+  orderTotal     Float     @map("order_total")
+  usedAt         DateTime  @default(now()) @map("used_at")
+  coupon         Coupon    @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  order          Order?    @relation(fields: [orderId], references: [id])
+
+  @@map("coupon_usages")
+}
+
+model InfluencerStats {
+  id           Int        @id @default(autoincrement())
+  influencerId Int        @map("influencer_id")
+  date         DateTime   @db.Date
+  orders       Int        @default(0)
+  revenue      Float      @default(0)
+  commission   Float      @default(0)
+  couponUses   Int        @default(0) @map("coupon_uses")
+  newCustomers Int        @default(0) @map("new_customers")
+  influencer   Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  @@unique([influencerId, date])
+  @@map("influencer_stats")
+}
+
+model Partner {
+  id             Int                    @id @default(autoincrement())
+  email          String                 @unique
+  password       String
+  firstName      String                 @map("first_name")
+  lastName       String                 @map("last_name")
+  company        String?
+  phone          String?
+  referralCode   String                 @unique @map("referral_code")
+  tier           PartnerTier            @default(BRONZE)
+  isActive       Boolean                @default(true) @map("is_active")
+  totalStores    Int                    @default(0) @map("total_stores")
+  activeStores   Int                    @default(0) @map("active_stores")
+  lastLoginAt    DateTime?              @map("last_login_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+  activities     PartnerActivity[]
+  commissions    PartnerCommission[]
+  payoutRequests PartnerPayoutRequest[]
+  stores         PartnerStore[]
+
+  @@map("partners")
+}
+
+model PartnerStore {
+  id            Int                 @id @default(autoincrement())
+  partnerId     Int                 @map("partner_id")
+  storeId       Int                 @map("store_id")
+  status        PartnerStoreStatus  @default(DEVELOPMENT)
+  referralCode  String?             @map("referral_code")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  transferredAt DateTime?           @map("transferred_at")
+  activatedAt   DateTime?           @map("activated_at")
+  cancelledAt   DateTime?           @map("cancelled_at")
+  transferEmail String?             @map("transfer_email")
+  commissions   PartnerCommission[]
+  partner       Partner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  store         Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, storeId])
+  @@map("partner_stores")
+}
+
+model PartnerCommission {
+  id              Int                   @id @default(autoincrement())
+  partnerId       Int                   @map("partner_id")
+  partnerStoreId  Int                   @map("partner_store_id")
+  amount          Decimal               @db.Decimal(10, 2)
+  status          CommissionStatus      @default(PENDING)
+  earnedAt        DateTime              @default(now()) @map("earned_at")
+  approvedAt      DateTime?             @map("approved_at")
+  paidAt          DateTime?             @map("paid_at")
+  payoutRequestId Int?                  @map("payout_request_id")
+  partner         Partner               @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerStore    PartnerStore          @relation(fields: [partnerStoreId], references: [id], onDelete: Cascade)
+  payoutRequest   PartnerPayoutRequest? @relation(fields: [payoutRequestId], references: [id])
+
+  @@map("partner_commissions")
+}
+
+model PartnerPayoutRequest {
+  id            Int                 @id @default(autoincrement())
+  partnerId     Int                 @map("partner_id")
+  amount        Decimal             @db.Decimal(10, 2)
+  status        PayoutStatus        @default(PENDING)
+  bankDetails   Json?               @map("bank_details")
+  requestedAt   DateTime            @default(now()) @map("requested_at")
+  processedAt   DateTime?           @map("processed_at")
+  notes         String?
+  transactionId String?             @map("transaction_id")
+  commissions   PartnerCommission[]
+  partner       Partner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@map("partner_payout_requests")
+}
+
+model PartnerActivity {
+  id        Int                 @id @default(autoincrement())
+  partnerId Int                 @map("partner_id")
+  type      PartnerActivityType
+  metadata  Json?
+  ipAddress String?             @map("ip_address")
+  userAgent String?             @map("user_agent")
+  createdAt DateTime            @default(now()) @map("created_at")
+  partner   Partner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@map("partner_activities")
+}
+
+model EmailTemplate {
+  id          Int      @id @default(autoincrement())
+  storeId     Int?     @map("store_id")
+  type        String
+  name        String
+  subject     String
+  htmlContent String   @map("html_content")
+  textContent String?  @map("text_content")
+  isActive    Boolean  @default(true) @map("is_active")
+  isDefault   Boolean  @default(false) @map("is_default")
+  variables   Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  store       Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, type])
+  @@map("email_templates")
+}
+
+model EmailLog {
+  id                Int       @id @default(autoincrement())
+  storeId           Int?      @map("store_id")
+  to                String
+  subject           String
+  type              String
+  status            String
+  sendgridMessageId String?   @map("sendgrid_message_id")
+  error             String?
+  orderId           Int?      @map("order_id")
+  customerId        Int?      @map("customer_id")
+  sentAt            DateTime? @map("sent_at")
+  openedAt          DateTime? @map("opened_at")
+  clickedAt         DateTime? @map("clicked_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  customer          Customer? @relation(fields: [customerId], references: [id])
+  order             Order?    @relation(fields: [orderId], references: [id])
+  store             Store?    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@map("email_logs")
 }
 
 enum PlanType {
@@ -770,80 +1067,6 @@ enum BundleDiscountType {
   FIXED_AMOUNT
 }
 
-// Real-time analytics models
-model ActiveSession {
-  id           String    @id
-  storeId      Int       @map("store_id")
-  customerId   Int?      @map("customer_id")
-  userAgent    String?   @map("user_agent")
-  ipAddress    String?   @map("ip_address")
-  lastActivity DateTime  @default(now()) @map("last_activity")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  expiresAt    DateTime  @map("expires_at")
-  
-  store        Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-
-  @@map("active_sessions")
-}
-
-model DailyAnalytics {
-  id                  Int      @id @default(autoincrement())
-  storeId             Int      @map("store_id")
-  date                DateTime @db.Date
-  uniqueVisitors      Int      @default(0) @map("unique_visitors")
-  pageViews           Int      @default(0) @map("page_views")
-  sessions            Int      @default(0)
-  orders              Int      @default(0)
-  revenue             Float    @default(0)
-  conversionRate      Float    @default(0) @map("conversion_rate")
-  avgSessionDuration  Int      @default(0) @map("avg_session_duration") // in seconds
-  bounceRate          Float    @default(0) @map("bounce_rate")
-  topPages            Json     @default("[]") @map("top_pages")
-  topProducts         Json     @default("[]") @map("top_products")
-  trafficSources      Json     @default("{}") @map("traffic_sources")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-  
-  store               Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-
-  @@unique([storeId, date])
-  @@map("daily_analytics")
-}
-
-model HourlyAnalytics {
-  id           Int      @id @default(autoincrement())
-  storeId      Int      @map("store_id")
-  date         DateTime
-  hour         Int      // 0-23
-  activeUsers  Int      @default(0) @map("active_users")
-  pageViews    Int      @default(0) @map("page_views")
-  newSessions  Int      @default(0) @map("new_sessions")
-  orders       Int      @default(0)
-  revenue      Float    @default(0)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  
-  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-
-  @@unique([storeId, date, hour])
-  @@map("hourly_analytics")
-}
-
-model PerformanceMetric {
-  id         Int      @id @default(autoincrement())
-  storeId    Int      @map("store_id")
-  metricType String   @map("metric_type") // 'page_load', 'api_response', etc.
-  value      Float
-  metadata   Json?
-  createdAt  DateTime @default(now()) @map("created_at")
-  
-  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-
-  @@map("performance_metrics")
-}
-
-// Enums for discount and coupon system
 enum DiscountType {
   PERCENTAGE
   FIXED_AMOUNT
@@ -872,258 +1095,6 @@ enum InfluencerStatus {
   PENDING
 }
 
-// Influencer model
-model Influencer {
-  id                Int               @id @default(autoincrement())
-  storeId           Int               @map("store_id")
-  name              String
-  email             String
-  password          String            // Hashed password for influencer login
-  phone             String?
-  code              String            @unique // Unique influencer code (auto-generated)
-  commissionRate    Float             @default(0.1) @map("commission_rate") // 10% default
-  status            InfluencerStatus  @default(PENDING)
-  totalEarnings     Float             @default(0) @map("total_earnings")
-  totalOrders       Int               @default(0) @map("total_orders")
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
-  
-  // Relations
-  store             Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  coupons           Coupon[]
-  automaticDiscounts AutomaticDiscount[]
-  influencerStats   InfluencerStats[]
-
-  @@unique([storeId, email])
-  @@unique([storeId, code])
-  @@map("influencers")
-}
-
-// Coupon model
-model Coupon {
-  id                Int           @id @default(autoincrement())
-  storeId           Int           @map("store_id")
-  influencerId      Int?          @map("influencer_id")
-  code              String        @unique
-  name              String
-  description       String?
-  type              CouponType    @default(MULTIPLE_USE)
-  discountType      DiscountType
-  discountValue     Float         @map("discount_value") // Percentage or fixed amount
-  minimumAmount     Float?        @map("minimum_amount")
-  maximumDiscount   Float?        @map("maximum_discount") // For percentage discounts
-  usageLimit        Int?          @map("usage_limit")
-  usageCount        Int           @default(0) @map("usage_count")
-  customerLimit     Int?          @map("customer_limit") // Per customer limit
-  startsAt          DateTime?     @map("starts_at")
-  expiresAt         DateTime?     @map("expires_at")
-  status            DiscountStatus @default(ACTIVE)
-  
-  // Conditions
-  applicableProducts Json?        @map("applicable_products") // Product IDs
-  applicableCategories Json?      @map("applicable_categories") // Category IDs
-  excludedProducts  Json?         @map("excluded_products")
-  excludedCategories Json?        @map("excluded_categories")
-  customerSegments  Json?         @map("customer_segments") // Customer criteria
-  
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
-  
-  // Relations
-  store             Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  influencer        Influencer?   @relation(fields: [influencerId], references: [id], onDelete: SetNull)
-  usages            CouponUsage[]
-
-  @@unique([storeId, code])
-  @@map("coupons")
-}
-
-// Automatic discount model
-model AutomaticDiscount {
-  id                Int           @id @default(autoincrement())
-  storeId           Int           @map("store_id")
-  influencerId      Int?          @map("influencer_id")
-  name              String
-  description       String?
-  discountType      DiscountType
-  discountValue     Float         @map("discount_value")
-  minimumAmount     Float?        @map("minimum_amount")
-  maximumDiscount   Float?        @map("maximum_discount")
-  priority          Int           @default(0) // Higher number = higher priority
-  stackable         Boolean       @default(false) // Can combine with other discounts
-  startsAt          DateTime?     @map("starts_at")
-  expiresAt         DateTime?     @map("expires_at")
-  status            DiscountStatus @default(ACTIVE)
-  
-  // Conditions (same as coupon)
-  applicableProducts Json?        @map("applicable_products")
-  applicableCategories Json?      @map("applicable_categories")
-  excludedProducts  Json?         @map("excluded_products")
-  excludedCategories Json?        @map("excluded_categories")
-  customerSegments  Json?         @map("customer_segments")
-  
-  // BOGO and tiered discount settings
-  buyQuantity       Int?          @map("buy_quantity") // For BOGO: buy X
-  getQuantity       Int?          @map("get_quantity") // For BOGO: get Y
-  tieredRules       Json?         @map("tiered_rules") // For tiered discounts
-  
-  // Advanced BOGO settings
-  buyProducts       Json?         @map("buy_products") // Specific products to buy
-  buyCategories     Json?         @map("buy_categories") // Categories to buy from
-  getProducts       Json?         @map("get_products") // Specific products to get discount on
-  getCategories     Json?         @map("get_categories") // Categories to get discount on
-  getDiscountType   String?       @map("get_discount_type") // 'percentage', 'fixed', 'fixed_price', 'free'
-  getDiscountValue  Float?        @map("get_discount_value") // Value based on getDiscountType
-  
-  usageCount        Int           @default(0) @map("usage_count")
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
-  
-  // Relations
-  store             Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  influencer        Influencer?   @relation(fields: [influencerId], references: [id], onDelete: SetNull)
-
-  @@map("automatic_discounts")
-}
-
-// Coupon usage tracking
-model CouponUsage {
-  id          Int      @id @default(autoincrement())
-  couponId    Int      @map("coupon_id")
-  orderId     Int?     @map("order_id")
-  customerId  Int?     @map("customer_id")
-  sessionId   String?  @map("session_id")
-  discountAmount Float @map("discount_amount")
-  orderTotal  Float    @map("order_total")
-  usedAt      DateTime @default(now()) @map("used_at")
-  
-  // Relations
-  coupon      Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
-  order       Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-
-  @@map("coupon_usages")
-}
-
-// Influencer statistics
-model InfluencerStats {
-  id            Int        @id @default(autoincrement())
-  influencerId  Int        @map("influencer_id")
-  date          DateTime   @db.Date
-  orders        Int        @default(0)
-  revenue       Float      @default(0)
-  commission    Float      @default(0)
-  couponUses    Int        @default(0) @map("coupon_uses")
-  newCustomers  Int        @default(0) @map("new_customers")
-  
-  // Relations
-  influencer    Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
-
-  @@unique([influencerId, date])
-  @@map("influencer_stats")
-}
-
-// Partner System Models
-model Partner {
-  id              Int                @id @default(autoincrement())
-  email           String             @unique
-  password        String
-  firstName       String             @map("first_name")
-  lastName        String             @map("last_name")
-  company         String?
-  phone           String?
-  referralCode    String             @unique @map("referral_code")
-  tier            PartnerTier        @default(BRONZE)
-  isActive        Boolean            @default(true) @map("is_active")
-  totalStores     Int                @default(0) @map("total_stores")
-  activeStores    Int                @default(0) @map("active_stores")
-  lastLoginAt     DateTime?          @map("last_login_at")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
-  
-  // Relations
-  stores          PartnerStore[]
-  commissions     PartnerCommission[]
-  payoutRequests  PartnerPayoutRequest[]
-  activities      PartnerActivity[]
-  
-  @@map("partners")
-}
-
-model PartnerStore {
-  id              Int                @id @default(autoincrement())
-  partnerId       Int                @map("partner_id")
-  storeId         Int                @map("store_id")
-  status          PartnerStoreStatus @default(DEVELOPMENT)
-  referralCode    String?            @map("referral_code")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  transferredAt   DateTime?          @map("transferred_at")
-  activatedAt     DateTime?          @map("activated_at")
-  cancelledAt     DateTime?          @map("cancelled_at")
-  transferEmail   String?            @map("transfer_email")
-  
-  // Relations
-  partner         Partner            @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  store           Store              @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  commissions     PartnerCommission[]
-  
-  @@unique([partnerId, storeId])
-  @@map("partner_stores")
-}
-
-model PartnerCommission {
-  id              Int                @id @default(autoincrement())
-  partnerId       Int                @map("partner_id")
-  partnerStoreId  Int                @map("partner_store_id")
-  amount          Decimal            @db.Decimal(10, 2)
-  status          CommissionStatus   @default(PENDING)
-  earnedAt        DateTime           @default(now()) @map("earned_at")
-  approvedAt      DateTime?          @map("approved_at")
-  paidAt          DateTime?          @map("paid_at")
-  payoutRequestId Int?               @map("payout_request_id")
-  
-  // Relations
-  partner         Partner            @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  partnerStore    PartnerStore       @relation(fields: [partnerStoreId], references: [id], onDelete: Cascade)
-  payoutRequest   PartnerPayoutRequest? @relation(fields: [payoutRequestId], references: [id])
-  
-  @@map("partner_commissions")
-}
-
-model PartnerPayoutRequest {
-  id              Int                @id @default(autoincrement())
-  partnerId       Int                @map("partner_id")
-  amount          Decimal            @db.Decimal(10, 2)
-  status          PayoutStatus       @default(PENDING)
-  bankDetails     Json?              @map("bank_details")
-  requestedAt     DateTime           @default(now()) @map("requested_at")
-  processedAt     DateTime?          @map("processed_at")
-  notes           String?
-  transactionId   String?            @map("transaction_id")
-  
-  // Relations
-  partner         Partner            @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  commissions     PartnerCommission[]
-  
-  @@map("partner_payout_requests")
-}
-
-model PartnerActivity {
-  id              Int                @id @default(autoincrement())
-  partnerId       Int                @map("partner_id")
-  type            PartnerActivityType
-  metadata        Json?
-  ipAddress       String?            @map("ip_address")
-  userAgent       String?            @map("user_agent")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  
-  // Relations
-  partner         Partner            @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  
-  @@map("partner_activities")
-}
-
-// Enums for Partner System
 enum PartnerTier {
   BRONZE
   SILVER
@@ -1159,48 +1130,4 @@ enum PartnerActivityType {
   PAYOUT_REQUESTED
   PROFILE_UPDATED
   PASSWORD_CHANGED
-}
-
-// Email System Models
-model EmailTemplate {
-  id          Int      @id @default(autoincrement())
-  storeId     Int?     @map("store_id") // null = global template
-  type        String   // order_confirmation, abandoned_cart, welcome, etc.
-  name        String
-  subject     String
-  htmlContent String   @map("html_content") @db.Text
-  textContent String?  @map("text_content") @db.Text
-  isActive    Boolean  @default(true) @map("is_active")
-  isDefault   Boolean  @default(false) @map("is_default")
-  variables   Json?    // Available variables for this template
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  
-  store       Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  
-  @@unique([storeId, type])
-  @@map("email_templates")
-}
-
-model EmailLog {
-  id                Int      @id @default(autoincrement())
-  storeId           Int?     @map("store_id")
-  to                String
-  subject           String
-  type              String   // order_confirmation, abandoned_cart, etc.
-  status            String   // sent, failed, bounced, opened, clicked
-  sendgridMessageId String?  @map("sendgrid_message_id")
-  error             String?  @db.Text
-  orderId           Int?     @map("order_id")
-  customerId        Int?     @map("customer_id")
-  sentAt            DateTime? @map("sent_at")
-  openedAt          DateTime? @map("opened_at")
-  clickedAt         DateTime? @map("clicked_at")
-  createdAt         DateTime @default(now()) @map("created_at")
-  
-  store             Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  order             Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  customer          Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  
-  @@map("email_logs")
 }

@@ -40,7 +40,7 @@ const EmailTemplatesPage = ({ storeId }) => {
         return;
       }
       
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       if (!token) {
         console.log('No authentication token found');
         alert('נדרש להתחבר מחדש');
@@ -98,7 +98,7 @@ const EmailTemplatesPage = ({ storeId }) => {
         return;
       }
       
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       apiService.setToken(token);
 
       const saveData = {
@@ -127,7 +127,7 @@ const EmailTemplatesPage = ({ storeId }) => {
 
   const handlePreview = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       apiService.setToken(token);
 
       const previewData = {
@@ -158,7 +158,7 @@ const EmailTemplatesPage = ({ storeId }) => {
 
     try {
       setSendingTest(true);
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       apiService.setToken(token);
 
       const testData = {
@@ -189,7 +189,7 @@ const EmailTemplatesPage = ({ storeId }) => {
     }
 
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       apiService.setToken(token);
 
       await apiService.deleteEmailTemplate(selectedTemplate.type, storeId);

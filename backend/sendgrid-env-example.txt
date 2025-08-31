@@ -1,6 +1,0 @@
-# SendGrid Configuration
-SENDGRID_API_KEY=SG.your-sendgrid-api-key-here
-SENDGRID_FROM_EMAIL=noreply@yourdomain.com
-SENDGRID_FROM_NAME=QuickShop
-
-# Add these to your existing .env file

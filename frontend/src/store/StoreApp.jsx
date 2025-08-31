@@ -11,21 +11,28 @@ const StoreApp = ({ storeSlug }) => {
   const [isOwner, setIsOwner] = useState(false)
 
   useEffect(() => {
-    fetchStoreData()
+
+    if (storeSlug) {
+      fetchStoreData()
+    } else {
+      console.log('❌ No storeSlug provided to StoreApp')
+      setError('החנות לא נמצאה')
+      setLoading(false)
+    }
   }, [storeSlug])
 
   const checkOwnership = async (storeData) => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken')
+      const token = localStorage.getItem('authToken')
       let userData = localStorage.getItem('user')
       
-      console.log('🔍 Checking ownership...')
+
       console.log('Token exists:', !!token)
       console.log('User data exists:', !!userData)
       
       if (!token) {
         console.log('❌ No token found - user not logged in')
-        console.log('💡 To manage this store, please login at: http://localhost:5173')
+        console.log('💡 To manage this store, please login at: https://my-quickshop.com')
         setIsOwner(false)
         return
       }
@@ -34,7 +41,7 @@ const StoreApp = ({ storeSlug }) => {
       if (!userData) {
         console.log('🔄 Token found but no user data, fetching from server...')
         try {
-          const response = await fetch('http://localhost:3001/api/dashboard/user-store', {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/dashboard/user-store`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -54,7 +61,7 @@ const StoreApp = ({ storeSlug }) => {
             // If we get 403, the token is probably invalid, so clear it
             if (response.status === 403) {
               console.log('🗑️ Clearing invalid token')
-              localStorage.removeItem('token')
+              localStorage.removeItem('authToken')
               localStorage.removeItem('authToken')
               localStorage.removeItem('user')
             }
@@ -76,7 +83,7 @@ const StoreApp = ({ storeSlug }) => {
       
       const user = JSON.parse(userData)
       console.log('👤 Current user:', user)
-      console.log('🏪 Store owner:', storeData.owner)
+
       
       // Check if the current user is the store owner
       if (user.id && storeData.owner && user.id === storeData.owner.id) {
@@ -94,11 +101,14 @@ const StoreApp = ({ storeSlug }) => {
 
   const fetchStoreData = async () => {
     try {
+      console.log('🔄 fetchStoreData called with storeSlug:', storeSlug)
       setLoading(true)
       setError(null)
       
       // Fetch store data from API
-      const response = await fetch(`http://localhost:3001/api/stores/${storeSlug}`)
+      const apiUrl = `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeSlug}`
+      console.log('📡 Fetching store data from:', apiUrl)
+      const response = await fetch(apiUrl)
       
       if (!response.ok) {
         if (response.status === 404) {

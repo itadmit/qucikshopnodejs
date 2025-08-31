@@ -5,6 +5,7 @@ import { Store } from '../models/Store.js';
 import prisma from '../lib/prisma.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { config } from '../config.js';
+import { setupNewStore } from '../services/storeSetup.js';
 
 const router = express.Router();
 
@@ -59,6 +60,9 @@ router.post('/register', async (req, res) => {
 
       return { user, store };
     });
+
+    // Setup default store data (menus, pages, settings)
+    await setupNewStore(result.store.id);
 
     // Generate auth token
     const authResult = await User.authenticate(email, password);

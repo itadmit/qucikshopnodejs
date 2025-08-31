@@ -84,14 +84,30 @@ const ProductBasicInfo = ({
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">תיאור</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            תיאור
+            <span className="text-xs text-gray-500 mr-2">
+              ({(productData.description || '').length}/50,000 תווים)
+            </span>
+          </label>
           <RichTextEditor
             value={productData.description}
-            onChange={(content) => setProductData({ ...productData, description: content })}
+            onChange={(content) => {
+              if (content.length <= 50000) {
+                setProductData({ ...productData, description: content });
+              } else {
+                alert('תיאור המוצר ארוך מדי. מקסימום 50,000 תווים מותר.');
+              }
+            }}
             placeholder="תיאור המוצר..."
             minHeight="150px"
             maxHeight="300px"
           />
+          {(productData.description || '').length > 45000 && (
+            <div className="text-sm text-orange-600 mt-1">
+              ⚠️ התיאור מתקרב לגבול המקסימלי
+            </div>
+          )}
         </div>
       </div>
     </div>

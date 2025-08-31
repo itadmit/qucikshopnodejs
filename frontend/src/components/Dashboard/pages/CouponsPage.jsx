@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, EyeOff, Copy, Download } from 'lucide-react'
+import DataTable from '../components/DataTable.jsx'
+import { DashboardPageSkeleton } from '../components/Skeleton'
 
 const CouponsPage = ({ storeId }) => {
   const { t } = useTranslation()
@@ -14,6 +16,112 @@ const CouponsPage = ({ storeId }) => {
   const [loading, setLoading] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
+
+  // Define columns for Coupons DataTable
+  const couponColumns = [
+    {
+      key: 'code',
+      header: 'קוד קופון',
+      accessor: 'code',
+      sortable: true,
+      render: (coupon) => (
+        <div className="text-sm font-medium text-gray-900">{coupon.code}</div>
+      )
+    },
+    {
+      key: 'name',
+      header: 'שם',
+      accessor: 'name',
+      sortable: true,
+      render: (coupon) => (
+        <div className="text-sm text-gray-900">{coupon.name}</div>
+      )
+    },
+    {
+      key: 'discountType',
+      header: 'סוג הנחה',
+      accessor: 'discountType',
+      sortable: true,
+      filterable: true,
+      filterOptions: [
+        { value: 'PERCENTAGE', label: 'אחוזים' },
+        { value: 'FIXED_AMOUNT', label: 'סכום קבוע' },
+        { value: 'FREE_SHIPPING', label: 'משלוח חינם' }
+      ],
+      render: (coupon) => (
+        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+          coupon.discountType === 'PERCENTAGE' ? 'bg-blue-100 text-blue-800' :
+          coupon.discountType === 'FIXED_AMOUNT' ? 'bg-green-100 text-green-800' :
+          'bg-purple-100 text-purple-800'
+        }`}>
+          {coupon.discountType === 'PERCENTAGE' ? 'אחוזים' :
+           coupon.discountType === 'FIXED_AMOUNT' ? 'סכום קבוע' : 'משלוח חינם'}
+        </span>
+      )
+    },
+    {
+      key: 'discountValue',
+      header: 'ערך',
+      accessor: 'discountValue',
+      sortable: true,
+      render: (coupon) => (
+        <div className="text-sm text-gray-900">
+          {coupon.discountType === 'PERCENTAGE' ? `${coupon.discountValue}%` :
+           coupon.discountType === 'FIXED_AMOUNT' ? `₪${coupon.discountValue}` : 'חינם'}
+        </div>
+      )
+    },
+    {
+      key: 'usageCount',
+      header: 'שימושים',
+      accessor: 'usageCount',
+      sortable: true,
+      render: (coupon) => (
+        <div className="text-sm text-gray-900">
+          {coupon.usageCount || 0} / {coupon.usageLimit || '∞'}
+        </div>
+      )
+    },
+    {
+      key: 'isActive',
+      header: 'סטטוס',
+      accessor: 'isActive',
+      sortable: true,
+      filterable: true,
+      filterOptions: [
+        { value: true, label: 'פעיל' },
+        { value: false, label: 'לא פעיל' }
+      ],
+      render: (coupon) => (
+        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+          coupon.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {coupon.isActive ? (
+            <>
+              <Eye className="w-3 h-3 ml-1" />
+              פעיל
+            </>
+          ) : (
+            <>
+              <EyeOff className="w-3 h-3 ml-1" />
+              לא פעיל
+            </>
+          )}
+        </span>
+      )
+    },
+    {
+      key: 'expiresAt',
+      header: 'תפוגה',
+      accessor: 'expiresAt',
+      sortable: true,
+      render: (coupon) => (
+        <div className="text-sm text-gray-900">
+          {coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleDateString('he-IL') : 'ללא תפוגה'}
+        </div>
+      )
+    }
+  ];
 
   useEffect(() => {
     if (storeId) {
@@ -40,9 +148,9 @@ const CouponsPage = ({ storeId }) => {
 
   const loadCoupons = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/coupons?storeId=${storeId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/coupons?storeId=${storeId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
       })
       
@@ -57,9 +165,9 @@ const CouponsPage = ({ storeId }) => {
 
   const loadAutomaticDiscounts = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/automatic-discounts?storeId=${storeId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/automatic-discounts?storeId=${storeId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
       })
       
@@ -74,9 +182,9 @@ const CouponsPage = ({ storeId }) => {
 
   const loadInfluencers = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/influencers?storeId=${storeId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencers?storeId=${storeId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
       })
       
@@ -106,10 +214,10 @@ const CouponsPage = ({ storeId }) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/influencers/${influencerId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencers/${influencerId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
       })
 
@@ -132,10 +240,10 @@ const CouponsPage = ({ storeId }) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/coupons/${couponId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/coupons/${couponId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
       })
 
@@ -158,10 +266,10 @@ const CouponsPage = ({ storeId }) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/automatic-discounts/${discountId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/automatic-discounts/${discountId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
       })
 
@@ -280,119 +388,110 @@ const CouponsPage = ({ storeId }) => {
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="mr-3 text-gray-600">טוען...</span>
-        </div>
+        <DashboardPageSkeleton hasTable={true} tableRows={5} />
       ) : (
         <div>
           {/* Coupons Tab */}
           {activeTab === 'coupons' && (
-            <div className="space-y-4">
-              {coupons.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+            <DataTable
+              data={coupons}
+              columns={couponColumns}
+              title="רשימת קופונים"
+              subtitle={`${coupons.length} קופונים בסך הכל`}
+              searchable={true}
+              filterable={true}
+              selectable={true}
+              sortable={true}
+              loading={loading}
+              pagination={true}
+              itemsPerPage={10}
+              actions={[
+                {
+                  label: 'ייצא קופונים',
+                  icon: Download,
+                  onClick: () => console.log('Export coupons')
+                },
+                {
+                  label: 'קופון חדש',
+                  icon: Plus,
+                  variant: 'primary',
+                  onClick: () => navigate('/dashboard/coupons/new')
+                }
+              ]}
+              bulkActions={[
+                {
+                  label: 'הפעל קופונים',
+                  icon: Eye,
+                  onClick: (selectedIds) => console.log('Activate coupons:', selectedIds)
+                },
+                {
+                  label: 'השבת קופונים',
+                  icon: EyeOff,
+                  onClick: (selectedIds) => console.log('Deactivate coupons:', selectedIds)
+                },
+                {
+                  label: 'מחק קופונים',
+                  icon: Trash2,
+                  onClick: (selectedIds) => {
+                    if (confirm(`האם אתה בטוח שברצונך למחוק ${selectedIds.length} קופונים?`)) {
+                      console.log('Delete coupons:', selectedIds);
+                    }
+                  }
+                }
+              ]}
+              rowActions={[
+                {
+                  label: 'ערוך קופון',
+                  icon: Edit,
+                  variant: 'primary',
+                  onClick: (coupon) => {
+                    navigate(`/dashboard/coupons/${coupon.id}/edit`);
+                  }
+                },
+                {
+                  label: 'שכפל קופון',
+                  icon: Copy,
+                  onClick: (coupon) => {
+                    console.log('Duplicate coupon:', coupon.id);
+                  }
+                },
+                {
+                  label: 'הפעל/השבת',
+                  icon: Eye,
+                  onClick: (coupon) => {
+                    console.log('Toggle coupon status:', coupon.id);
+                  }
+                },
+                {
+                  label: 'מחק קופון',
+                  icon: Trash2,
+                  variant: 'danger',
+                  onClick: (coupon) => {
+                    if (confirm(`האם אתה בטוח שברצונך למחוק את הקופון "${coupon.name}"?`)) {
+                      console.log('Delete coupon:', coupon.id);
+                    }
+                  }
+                }
+              ]}
+              onRowClick={(coupon) => {
+                navigate(`/dashboard/coupons/${coupon.id}/edit`);
+              }}
+              emptyState={
+                <div className="text-center py-12">
                   <i className="ri-coupon-3-line text-4xl text-gray-400 mb-4"></i>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">אין קופונים עדיין</h3>
                   <p className="text-gray-600 mb-4">צור את הקופון הראשון שלך כדי להתחיל</p>
-
+                  <button
+                    onClick={() => navigate('/dashboard/coupons/new')}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <Plus className="h-4 w-4 ml-2" />
+                    צור קופון ראשון
+                  </button>
                 </div>
-              ) : (
-                <div className="bg-white shadow rounded-lg overflow-hidden">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          קוד קופון
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          שם
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          סוג הנחה
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          ערך
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          שימושים
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          סטטוס
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          פעולות
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {coupons.map((coupon) => (
-                        <tr key={coupon.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
-                                {coupon.code}
-                              </code>
-                              {coupon.influencer && (
-                                <span className="mr-2 text-xs text-blue-600">
-                                  <i className="ri-user-star-line"></i>
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
-                              {coupon.name}
-                            </div>
-                            {coupon.description && (
-                              <div className="text-sm text-gray-500">
-                                {coupon.description}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {getDiscountTypeLabel(coupon.discountType)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {coupon.discountType === 'PERCENTAGE' 
-                              ? `${coupon.discountValue}%`
-                              : coupon.discountType === 'FIXED_AMOUNT'
-                              ? formatPrice(coupon.discountValue)
-                              : 'משלוח חינם'
-                            }
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {coupon.usageCount}
-                            {coupon.usageLimit && ` / ${coupon.usageLimit}`}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(coupon.status)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                              <button
-                                onClick={() => navigate(`/dashboard/coupons/${coupon.id}/edit`)}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                <i className="ri-edit-line"></i>
-                              </button>
-                              <button className="text-gray-600 hover:text-gray-900">
-                                <i className="ri-bar-chart-line"></i>
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteCoupon(coupon.id)}
-                                className="text-red-600 hover:text-red-900"
-                              >
-                                <i className="ri-delete-bin-line"></i>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+              }
+              className="shadow-sm"
+            />
           )}
 
           {/* Automatic Discounts Tab */}
@@ -684,11 +783,11 @@ const CreateInfluencerModal = ({ isOpen, onClose, storeId, onSuccess }) => {
     
     setLoading(true)
     try {
-      const response = await fetch('http://localhost:3001/api/influencers', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           ...formData,

@@ -3,7 +3,7 @@
  * כותרת הבילדר עם כפתורי פעולה
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Eye, 
@@ -13,7 +13,8 @@ import {
   Tablet, 
   Undo, 
   Redo, 
-  Save 
+  Save,
+  RotateCcw
 } from 'lucide-react';
 import { Select } from '../../ui';
 
@@ -30,10 +31,41 @@ const BuilderHeader = ({
   onPreviewModeChange,
   onUndo,
   onRedo,
-  onSave
+  onSave,
+  onResetToDefault,
+  userStore,
+  currentPageData,
+  pages = []
 }) => {
+
+
+
+  // יצירת אפשרויות לסלקט
+  const getPageOptions = () => {
+    const staticPages = [
+      { value: 'home', label: 'עמוד בית (מפורסם)' },
+      { value: 'product', label: 'עמוד מוצר (מפורסם)' },
+      { value: 'category', label: 'עמוד קטגוריה (מפורסם)' },
+      { value: 'about', label: 'אודות (מפורסם)' },
+      { value: 'contact', label: 'צור קשר (מפורסם)' }
+    ];
+
+    const dynamicPages = pages
+      .filter(page => !staticPages.some(sp => sp.value === page.slug)) // הסרת כפילויות
+      .map(page => ({
+        value: page.slug,
+        label: `${page.title} ${page.isPublished ? '(מפורסם)' : '(טיוטה)'}`
+      }));
+
+    const globalOptions = [
+      { value: 'header', label: 'הדר האתר' },
+      { value: 'footer', label: 'פוטר האתר' }
+    ];
+
+    return [...staticPages, ...dynamicPages, ...globalOptions];
+  };
   return (
-    <div className="builder-header bg-white border-b border-gray-200 px-6 py-4">
+    <div className="builder-header bg-white border-b border-gray-200 px-6 py-4 relative z-50">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4 space-x-reverse">
           <button
@@ -55,17 +87,10 @@ const BuilderHeader = ({
                   onPageChange({ editingGlobal: null, selectedPage: value });
                 }
               }}
-              options={[
-                { value: 'home', label: 'עמוד בית' },
-                { value: 'product', label: 'עמוד מוצר' },
-                { value: 'category', label: 'עמוד קטגוריה' },
-                { value: 'about', label: 'אודות' },
-                { value: 'contact', label: 'צור קשר' },
-                { value: 'header', label: 'הדר האתר' },
-                { value: 'footer', label: 'פוטר האתר' }
-              ]}
+              options={getPageOptions()}
               size="sm"
               className="min-w-[150px]"
+              placeholder="בחר עמוד..."
             />
             
             {editingGlobal && (
@@ -128,6 +153,17 @@ const BuilderHeader = ({
               {isPreviewMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               <span className="text-sm">{isPreviewMode ? 'עריכה' : 'תצוגה מקדימה'}</span>
             </button>
+            {/* Reset to Default Button - only for content pages */}
+            {currentPageData && onResetToDefault && (
+              <button
+                onClick={onResetToDefault}
+                className="flex items-center space-x-2 space-x-reverse px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                title="איפוס לתוכן ברירת מחדל"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span className="text-sm">איפוס</span>
+              </button>
+            )}
             <button
               onClick={onSave}
               className="flex items-center space-x-2 space-x-reverse px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"

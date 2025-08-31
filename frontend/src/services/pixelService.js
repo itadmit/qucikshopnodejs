@@ -17,7 +17,7 @@ class PixelService {
     this.storeSettings = storeSettings;
     
     if (this.debugMode) {
-      console.log('🔍 Initializing pixels with settings:', storeSettings);
+
     }
 
     // אתחול Facebook Pixel
@@ -38,7 +38,7 @@ class PixelService {
     this.isInitialized = true;
     
     if (this.debugMode) {
-      console.log('✅ Pixels initialized successfully');
+
     }
   }
 
@@ -64,7 +64,7 @@ class PixelService {
         window.fbq('track', 'PageView');
         
         if (this.debugMode) {
-          console.log('📘 Facebook Pixel initialized:', pixelId);
+
         }
         resolve();
       };
@@ -119,7 +119,7 @@ class PixelService {
         });
         
         if (this.debugMode) {
-          console.log('📊 Google Analytics initialized:', measurementId);
+
         }
         resolve();
       };
@@ -153,7 +153,7 @@ class PixelService {
       
       script.onload = () => {
         if (this.debugMode) {
-          console.log('🏷️ Google Tag Manager initialized:', containerId);
+
         }
         resolve();
       };
@@ -204,7 +204,7 @@ class PixelService {
     }
 
     if (this.debugMode) {
-      console.log('📄 Page view tracked:', eventData);
+
     }
   }
 
@@ -269,7 +269,7 @@ class PixelService {
     }
 
     if (this.debugMode) {
-      console.log('👁️ View content tracked:', eventData);
+
     }
   }
 
@@ -334,7 +334,7 @@ class PixelService {
     }
 
     if (this.debugMode) {
-      console.log('🛒 Add to cart tracked:', eventData);
+
     }
   }
 
@@ -380,7 +380,7 @@ class PixelService {
     }
 
     if (this.debugMode) {
-      console.log('🗑️ Remove from cart tracked:', { productData, quantity, value });
+
     }
   }
 
@@ -439,7 +439,7 @@ class PixelService {
     }
 
     if (this.debugMode) {
-      console.log('🛒 Begin checkout tracked:', eventData);
+
     }
   }
 
@@ -499,7 +499,7 @@ class PixelService {
     }
 
     if (this.debugMode) {
-      console.log('💰 Purchase tracked:', eventData);
+
     }
   }
 
@@ -538,7 +538,7 @@ class PixelService {
     }
 
     if (this.debugMode) {
-      console.log('🔍 Search tracked:', eventData);
+
     }
   }
 
@@ -567,7 +567,7 @@ class PixelService {
     }
 
     if (this.debugMode) {
-      console.log('🎯 Custom event tracked:', { eventName, eventData });
+
     }
   }
 

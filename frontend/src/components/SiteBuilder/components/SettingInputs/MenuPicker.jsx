@@ -28,7 +28,7 @@ const MenuPicker = ({
       setError(null);
       
       try {
-        const storeSlug = localStorage.getItem('currentStore');
+        const storeSlug = localStorage.getItem('currentStoreSlug') || localStorage.getItem('currentStore');
         if (!storeSlug) {
           throw new Error('Store not found');
         }
@@ -107,7 +107,6 @@ const MenuPicker = ({
         options={allOptions}
         placeholder={placeholder}
         searchable
-        searchPlaceholder="חפש תפריט..."
         loading={loading}
         className="w-full"
         renderOption={(option) => option.label}

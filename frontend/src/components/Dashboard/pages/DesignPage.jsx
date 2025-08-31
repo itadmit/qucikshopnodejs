@@ -551,7 +551,7 @@ const DesignPage = () => {
                       onClick={() => {
                         try {
                           // Open store homepage - force store view by adding a parameter or using a different approach
-                          const storeUrl = 'http://localhost:5174/?preview=store';
+                          const storeUrl = 'https://my-quickshop.com/?preview=store';
                           const previewWindow = window.open(storeUrl, '_blank');
                           if (!previewWindow) {
                             alert('לא ניתן לפתוח תצוגה מקדימה. אנא בדוק שהחנות פועלת');

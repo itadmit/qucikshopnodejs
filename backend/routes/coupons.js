@@ -1,10 +1,33 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticateToken } from '../middleware/auth.js';
+import discountService from '../services/discountService.js';
 
 const router = express.Router();
 
-// Apply authentication middleware to all routes
+// POST /api/coupons/calculate - Calculate discounts for cart (public endpoint for store preview)
+router.post('/calculate', async (req, res) => {
+  try {
+    const { cart, storeSlug, couponCode, customer } = req.body;
+    
+    if (!cart || !storeSlug) {
+      return res.status(400).json({ error: 'Cart and store slug are required' });
+    }
+
+    // Calculate discounts using the discount service
+    const result = await discountService.calculateDiscounts(cart, storeSlug, couponCode, customer);
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error calculating discounts:', error);
+    res.status(500).json({ 
+      error: 'Failed to calculate discounts',
+      details: error.message 
+    });
+  }
+});
+
+// Apply authentication middleware to all other routes
 router.use(authenticateToken);
 
 // GET /api/coupons - Get all coupons for a store

@@ -24,8 +24,8 @@ const JupiterCategoryPage = ({ storeData }) => {
       
       // Fetch category and its products
       const [categoryResponse, productsResponse] = await Promise.all([
-        fetch(`http://localhost:3001/api/stores/${storeData.slug}/categories/${slug}`),
-        fetch(`http://localhost:3001/api/stores/${storeData.slug}/categories/${slug}/products`)
+        fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/categories/${slug}`),
+        fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/categories/${slug}/products`)
       ])
       
       if (categoryResponse.ok) {

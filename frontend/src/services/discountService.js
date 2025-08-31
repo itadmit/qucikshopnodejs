@@ -5,7 +5,11 @@
 
 class DiscountService {
   constructor() {
-    this.apiBase = 'http://localhost:3001/api'
+    // Use local API in development, external API in production
+    const isDevelopment = window.location.port === '5173' || window.location.port === '5174' || window.location.port === '5175' || window.location.port === '5176' || window.location.port === '5177';
+    this.apiBase = isDevelopment 
+      ? 'http://3.64.187.151:3001/api'
+      : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
   }
 
   /**

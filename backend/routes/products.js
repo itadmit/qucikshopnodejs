@@ -11,58 +11,71 @@ router.get('/', authenticateToken, async (req, res) => {
     const { storeId } = req.query;
     const userId = req.user.id;
 
-    // Verify user has access to this store
-    const storeUser = await prisma.storeUser.findFirst({
+    // Verify user has access to this store (either as owner or store user)
+    const store = await prisma.store.findFirst({
       where: {
-        storeId: parseInt(storeId),
-        userId: userId,
-        isActive: true
+        id: parseInt(storeId),
+        userId: userId // Check if user is owner
       }
     });
 
-    if (!storeUser) {
-      return res.status(403).json({ error: 'Access denied' });
+    if (!store) {
+      // If not owner, check if user is a store user
+      const storeUser = await prisma.storeUser.findFirst({
+        where: {
+          storeId: parseInt(storeId),
+          userId: userId,
+          isActive: true
+        }
+      });
+
+      if (!storeUser) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
     }
 
     const products = await prisma.product.findMany({
       where: {
         storeId: parseInt(storeId)
       },
-      include: {
-        category: true,
-        media: true,
-        variants: {
-          include: {
-            optionValues: {
-              include: {
-                option: true
-              }
-            }
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        sku: true,
+        status: true,
+        price: true,
+        inventoryQuantity: true,
+        type: true,
+        createdAt: true,
+        category: {
+          select: {
+            name: true
           }
         },
-        bundleItems: {
-          include: {
-            product: {
-              include: {
-                media: true
-              }
-            },
-            variant: {
-              include: {
-                optionValues: {
-                  include: {
-                    option: true,
-                    optionValue: true
-                  }
-                }
+        media: {
+          select: {
+            media: {
+              select: {
+                s3Url: true
               }
             }
+          },
+          where: {
+            isPrimary: true
+          },
+          take: 1
+        },
+        _count: {
+          select: {
+            variants: true
           }
         }
       },
       orderBy: {
         createdAt: 'desc'
-      }
+      },
+      take: 100 // Limit to 100 products for now
     });
 
     res.json({
@@ -77,6 +90,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
 // Get single product
 router.get('/:id', authenticateToken, async (req, res) => {
+  console.log('🔍 GET /products/:id route hit!', { id: req.params.id });
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -86,18 +100,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
         id: parseInt(id)
       },
       include: {
-        store: {
+        store: true,
+        category: true,
+        media: {
           include: {
-            storeUsers: {
-              where: {
-                userId: userId,
-                isActive: true
-              }
-            }
+            media: true
           }
         },
-        category: true,
-        media: true,
         options: {
           include: {
             values: true
@@ -119,8 +128,20 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    if (product.store.storeUsers.length === 0) {
-      return res.status(403).json({ error: 'Access denied' });
+    // Check if user is owner of the store
+    if (product.store.userId !== userId) {
+      // If not owner, check if user is a store user
+      const storeUser = await prisma.storeUser.findFirst({
+        where: {
+          storeId: product.storeId,
+          userId: userId,
+          isActive: true
+        }
+      });
+      
+      if (!storeUser) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
     }
 
     // Process options to parse pattern data
@@ -157,6 +178,13 @@ router.post('/', authenticateToken, async (req, res) => {
 
     if (!req.body.sku || req.body.sku.trim() === '') {
       return res.status(400).json({ error: 'מקט הוא שדה חובה' });
+    }
+
+    // Validate description size to prevent performance issues
+    if (req.body.description && req.body.description.length > 50000) {
+      return res.status(400).json({ 
+        error: 'תיאור המוצר ארוך מדי. מקסימום 50,000 תווים מותר.' 
+      });
     }
 
     // אימות מחיר למוצר פשוט
@@ -224,25 +252,40 @@ router.post('/', authenticateToken, async (req, res) => {
       bundleItems
     } = req.body;
 
-    // Verify user has access to this store
-    const storeUser = await prisma.storeUser.findFirst({
+    // Verify user has access to this store (either as owner or store user)
+    const store = await prisma.store.findFirst({
       where: {
-        storeId: parseInt(storeId),
-        userId: userId,
-        isActive: true
+        id: parseInt(storeId),
+        userId: userId // Check if user is owner
       }
     });
 
-    if (!storeUser) {
-      return res.status(403).json({ error: 'Access denied' });
+    if (!store) {
+      // If not owner, check if user is a store user
+      const storeUser = await prisma.storeUser.findFirst({
+        where: {
+          storeId: parseInt(storeId),
+          userId: userId,
+          isActive: true
+        }
+      });
+
+      if (!storeUser) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
     }
 
     // Generate slug from name
-    const slug = name.toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
+    let slug = name.toLowerCase()
+      .replace(/[^a-z0-9\u0590-\u05FF\s-]/g, '') // Include Hebrew characters
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim('-');
+    
+    // If slug is empty or invalid, use product ID
+    if (!slug || slug.length < 2) {
+      slug = `product-${Date.now()}`;
+    }
 
     // Create product with transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -268,7 +311,7 @@ router.post('/', authenticateToken, async (req, res) => {
           isDigital: isDigital ?? false,
           seoTitle,
           seoDescription,
-          tags: tags ? JSON.parse(tags) : null,
+          tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : null,
           customFields: customFields ? JSON.stringify(customFields) : null
         }
       });
@@ -307,15 +350,41 @@ router.post('/', authenticateToken, async (req, res) => {
 
       // Create media if provided
       if (media && Array.isArray(media)) {
-        for (const mediaItem of media) {
+        for (let i = 0; i < media.length; i++) {
+          const mediaItem = media[i];
+          
+          // First find or create the media record
+          let mediaRecord = await tx.media.findFirst({
+            where: {
+              s3Url: mediaItem.url,
+              storeId: product.storeId
+            }
+          });
+
+          if (!mediaRecord) {
+            mediaRecord = await tx.media.create({
+              data: {
+                storeId: product.storeId,
+                filename: mediaItem.filename || `image-${i}.webp`,
+                originalFilename: mediaItem.originalName || `image-${i}`,
+                mimeType: mediaItem.mimeType || 'image/webp',
+                fileSize: mediaItem.size || 0,
+                s3Key: mediaItem.key || mediaItem.s3Key || '',
+                s3Url: mediaItem.url,
+                altText: mediaItem.altText || ''
+              }
+            });
+          }
+
+          // Then create the product-media relationship
           await tx.productMedia.create({
             data: {
               productId: product.id,
-              url: mediaItem.url,
-              type: mediaItem.type,
+              mediaId: mediaRecord.id,
+              type: mediaItem.type || 'IMAGE',
               altText: mediaItem.altText || '',
-              isPrimary: mediaItem.isPrimary || false,
-              sortOrder: mediaItem.sortOrder || 0
+              isPrimary: mediaItem.isPrimary || i === 0,
+              sortOrder: mediaItem.sortOrder || i
             }
           });
         }
@@ -379,17 +448,31 @@ router.post('/', authenticateToken, async (req, res) => {
       message: 'Product created successfully'
     });
   } catch (error) {
-    console.error('Create product error:', error);
-    res.status(500).json({ error: 'Failed to create product' });
+    console.error('❌ Create product error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
+    res.status(500).json({ error: 'Failed to create product', details: error.message });
   }
 });
 
 // Update product
 router.put('/:id', authenticateToken, async (req, res) => {
+  console.log('🚀 PUT /products/:id route hit!', { id: req.params.id });
   try {
     const { id } = req.params;
     const userId = req.user.id;
     const updateData = req.body;
+    
+    console.log('📝 Update data received:', JSON.stringify(updateData, null, 2));
+
+    // Validate description size to prevent performance issues
+    if (updateData.description && updateData.description.length > 50000) {
+      return res.status(400).json({ 
+        error: 'תיאור המוצר ארוך מדי. מקסימום 50,000 תווים מותר.' 
+      });
+    }
+
+    console.log('🔄 Update product request:', { productId: id, userId });
 
     // Verify user has access to this product's store
     const product = await prisma.product.findFirst({
@@ -397,52 +480,164 @@ router.put('/:id', authenticateToken, async (req, res) => {
         id: parseInt(id)
       },
       include: {
-        store: {
-          include: {
-            storeUsers: {
-              where: {
-                userId: userId,
-                isActive: true
-              }
-            }
-          }
-        }
+        store: true
       }
     });
 
+    console.log('📦 Product found:', product ? {
+      id: product.id,
+      name: product.name,
+      storeId: product.storeId,
+      store: {
+        id: product.store.id,
+        userId: product.store.userId,
+        name: product.store.name
+      }
+    } : null);
+
     if (!product) {
+      console.log('❌ Product not found');
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    if (product.store.storeUsers.length === 0) {
+    // Check if user is store owner OR has store user access
+    const isStoreOwner = product.store.userId === userId;
+    let hasStoreUserAccess = false;
+    
+    console.log('🔍 Checking access:', { 
+      userId, 
+      storeUserId: product.store.userId, 
+      isStoreOwner 
+    });
+    
+    if (!isStoreOwner) {
+      const storeUser = await prisma.storeUser.findFirst({
+        where: {
+          storeId: product.storeId,
+          userId: userId,
+          isActive: true
+        }
+      });
+      hasStoreUserAccess = !!storeUser;
+      console.log('👥 Store user check:', { storeUser, hasStoreUserAccess });
+    }
+
+    if (!isStoreOwner && !hasStoreUserAccess) {
+      console.log('❌ Access denied - user has no access to store');
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Update product
-    const updatedProduct = await prisma.product.update({
-      where: {
-        id: parseInt(id)
-      },
-      data: {
-        name: updateData.name,
-        description: updateData.description,
-        shortDescription: updateData.shortDescription,
-        sku: updateData.sku,
-        price: updateData.price ? parseFloat(updateData.price) : null,
-        comparePrice: updateData.comparePrice ? parseFloat(updateData.comparePrice) : null,
-        costPrice: updateData.costPrice ? parseFloat(updateData.costPrice) : null,
-        categoryId: updateData.categoryId ? parseInt(updateData.categoryId) : null,
-        trackInventory: updateData.trackInventory,
-        inventoryQuantity: updateData.inventoryQuantity ? parseInt(updateData.inventoryQuantity) : 0,
-        allowBackorder: updateData.allowBackorder,
-        weight: updateData.weight ? parseFloat(updateData.weight) : null,
-        requiresShipping: updateData.requiresShipping,
-        isDigital: updateData.isDigital,
-        seoTitle: updateData.seoTitle,
-        seoDescription: updateData.seoDescription,
-        tags: updateData.tags ? JSON.parse(updateData.tags) : null,
-        customFields: updateData.customFields ? JSON.stringify(updateData.customFields) : null
+    console.log('✅ Access granted - proceeding with update');
+
+    // Generate new slug if name is being updated
+    let newSlug = undefined;
+    if (updateData.name) {
+      newSlug = updateData.name.toLowerCase()
+        .replace(/[^a-z0-9\u0590-\u05FF\s-]/g, '') // Include Hebrew characters
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim('-');
+      
+      // If slug is empty or invalid, use product ID
+      if (!newSlug || newSlug.length < 2) {
+        newSlug = `product-${id}`;
       }
+    }
+
+    // Update product using transaction to handle media
+    const updatedProduct = await prisma.$transaction(async (tx) => {
+      // Update basic product data
+      const product = await tx.product.update({
+        where: {
+          id: parseInt(id)
+        },
+        data: {
+          name: updateData.name,
+          ...(newSlug && { slug: newSlug }),
+          description: updateData.description,
+          shortDescription: updateData.shortDescription,
+          sku: updateData.sku,
+          price: updateData.price ? parseFloat(updateData.price) : null,
+          comparePrice: updateData.comparePrice ? parseFloat(updateData.comparePrice) : null,
+          costPrice: updateData.costPrice ? parseFloat(updateData.costPrice) : null,
+          categoryId: updateData.categoryId ? parseInt(updateData.categoryId) : null,
+          trackInventory: updateData.trackInventory,
+          inventoryQuantity: updateData.inventoryQuantity ? parseInt(updateData.inventoryQuantity) : 0,
+          allowBackorder: updateData.allowBackorder,
+          weight: updateData.weight ? parseFloat(updateData.weight) : null,
+          requiresShipping: updateData.requiresShipping,
+          isDigital: updateData.isDigital,
+          seoTitle: updateData.seoTitle,
+          seoDescription: updateData.seoDescription,
+          tags: updateData.tags ? (typeof updateData.tags === 'string' ? JSON.parse(updateData.tags) : updateData.tags) : null,
+          status: updateData.status || 'DRAFT',
+          customFields: updateData.customFields ? JSON.stringify(updateData.customFields) : null
+        }
+      });
+
+      // Handle media updates if provided
+      if (updateData.images && Array.isArray(updateData.images)) {
+        console.log('🖼️ Processing media updates for product:', id);
+        console.log('📸 Images data:', JSON.stringify(updateData.images, null, 2));
+        
+        // Delete existing product media relationships
+        await tx.productMedia.deleteMany({
+          where: { productId: parseInt(id) }
+        });
+        console.log('🗑️ Deleted existing product media');
+
+        // Create new media and link to product
+        for (let i = 0; i < updateData.images.length; i++) {
+          const mediaItem = updateData.images[i];
+          console.log(`📷 Processing image ${i + 1}:`, mediaItem);
+          
+          try {
+            // First find or create the media record
+            let media = await tx.media.findFirst({
+              where: {
+                s3Url: mediaItem.url,
+                storeId: product.storeId
+              }
+            });
+
+            if (!media) {
+              media = await tx.media.create({
+                data: {
+                  storeId: product.storeId,
+                  filename: mediaItem.filename || `image-${i}.webp`,
+                  originalFilename: mediaItem.originalName || `image-${i}`,
+                  mimeType: mediaItem.mimeType || 'image/webp',
+                  fileSize: mediaItem.size || 0,
+                  s3Key: mediaItem.key || mediaItem.s3Key || '',
+                  s3Url: mediaItem.url,
+                  altText: mediaItem.altText || ''
+                }
+              });
+              console.log('✅ Created new media record:', media.id);
+            } else {
+              console.log('✅ Found existing media record:', media.id);
+            }
+
+            // Then create the product-media relationship
+            await tx.productMedia.create({
+              data: {
+                productId: parseInt(id),
+                mediaId: media.id,
+                type: mediaItem.type || 'IMAGE',
+                altText: mediaItem.altText || '',
+                isPrimary: i === 0, // First image is primary
+                sortOrder: i
+              }
+            });
+            console.log('✅ Created product-media relationship');
+          } catch (mediaError) {
+            console.error(`❌ Error processing image ${i + 1}:`, mediaError);
+            throw mediaError;
+          }
+        }
+      }
+
+      return product;
     });
 
     res.json({
@@ -451,8 +646,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
       message: 'Product updated successfully'
     });
   } catch (error) {
-    console.error('Update product error:', error);
-    res.status(500).json({ error: 'Failed to update product' });
+    console.error('❌ Update product error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
+    res.status(500).json({ error: 'Failed to update product', details: error.message });
   }
 });
 
@@ -462,22 +659,13 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    // Verify user has access to this product's store
+    // First get the product
     const product = await prisma.product.findFirst({
       where: {
         id: parseInt(id)
       },
       include: {
-        store: {
-          include: {
-            storeUsers: {
-              where: {
-                userId: userId,
-                isActive: true
-              }
-            }
-          }
-        }
+        store: true
       }
     });
 
@@ -485,7 +673,22 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    if (product.store.storeUsers.length === 0) {
+    // Verify user has access to this product's store (either as owner or store user)
+    const isStoreOwner = product.store.userId === userId;
+    let hasStoreUserAccess = false;
+    
+    if (!isStoreOwner) {
+      const storeUser = await prisma.storeUser.findFirst({
+        where: {
+          storeId: product.storeId,
+          userId: userId,
+          isActive: true
+        }
+      });
+      hasStoreUserAccess = !!storeUser;
+    }
+
+    if (!isStoreOwner && !hasStoreUserAccess) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -554,16 +757,7 @@ router.get('/:id/bundle-availability', authenticateToken, async (req, res) => {
         type: 'BUNDLE'
       },
       include: {
-        store: {
-          include: {
-            storeUsers: {
-              where: {
-                userId: userId,
-                isActive: true
-              }
-            }
-          }
-        }
+        store: true
       }
     });
 
@@ -571,7 +765,22 @@ router.get('/:id/bundle-availability', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Bundle product not found' });
     }
 
-    if (product.store.storeUsers.length === 0) {
+    // Check if user is store owner OR has store user access
+    const isStoreOwner = product.store.userId === userId;
+    let hasStoreUserAccess = false;
+    
+    if (!isStoreOwner) {
+      const storeUser = await prisma.storeUser.findFirst({
+        where: {
+          storeId: product.storeId,
+          userId: userId,
+          isActive: true
+        }
+      });
+      hasStoreUserAccess = !!storeUser;
+    }
+
+    if (!isStoreOwner && !hasStoreUserAccess) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -653,16 +862,7 @@ router.post('/:id/reduce-inventory', authenticateToken, async (req, res) => {
         type: 'BUNDLE'
       },
       include: {
-        store: {
-          include: {
-            storeUsers: {
-              where: {
-                userId: userId,
-                isActive: true
-              }
-            }
-          }
-        }
+        store: true
       }
     });
 
@@ -670,7 +870,22 @@ router.post('/:id/reduce-inventory', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Bundle product not found' });
     }
 
-    if (product.store.storeUsers.length === 0) {
+    // Check if user is store owner OR has store user access
+    const isStoreOwner = product.store.userId === userId;
+    let hasStoreUserAccess = false;
+    
+    if (!isStoreOwner) {
+      const storeUser = await prisma.storeUser.findFirst({
+        where: {
+          storeId: product.storeId,
+          userId: userId,
+          isActive: true
+        }
+      });
+      hasStoreUserAccess = !!storeUser;
+    }
+
+    if (!isStoreOwner && !hasStoreUserAccess) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -706,17 +921,27 @@ router.get('/categories', authenticateToken, async (req, res) => {
     const { storeId } = req.query;
     const userId = req.user.id;
 
-    // Verify user has access to this store
-    const storeUser = await prisma.storeUser.findFirst({
+    // Verify user has access to this store (either as owner or store user)
+    const store = await prisma.store.findFirst({
       where: {
-        storeId: parseInt(storeId),
-        userId: userId,
-        isActive: true
+        id: parseInt(storeId),
+        userId: userId // Check if user is owner
       }
     });
 
-    if (!storeUser) {
-      return res.status(403).json({ error: 'Access denied' });
+    if (!store) {
+      // If not owner, check if user is a store user
+      const storeUser = await prisma.storeUser.findFirst({
+        where: {
+          storeId: parseInt(storeId),
+          userId: userId,
+          isActive: true
+        }
+      });
+
+      if (!storeUser) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
     }
 
     // Get unique categories from products

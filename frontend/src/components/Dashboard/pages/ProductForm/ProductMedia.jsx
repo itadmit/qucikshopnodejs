@@ -4,15 +4,28 @@ import MediaUploader from '../../components/MediaUploader.jsx';
 const ProductMedia = ({ 
   productImages, 
   setProductImages, 
-  fileInputRef 
+  fileInputRef,
+  storeId 
 }) => {
   return (
     <div className="space-y-4">
       <MediaUploader
-        images={productImages}
-        onImagesChange={setProductImages}
-        maxImages={10}
-        fileInputRef={fileInputRef}
+        media={productImages}
+        onUpload={(newMediaItems, isReorder = false) => {
+          if (isReorder) {
+            // Replacing entire array (for reordering)
+            setProductImages(newMediaItems);
+          } else {
+            // Adding new items
+            setProductImages(prev => [...prev, ...newMediaItems]);
+          }
+        }}
+        onDelete={(uniqueId) => {
+          setProductImages(prev => prev.filter(item => item.uniqueId !== uniqueId));
+        }}
+        maxFiles={10}
+        storeId={storeId}
+        folder="products"
       />
       
       {productImages.length > 0 && (

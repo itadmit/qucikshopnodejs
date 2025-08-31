@@ -2888,6 +2888,171 @@ export const socialProofSection = createSectionSchema({
   }]
 });
 
+// Rich Text Section
+export const richTextSection = createSectionSchema({
+  id: 'rich_text',
+  name: 'תוכן עשיר',
+  category: SECTION_CATEGORIES.CONTENT,
+  icon: FileText,
+  description: 'סקשן תוכן עשיר עם עורך מתקדם',
+  settings: [
+    // תוכן
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'תוכן',
+      group: 'content'
+    }),
+    createSetting({
+      type: SETTING_TYPES.RICHTEXT,
+      id: 'content',
+      label: 'תוכן',
+      placeholder: 'הכנס תוכן כאן...',
+      default: '<h1 style="text-align: center;">כותרת</h1><p style="text-align: center;">כאן יופיע התוכן</p>',
+      group: 'content'
+    }),
+
+    // פריסה
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'פריסה',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'container',
+      label: 'רוחב הקונטיינר',
+      options: [
+        { value: 'container', label: 'רגיל (מוגבל)' },
+        { value: 'container-fluid', label: 'רחב (עם שוליים)' },
+        { value: 'full-width', label: 'רוחב מלא' }
+      ],
+      default: 'container',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.SELECT,
+      id: 'text_align',
+      label: 'יישור טקסט',
+      options: [
+        { value: 'right', label: 'ימין' },
+        { value: 'center', label: 'מרכז' },
+        { value: 'left', label: 'שמאל' },
+        { value: 'justify', label: 'מוצדק' }
+      ],
+      default: 'right',
+      group: 'layout'
+    }),
+    createSetting({
+      type: SETTING_TYPES.RANGE,
+      id: 'max_width',
+      label: 'רוחב מקסימלי לתוכן',
+      min: 400,
+      max: 1200,
+      step: 50,
+      unit: 'px',
+      default: 800,
+      group: 'layout'
+    }),
+
+    // ריווח
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'ריווח',
+      group: 'spacing'
+    }),
+    createSetting({
+      type: SETTING_TYPES.RANGE,
+      id: 'padding_top',
+      label: 'ריווח עליון',
+      min: 0,
+      max: 200,
+      step: 10,
+      unit: 'px',
+      default: 60,
+      group: 'spacing'
+    }),
+    createSetting({
+      type: SETTING_TYPES.RANGE,
+      id: 'padding_bottom',
+      label: 'ריווח תחתון',
+      min: 0,
+      max: 200,
+      step: 10,
+      unit: 'px',
+      default: 60,
+      group: 'spacing'
+    }),
+
+    // עיצוב
+    createSetting({
+      type: SETTING_TYPES.HEADER,
+      label: 'עיצוב',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'background_color',
+      label: 'צבע רקע',
+      default: '#ffffff',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.COLOR,
+      id: 'text_color',
+      label: 'צבע טקסט ברירת מחדל',
+      default: '#1f2937',
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.RANGE,
+      id: 'border_radius',
+      label: 'עיגול פינות',
+      min: 0,
+      max: 50,
+      step: 5,
+      unit: 'px',
+      default: 0,
+      group: 'style'
+    }),
+    createSetting({
+      type: SETTING_TYPES.CHECKBOX,
+      id: 'add_shadow',
+      label: 'הוסף צל',
+      default: false,
+      group: 'style'
+    })
+  ],
+  presets: [{
+    name: 'ברירת מחדל',
+    settings: {
+      content: '<h1 style="text-align: center;">כותרת</h1><p style="text-align: center;">כאן יופיע התוכן</p>',
+      container: 'container',
+      text_align: 'right',
+      max_width: 800,
+      padding_top: 60,
+      padding_bottom: 60,
+      background_color: '#ffffff',
+      text_color: '#1f2937',
+      border_radius: 0,
+      add_shadow: false
+    }
+  }, {
+    name: 'כרטיס תוכן',
+    settings: {
+      content: '<h2 style="text-align: center;">כותרת הכרטיס</h2><p>תוכן הכרטיס יופיע כאן עם עיצוב מיוחד.</p>',
+      container: 'container',
+      text_align: 'right',
+      max_width: 600,
+      padding_top: 40,
+      padding_bottom: 40,
+      background_color: '#f9fafb',
+      text_color: '#374151',
+      border_radius: 15,
+      add_shadow: true
+    }
+  }]
+});
+
 // All sections are now fully implemented above
 
 // רישום כל הסקשנים
@@ -2911,7 +3076,9 @@ export const ALL_SECTIONS = [
   mapSection,
   blogPostsSection,
   countdownSection,
-  socialProofSection
+  socialProofSection,
+  // סקשן תוכן עשיר
+  richTextSection
 ];
 
 // Debug logging (removed for production)

@@ -28,7 +28,7 @@ const TemplateManager = ({ templateName = 'jupiter', storeData }) => {
 
   // טעינת עמודים מותאמים אישית והגדרות גלובליות
   useEffect(() => {
-    console.log('🏪 TemplateManager loading data for store:', storeData?.slug);
+
     if (storeData?.slug) {
       loadCustomPages();
       loadGlobalSettings();
@@ -46,8 +46,8 @@ const TemplateManager = ({ templateName = 'jupiter', storeData }) => {
       
       for (const pageType of pageTypes) {
         try {
-          const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-          const response = await fetch(`${baseUrl}/api/custom-pages/${storeData.slug}/${pageType}`);
+          const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+          const response = await fetch(`${baseUrl}/custom-pages/${storeData.slug}/${pageType}`);
           if (response.ok) {
             const pageData = await response.json();
             customPagesData[pageType] = pageData;
@@ -74,12 +74,13 @@ const TemplateManager = ({ templateName = 'jupiter', storeData }) => {
   // טעינת הגדרות גלובליות (הדר ופוטר)
   const loadGlobalSettings = async () => {
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
       
       // טעינת הדר ופוטר במקביל
-      const [headerResponse, footerResponse] = await Promise.all([
-        fetch(`${baseUrl}/api/global-settings/${storeData.slug}/header`),
-        fetch(`${baseUrl}/api/global-settings/${storeData.slug}/footer`)
+      const [headerResponse, footerResponse, menusResponse] = await Promise.all([
+        fetch(`${baseUrl}/global-settings/${storeData.slug}/header`),
+        fetch(`${baseUrl}/global-settings/${storeData.slug}/footer`),
+        fetch(`${baseUrl}/menus/${storeData.slug}`)
       ]);
 
       const globalData = {};
@@ -94,6 +95,32 @@ const TemplateManager = ({ templateName = 'jupiter', storeData }) => {
         const footerData = await footerResponse.json();
         globalData.footer = footerData;
         console.log('🎯 Global footer loaded:', footerData);
+      }
+
+      // טעינת תפריטים
+      if (menusResponse.ok) {
+        const menusData = await menusResponse.json();
+        globalData.menus = menusData;
+        console.log('🎯 Global menus loaded:', menusData);
+        
+        // חיבור התפריטים להגדרות הדר והפוטר
+        if (globalData.header && globalData.header.settings?.navigation?.menuHandle) {
+          const mainMenu = menusData.find(menu => menu.handle === globalData.header.settings.navigation.menuHandle);
+          if (mainMenu) {
+            globalData.header.menu = mainMenu;
+            console.log('🔗 Main menu connected to header:', mainMenu);
+          }
+        }
+        
+        if (globalData.footer && globalData.footer.settings?.menus) {
+          globalData.footer.settings.menus.forEach(menuConfig => {
+            const footerMenu = menusData.find(menu => menu.handle === menuConfig.menuHandle);
+            if (footerMenu) {
+              menuConfig.menu = footerMenu;
+              console.log('🔗 Footer menu connected:', footerMenu);
+            }
+          });
+        }
       }
 
       setGlobalSettings(globalData);
@@ -120,7 +147,30 @@ const TemplateManager = ({ templateName = 'jupiter', storeData }) => {
       );
     }
     
-    // אין עמוד מותאם או לא פרסום - נציג ברירת מחדל
+    // עבור דף הבית - אם אין עמוד מותאם, נציג הודעה לבנות דף
+    if (pageType === 'home') {
+      return (props) => (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center max-w-md mx-auto p-8">
+            <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <i className="ri-tools-line text-4xl text-blue-600"></i>
+            </div>
+            <h1 className="text-xl font-bold text-gray-900 mb-4">דף הבית לא נבנה עדיין</h1>
+            <p className="text-gray-600 mb-6">
+              כדי להציג את החנות, צריך לבנות את דף הבית בבילדר
+            </p>
+            <a 
+              href="https://my-quickshop.com/dashboard/design"
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-block"
+            >
+              בנה דף בית בבילדר
+            </a>
+          </div>
+        </div>
+      );
+    }
+    
+    // עבור דפים אחרים - נציג ברירת מחדל
     return defaultComponent;
   };
 
@@ -191,6 +241,17 @@ const TemplateManager = ({ templateName = 'jupiter', storeData }) => {
   const HomePage = getCustomPageOrDefault('home', getPage('HomePage'));
   const CategoryPage = getCustomPageOrDefault('category', getPage('CategoryPage'));
   const ProductPage = getCustomPageOrDefault('product', getPage('ProductPage'));
+  const CollectionsPage = getPage('CollectionsPage');
+  const ProductsPage = getPage('ProductsPage');
+
+  // Debug logging
+  console.log('🔍 Template Manager Debug:', {
+    templateName,
+    hasTemplate: !!template,
+    availablePages: template?.pages ? Object.keys(template.pages) : [],
+    CollectionsPage: !!CollectionsPage,
+    ProductsPage: !!ProductsPage
+  });
 
   // Apply template class for styling
   const templateClass = `store-template-${template.name}`;
@@ -206,6 +267,50 @@ const TemplateManager = ({ templateName = 'jupiter', storeData }) => {
           <Route 
             path="/" 
             element={HomePage ? <HomePage storeData={storeData} /> : <div>דף הבית לא זמין</div>} 
+          />
+          <Route 
+            path="/collections" 
+            element={CollectionsPage ? <CollectionsPage storeData={storeData} /> : (
+              <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center max-w-md mx-auto p-8">
+                  <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span className="text-4xl text-red-600">⚠️</span>
+                  </div>
+                  <h1 className="text-xl font-bold text-gray-900 mb-4">דף קולקציות לא זמין</h1>
+                  <p className="text-gray-600 mb-6">
+                    הדף עדיין לא נטען נכון. בדוק את הקונסול לפרטים נוספים.
+                  </p>
+                  <div className="text-left bg-gray-100 p-4 rounded-lg text-sm">
+                    <p>Debug Info:</p>
+                    <p>Template: {templateName}</p>
+                    <p>CollectionsPage: {CollectionsPage ? 'Found' : 'Not Found'}</p>
+                    <p>Available Pages: {template?.pages ? Object.keys(template.pages).join(', ') : 'None'}</p>
+                  </div>
+                </div>
+              </div>
+            )} 
+          />
+          <Route 
+            path="/products" 
+            element={ProductsPage ? <ProductsPage storeData={storeData} /> : (
+              <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center max-w-md mx-auto p-8">
+                  <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span className="text-4xl text-red-600">⚠️</span>
+                  </div>
+                  <h1 className="text-xl font-bold text-gray-900 mb-4">דף מוצרים לא זמין</h1>
+                  <p className="text-gray-600 mb-6">
+                    הדף עדיין לא נטען נכון. בדוק את הקונסול לפרטים נוספים.
+                  </p>
+                  <div className="text-left bg-gray-100 p-4 rounded-lg text-sm">
+                    <p>Debug Info:</p>
+                    <p>Template: {templateName}</p>
+                    <p>ProductsPage: {ProductsPage ? 'Found' : 'Not Found'}</p>
+                    <p>Available Pages: {template?.pages ? Object.keys(template.pages).join(', ') : 'None'}</p>
+                  </div>
+                </div>
+              </div>
+            )} 
           />
           <Route 
             path="/categories/:slug" 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DndContext,
@@ -199,6 +199,7 @@ const MenusPage = () => {
   const [selectedMenu, setSelectedMenu] = useState('main');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [menus, setMenus] = useState({
     main: {
       id: 'main',
@@ -213,6 +214,57 @@ const MenusPage = () => {
       items: []
     }
   });
+
+  // Load menus from server
+  useEffect(() => {
+    fetchMenus();
+  }, []);
+
+  const fetchMenus = async () => {
+    try {
+      setLoading(true);
+      
+      // Use local development server if running on port 5173 (Vite dev server)
+      const isDevelopment = window.location.port === '5173';
+      const baseUrl = isDevelopment 
+        ? 'http://3.64.187.151:3001/api'
+        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      
+      // Get store slug from localStorage or use default
+      const storeSlug = localStorage.getItem('currentStoreSlug') || 'yogevstore';
+      
+      const response = await fetch(`${baseUrl}/menus/${storeSlug}`);
+      
+      if (response.ok) {
+        const serverMenus = await response.json();
+        console.log('📋 Loaded menus from server:', serverMenus);
+        
+        // Convert server menus to component format
+        const menusMap = {};
+        serverMenus.forEach(menu => {
+          const key = menu.handle === 'main-menu' ? 'main' : 'footer';
+          menusMap[key] = {
+            id: key,
+            name: menu.name,
+            handle: menu.handle,
+            items: menu.items || []
+          };
+        });
+        
+        // Merge with default structure
+        setMenus(prevMenus => ({
+          ...prevMenus,
+          ...menusMap
+        }));
+      } else {
+        console.error('Failed to load menus from server');
+      }
+    } catch (error) {
+      console.error('Error loading menus:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -421,6 +473,22 @@ const MenusPage = () => {
     { value: 'home', label: 'עמוד הבית', icon: Home }
   ];
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-xl font-bold text-gray-900 mb-2">ניהול תפריטים</h1>
+          <p className="text-gray-600">נהל את התפריטים של החנות שלך - גרור ושחרר לשינוי סדר</p>
+        </div>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">טוען תפריטים...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -468,7 +536,7 @@ const MenusPage = () => {
           <div className="bg-white rounded-lg shadow-sm border p-4 mt-6">
             <h3 className="font-semibold text-gray-900 mb-4">תצוגה מקדימה</h3>
             <button
-              onClick={() => window.open('http://yogevstore.localhost:5173/', '_blank')}
+              onClick={() => window.open('https://yogevstore.my-quickshop.com/', '_blank')}
               className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Eye className="w-4 h-4 ml-2" />

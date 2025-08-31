@@ -7,7 +7,7 @@ const CartIcon = ({ itemsCount = 0, onClick }) => {
   return (
     <button 
       onClick={onClick}
-      className="relative p-2 text-gray-600 hover:text-primary-600 transition-colors group"
+      className="relative p-1 text-gray-600 hover:text-primary-600 transition-colors group"
       aria-label={t('nav.cart')}
     >
       <ShoppingCart className="w-5 h-5" />

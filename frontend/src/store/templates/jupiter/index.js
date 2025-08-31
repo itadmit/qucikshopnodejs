@@ -2,6 +2,8 @@
 import JupiterHomePage from './pages/JupiterHomePage';
 import JupiterCategoryPage from './pages/JupiterCategoryPage';
 import JupiterProductPage from './pages/JupiterProductPage';
+import JupiterCollectionsPage from './pages/JupiterCollectionsPage';
+import JupiterProductsPage from './pages/JupiterProductsPage';
 import JupiterHeader from './components/JupiterHeader';
 import JupiterFooter from './components/JupiterFooter';
 import JupiterCategoryCard from './components/JupiterCategoryCard';
@@ -23,7 +25,9 @@ const JupiterTemplate = {
   pages: {
     HomePage: JupiterHomePage,
     CategoryPage: JupiterCategoryPage,
-    ProductPage: JupiterProductPage
+    ProductPage: JupiterProductPage,
+    CollectionsPage: JupiterCollectionsPage,
+    ProductsPage: JupiterProductsPage
   },
   
   // Components

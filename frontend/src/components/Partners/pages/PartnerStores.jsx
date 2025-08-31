@@ -38,7 +38,7 @@ const PartnerStores = ({ partner }) => {
   const fetchStores = async () => {
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch('http://localhost:3001/api/partners/stores', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/stores`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

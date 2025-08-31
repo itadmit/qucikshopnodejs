@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowRight, Save } from 'lucide-react'
+import apiService from '../../../services/api.js'
 
 const AutomaticDiscountFormPage = () => {
   const navigate = useNavigate()
@@ -44,8 +45,8 @@ const AutomaticDiscountFormPage = () => {
   useEffect(() => {
     const fetchStoreData = async () => {
       try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/dashboard/user-store', {
+        const token = localStorage.getItem('authToken')
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/dashboard/user-store`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         
@@ -71,8 +72,8 @@ const AutomaticDiscountFormPage = () => {
   const loadDiscount = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:3001/api/automatic-discounts/${id}`, {
+      const token = localStorage.getItem('authToken')
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/automatic-discounts/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -141,10 +142,10 @@ const AutomaticDiscountFormPage = () => {
     
     setSaving(true)
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('authToken')
       const url = isEditMode 
-        ? `http://localhost:3001/api/automatic-discounts/${id}`
-        : 'http://localhost:3001/api/automatic-discounts'
+        ? `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/automatic-discounts/${id}`
+        : `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/automatic-discounts`
       
       const method = isEditMode ? 'PUT' : 'POST'
       
@@ -658,9 +659,24 @@ const CategorySelector = ({ selected = [], onChange, label }) => {
   
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/products/categories?storeId=${1}`, {
+      // Get current store dynamically
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+      
+      apiService.setToken(token);
+      const userStores = await apiService.getUserStores();
+      if (!userStores || userStores.length === 0) return;
+      
+      const selectedStoreId = localStorage.getItem('selectedStoreId');
+      const currentStore = selectedStoreId 
+        ? userStores.find(store => store.id.toString() === selectedStoreId)
+        : userStores[0];
+      
+      if (!currentStore) return;
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/products/categories?storeId=${currentStore.id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       })
       
@@ -719,9 +735,24 @@ const ProductSelector = ({ selected = [], onChange, label }) => {
   
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/products?storeId=${1}`, {
+      // Get current store dynamically
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+      
+      apiService.setToken(token);
+      const userStores = await apiService.getUserStores();
+      if (!userStores || userStores.length === 0) return;
+      
+      const selectedStoreId = localStorage.getItem('selectedStoreId');
+      const currentStore = selectedStoreId 
+        ? userStores.find(store => store.id.toString() === selectedStoreId)
+        : userStores[0];
+      
+      if (!currentStore) return;
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/products?storeId=${currentStore.id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       })
       

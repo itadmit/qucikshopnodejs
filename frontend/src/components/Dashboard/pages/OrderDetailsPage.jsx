@@ -42,7 +42,7 @@ const OrderDetailsPage = ({ orderId }) => {
       
       try {
         setLoading(true);
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+        const token = localStorage.getItem('authToken');
         
         if (!token) {
           navigate('/dashboard/orders');

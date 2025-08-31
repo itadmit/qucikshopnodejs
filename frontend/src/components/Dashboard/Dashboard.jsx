@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import apiService from '../../services/api.js';
 import { 
   LayoutDashboard,
@@ -13,7 +13,9 @@ import {
   Menu,
   Layout,
   Truck,
-  Percent
+  Percent,
+  FileText,
+  Image
 } from 'lucide-react';
 
 // Import components
@@ -30,6 +32,7 @@ import AnalyticsPage from './pages/AnalyticsPage.jsx';
 import DesignPage from './pages/DesignPage.jsx';
 import DesignAndCustomizationPage from './pages/DesignAndCustomizationPage.jsx';
 import MenusPage from './pages/MenusPage.jsx';
+import PagesPage from './pages/PagesPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import ShippingPage from './pages/ShippingPage.jsx';
 import OrderDetailsPage from './pages/OrderDetailsPage.jsx';
@@ -40,10 +43,12 @@ import SiteBuilderPage from '../SiteBuilder/pages/SiteBuilderPage.jsx';
 import AdvancedTemplateEditor from './pages/AdvancedTemplateEditor.jsx';
 import OnboardingTour from './components/OnboardingTour.jsx';
 import CustomFieldsPage from './pages/CustomFieldsPage.jsx';
+import MediaLibraryPage from './pages/MediaLibraryPage.jsx';
 
 const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userStore, setUserStore] = useState(null);
@@ -52,7 +57,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
   // Fetch user store data
   const fetchUserStore = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       if (!token) {
         console.log('No token found for user store');
         return;
@@ -102,7 +107,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
   // Handle onboarding tour completion
   const handleOnboardingComplete = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       if (token) {
         apiService.setToken(token);
         await apiService.completeOnboarding();
@@ -135,7 +140,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
       setError(null);
       
       // Check if user is authenticated
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken');
       if (!token) {
         setError('נדרש להתחבר כדי לצפות בנתונים');
         return;
@@ -158,7 +163,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
       
       // If authentication error, clear token and redirect to login
       if (err.message.includes('401') || err.message.includes('403')) {
-        localStorage.removeItem('token');
+        localStorage.removeItem('authToken');
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         setError('פג תוקף ההתחברות. אנא התחבר מחדש.');
@@ -184,6 +189,21 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
     const newPath = location.pathname;
     setCurrentPath(newPath);
     
+    // Handle /dashboard/builder redirect to /builder with parameters
+    if (newPath.includes('/dashboard/builder')) {
+      const urlParams = new URLSearchParams(location.search);
+      const pageId = urlParams.get('pageId');
+      const type = urlParams.get('type');
+      
+      if (pageId && type) {
+        navigate(`/builder?type=${type}&pageId=${pageId}`, { replace: true });
+        return;
+      } else {
+        navigate('/builder', { replace: true });
+        return;
+      }
+    }
+    
     if (newPath.includes('/products')) {
       setActiveTab('products');
     } else if (newPath.includes('/orders')) {
@@ -198,8 +218,12 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
       setActiveTab('design');
     } else if (newPath.includes('/builder')) {
       setActiveTab('builder');
+    } else if (newPath.includes('/pages')) {
+      setActiveTab('pages');
     } else if (newPath.includes('/menus')) {
       setActiveTab('menus');
+    } else if (newPath.includes('/media')) {
+      setActiveTab('media');
     } else if (newPath.includes('/coupons')) {
       setActiveTab('coupons');
     } else if (newPath.includes('/settings')) {
@@ -207,7 +231,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
     } else {
       setActiveTab('overview');
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.search, navigate]);
 
   // Menu items for sidebar navigation
   const menuItems = [
@@ -219,16 +243,28 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
     { id: 'analytics', icon: BarChart3, label: t('dashboard.analytics') || 'אנליטיקס' },
     { id: 'design', icon: Palette, label: t('dashboard.design') || 'עיצוב והתאמה' },
     { id: 'builder', icon: Layout, label: t('dashboard.builder') || 'עורך האתר' },
+    { id: 'pages', icon: FileText, label: 'עמודים' },
     { id: 'menus', icon: Menu, label: t('dashboard.menus') || 'תפריטים' },
+    { id: 'media', icon: Image, label: 'ספריית מדיה' },
     { id: 'settings', icon: Settings, label: t('dashboard.settings') || 'הגדרות' }
   ];
 
-  // Handle builder navigation
+  // Handle builder navigation - preserve URL parameters
   useEffect(() => {
-    if (activeTab === 'builder' && onNavigateToBuilder) {
-      onNavigateToBuilder();
+    if (activeTab === 'builder' && onNavigateToBuilder && !currentPath.includes('/builder')) {
+      // Check if we have URL parameters to preserve
+      const urlParams = new URLSearchParams(location.search);
+      const pageId = urlParams.get('pageId');
+      const type = urlParams.get('type');
+      
+      if (pageId && type) {
+        // Navigate to /builder with parameters
+        navigate(`/builder?type=${type}&pageId=${pageId}`);
+      } else {
+        onNavigateToBuilder();
+      }
     }
-  }, [activeTab, onNavigateToBuilder]);
+  }, [activeTab, onNavigateToBuilder, currentPath, location.search, navigate]);
 
   const renderTabContent = () => {
     // Check if we're on specific pages
@@ -238,6 +274,7 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
     // Check for product edit page
     if (currentPath.includes('/dashboard/products/') && currentPath.includes('/edit')) {
       const productId = currentPath.split('/')[3]; // Extract product ID from URL
+      
       return <ProductFormPage productId={productId} />;
     }
     if (currentPath === '/dashboard/products' || currentPath.includes('/products')) {
@@ -276,6 +313,11 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
     if (currentPath === '/dashboard/settings/custom-fields') {
       return <CustomFieldsPage />;
     }
+    // Check for media library page
+    if (currentPath === '/dashboard/media') {
+      return <MediaLibraryPage />;
+    }
+
     
     switch (activeTab) {
       case 'overview':
@@ -293,8 +335,12 @@ const Dashboard = ({ user, onLogout, onBack, onNavigateToBuilder }) => {
       case 'builder':
         // Builder navigation is handled by useEffect above
         return <OverviewPage stats={stats} recentOrders={recentOrders} popularProducts={popularProducts} userStore={userStore} />;
+      case 'pages':
+        return <PagesPage userStore={userStore} />;
       case 'menus':
         return <MenusPage />;
+      case 'media':
+        return <MediaLibraryPage />;
       case 'coupons':
         return <CouponsPage storeId={userStore?.id} />;
       case 'settings':

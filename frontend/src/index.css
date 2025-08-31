@@ -22,13 +22,20 @@
     background: url("data:image/svg+xml;utf8,<svg fill='%236b7280' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat left center !important;
     background-position: 8px center !important;
     background-size: 16px !important;
-    padding-left: 30px !important;
+    padding-left: 24px !important;
+    padding-right: 8px !important;
   }
 }
 
 @layer components {
   .btn-primary {
     @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+
+  /* Fix for overlay margin-top issue caused by space-y */
+  .fixed.inset-0 {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 
   .animate-slide-down {

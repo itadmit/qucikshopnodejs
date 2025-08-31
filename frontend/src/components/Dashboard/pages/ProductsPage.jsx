@@ -1,36 +1,44 @@
+import { useState, useEffect } from 'react';
 import { 
   Package, 
   Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  Edit, 
-  Copy, 
-  Trash2, 
-  Eye, 
-  EyeOff,
-  Grid3X3,
-  List,
-  Download,
+  Download, 
   Upload,
+  Eye,
+  Edit,
+  Copy,
+  Trash2,
   Tag,
   TrendingUp,
-  AlertCircle,
-  CheckCircle2,
-  Clock
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable.jsx';
+import { DashboardPageSkeleton } from '../components/Skeleton.jsx';
+import Toast from '../../../store/core/components/Toast.jsx';
 import apiService from '../../../services/api.js';
 
 const ProductsPage = () => {
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProducts, setSelectedProducts] = useState([]);
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [sortBy, setSortBy] = useState('name');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const [currentStore, setCurrentStore] = useState(null);
+  
+  // Toast state
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
+
+  // Check for success message from localStorage
+  useEffect(() => {
+    const successMessage = localStorage.getItem('productSaveSuccess');
+    if (successMessage) {
+      setToastMessage(successMessage);
+      setToastType('success');
+      setShowToast(true);
+      localStorage.removeItem('productSaveSuccess'); // Clean up
+    }
+  }, []);
 
   // Define columns for DataTable
   const columns = [
@@ -38,24 +46,30 @@ const ProductsPage = () => {
       key: 'image',
       header: 'תמונה',
       render: (product) => (
-        <div className="flex items-center">
-          <img 
-            src={product.image} 
-            alt={product.name}
-            className="w-10 h-10 rounded-lg object-cover"
-          />
+        <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+          {product.image ? (
+            <img 
+              src={product.image} 
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Package className="w-6 h-6 text-gray-400" />
+            </div>
+          )}
         </div>
       )
     },
     {
       key: 'name',
-      header: 'מוצר',
+      header: 'שם המוצר',
       accessor: 'name',
       sortable: true,
       render: (product) => (
         <div>
           <div className="text-sm font-medium text-gray-900">{product.name}</div>
-          <div className="text-sm text-gray-500">SKU: {product.sku}</div>
+          <div className="text-sm text-gray-500">{product.sku}</div>
         </div>
       )
     },
@@ -68,9 +82,9 @@ const ProductsPage = () => {
       filterOptions: [
         { value: 'ACTIVE', label: 'פעיל' },
         { value: 'DRAFT', label: 'טיוטה' },
-        { value: 'INACTIVE', label: 'לא פעיל' }
+        { value: 'ARCHIVED', label: 'בארכיון' }
       ],
-      render: (product) => getStatusBadge(product.status)
+      render: (product) => <StatusBadge status={product.status} />
     },
     {
       key: 'type',
@@ -82,14 +96,23 @@ const ProductsPage = () => {
         { value: 'SIMPLE', label: 'פשוט' },
         { value: 'VARIABLE', label: 'משתנה' },
         { value: 'BUNDLE', label: 'חבילה' }
-      ]
+      ],
+      render: (product) => (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {product.type === 'SIMPLE' ? 'פשוט' : product.type === 'VARIABLE' ? 'משתנה' : 'חבילה'}
+        </span>
+      )
     },
     {
       key: 'price',
       header: 'מחיר',
       accessor: 'price',
       sortable: true,
-      render: (product) => `₪${product.price?.toLocaleString('he-IL') || '0'}`
+      render: (product) => (
+        <div className="text-sm text-gray-900">
+          ₪{product.price?.toLocaleString('he-IL')}
+        </div>
+      )
     },
     {
       key: 'inventory',
@@ -97,13 +120,9 @@ const ProductsPage = () => {
       accessor: 'inventory',
       sortable: true,
       render: (product) => (
-        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-          product.inventory === 0 ? 'bg-red-100 text-red-800' :
-          product.inventory < 10 ? 'bg-yellow-100 text-yellow-800' :
-          'bg-green-100 text-green-800'
-        }`}>
-          {product.inventory}
-        </span>
+        <div className="text-sm text-gray-900">
+          {product.inventory || 0}
+        </div>
       )
     },
     {
@@ -112,197 +131,182 @@ const ProductsPage = () => {
       accessor: 'category',
       sortable: true,
       filterable: true,
-      filterOptions: [] // Will be populated from API data
+      render: (product) => (
+        <span className="text-sm text-gray-600">
+          {product.category || 'כללי'}
+        </span>
+      )
+    },
+    {
+      key: 'variants',
+      header: 'וריאנטים',
+      accessor: 'variants',
+      sortable: true,
+      render: (product) => (
+        <span className="text-sm text-gray-600">
+          {product.variants > 0 ? `${product.variants} וריאנטים` : '-'}
+        </span>
+      )
     }
   ];
 
-  // Fetch products from API
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-        const storeId = localStorage.getItem('currentStoreId') || '1'; // Default to store 1
-        
-        if (!token) {
-          console.log('No token found for products');
+  // Status badge component
+  const StatusBadge = ({ status }) => {
+    const config = {
+      ACTIVE: { 
+        label: 'פעיל', 
+        className: 'bg-green-100 text-green-800',
+        icon: CheckCircle2
+      },
+      DRAFT: { 
+        label: 'טיוטה', 
+        className: 'bg-yellow-100 text-yellow-800',
+        icon: Edit
+      },
+      ARCHIVED: { 
+        label: 'בארכיון', 
+        className: 'bg-gray-100 text-gray-800',
+        icon: Package
+      }
+    };
+
+    const statusConfig = config[status] || config.DRAFT;
+    const Icon = statusConfig.icon;
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.className}`}>
+        <Icon className="w-3 h-3 mr-1" />
+        {statusConfig.label}
+      </span>
+    );
+  };
+
+  // Fetch products
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        console.log('No token found for products');
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+      
+      apiService.setToken(token);
+      
+      // Get selected store ID from localStorage (should be set by dashboard)
+      const selectedStoreId = localStorage.getItem('selectedStoreId');
+      let result;
+      
+      if (!selectedStoreId) {
+        // If no store selected, get user's stores first
+        const userStores = await apiService.getUserStores();
+        if (!userStores || userStores.length === 0) {
+          console.log('No stores found for user');
           setProducts([]);
           return;
         }
         
-        apiService.setToken(token);
-        const result = await apiService.getProducts({ storeId });
-
-        if (result.success) {
-          // Transform API data to match component expectations
-          const transformedProducts = result.data.map(product => ({
-            id: product.id,
-            name: product.name,
-            sku: product.sku,
-            status: product.status || 'ACTIVE',
-            type: product.variants?.length > 0 ? 'VARIABLE' : 'SIMPLE',
-            price: parseFloat(product.price || 0),
-            inventory: product.inventoryQuantity || 0,
-            sales: 0, // TODO: Get from analytics
-            image: product.media?.[0]?.media?.s3Url || null,
-            variants: product.variants?.length || 0,
-            category: product.category?.name || 'כללי'
-          }));
-          setProducts(transformedProducts);
-        } else {
-          setProducts([]);
+        const currentStore = userStores[0];
+        localStorage.setItem('selectedStoreId', currentStore.id.toString());
+        setCurrentStore(currentStore);
+        result = await apiService.getProducts({ storeId: currentStore.id });
+      } else {
+        // Use cached store ID directly but also get store details
+        const userStores = await apiService.getUserStores();
+        const store = userStores?.find(s => s.id.toString() === selectedStoreId);
+        if (store) {
+          setCurrentStore(store);
         }
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        setProducts([]);
-      } finally {
-        setLoading(false);
+        result = await apiService.getProducts({ storeId: parseInt(selectedStoreId) });
       }
-    };
 
-    fetchProducts();
-  }, []);
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'ACTIVE':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircle2 className="w-3 h-3 ml-1" />
-          פעיל
-        </span>;
-      case 'DRAFT':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-          <Clock className="w-3 h-3 ml-1" />
-          טיוטה
-        </span>;
-      case 'INACTIVE':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          <EyeOff className="w-3 h-3 ml-1" />
-          לא פעיל
-        </span>;
-      default:
-        return null;
+      if (result.success) {
+        // Transform API data to match component expectations
+        const transformedProducts = result.data.map(product => ({
+          id: product.id,
+          name: product.name,
+          slug: product.slug, // Add slug for proper linking
+          sku: product.sku,
+          status: product.status || 'ACTIVE',
+          type: product._count?.variants > 0 ? 'VARIABLE' : 'SIMPLE',
+          price: parseFloat(product.price || 0),
+          inventory: product.inventoryQuantity || 0,
+          sales: 0, // TODO: Get from analytics
+          image: product.media?.[0]?.media?.s3Url || null,
+          media: product.media, // Keep original media data for image display
+          variants: product._count?.variants || 0,
+          category: product.category?.name || 'כללי'
+        }));
+        setProducts(transformedProducts);
+      } else {
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const ProductCard = ({ product }) => (
-    <div className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors p-4">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 ml-2"
-            checked={selectedProducts.includes(product.id)}
-            onChange={(e) => {
-              if (e.target.checked) {
-                setSelectedProducts([...selectedProducts, product.id]);
-              } else {
-                setSelectedProducts(selectedProducts.filter(id => id !== product.id));
-              }
-            }}
-          />
-          <img 
-            src={product.image} 
-            alt={product.name}
-            className="w-12 h-12 rounded-lg object-cover bg-gray-100"
-          />
-        </div>
-        <div className="relative">
-          <button className="p-1 hover:bg-gray-100 rounded">
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        <h3 className="font-medium text-gray-900 text-sm">{product.name}</h3>
-        <p className="text-xs text-gray-500">SKU: {product.sku}</p>
-        
-        <div className="flex items-center justify-between">
-          <span className="font-bold text-gray-900">₪{product.price}</span>
-          {getStatusBadge(product.status)}
-        </div>
-        
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>מלאי: {product.inventory}</span>
-          <span>נמכרו: {product.sales}</span>
-        </div>
-        
-        {product.type === 'VARIABLE' && (
-          <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-            {product.variants} וריאציות
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  // Load products on component mount
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-  const ProductRow = ({ product }) => (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap">
-        <input
-          type="checkbox"
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          checked={selectedProducts.includes(product.id)}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setSelectedProducts([...selectedProducts, product.id]);
-            } else {
-              setSelectedProducts(selectedProducts.filter(id => id !== product.id));
-            }
-          }}
-        />
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <img 
-            src={product.image} 
-            alt={product.name}
-            className="w-10 h-10 rounded-lg object-cover bg-gray-100 ml-3"
-          />
-          <div>
-            <div className="text-sm font-medium text-gray-900">{product.name}</div>
-            <div className="text-sm text-gray-500">{product.sku}</div>
-          </div>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        {getStatusBadge(product.status)}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {product.type === 'VARIABLE' ? `${product.variants} וריאציות` : 'מוצר פשוט'}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        ₪{product.price}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {product.inventory}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {product.category}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => {
-              window.history.pushState({}, '', `/dashboard/products/${product.id}/edit`);
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            className="text-blue-600 hover:text-blue-900"
-            title="ערוך מוצר"
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-          <button className="text-gray-600 hover:text-gray-900">
-            <Copy className="w-4 h-4" />
-          </button>
-          <button className="text-red-600 hover:text-red-900">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
+  // Delete single product
+  const handleDeleteProduct = async (product) => {
+    if (!confirm(`האם אתה בטוח שברצונך למחוק את המוצר "${product.name}"?`)) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      const token = localStorage.getItem('authToken');
+      apiService.setToken(token);
+      
+      const result = await apiService.deleteProduct(product.id);
+      
+      if (result.success) {
+        await fetchProducts();
+      } else {
+        alert(`שגיאה במחיקת המוצר: ${result.error || 'שגיאה לא ידועה'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert(`שגיאה במחיקת המוצר: ${error.message || 'שגיאה לא ידועה'}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Delete multiple products
+  const handleBulkDelete = async (selectedIds) => {
+    if (!confirm(`האם אתה בטוח שברצונך למחוק ${selectedIds.length} מוצרים?`)) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      const token = localStorage.getItem('authToken');
+      apiService.setToken(token);
+      
+      // Delete products one by one (can be optimized with bulk API later)
+      for (const productId of selectedIds) {
+        await apiService.deleteProduct(productId);
+      }
+      
+      await fetchProducts();
+    } catch (error) {
+      console.error('Error deleting products:', error);
+      alert(`שגיאה במחיקת המוצרים: ${error.message || 'שגיאה לא ידועה'}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -334,168 +338,185 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* Filters and Search */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="חפש מוצרים..."
-                className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      {/* Products Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">סך המוצרים</p>
+              <p className="text-2xl font-bold text-gray-900">{products.length}</p>
             </div>
-            
-            <select 
-              value={filterStatus} 
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                backgroundPosition: 'left 0.5rem center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: '1.5em 1.5em'
-              }}
-            >
-              <option value="all">כל הסטטוסים</option>
-              <option value="ACTIVE">פעיל</option>
-              <option value="DRAFT">טיוטה</option>
-              <option value="INACTIVE">לא פעיל</option>
-            </select>
-
-            <select 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                backgroundPosition: 'left 0.5rem center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: '1.5em 1.5em'
-              }}
-            >
-              <option value="name">מיין לפי שם</option>
-              <option value="price">מיין לפי מחיר</option>
-              <option value="inventory">מיין לפי מלאי</option>
-              <option value="sales">מיין לפי מכירות</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </button>
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Package className="w-6 h-6 text-blue-600" />
+            </div>
           </div>
         </div>
-
-        {selectedProducts.length > 0 && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg flex items-center justify-between">
-            <span className="text-sm text-blue-800">
-              {selectedProducts.length} מוצרים נבחרו
-            </span>
-            <div className="flex items-center gap-2">
-              <button className="px-3 py-1 text-sm bg-white border border-blue-200 text-blue-700 rounded hover:bg-blue-50">
-                עדכן סטטוס
-              </button>
-              <button className="px-3 py-1 text-sm bg-white border border-blue-200 text-blue-700 rounded hover:bg-blue-50">
-                עדכן קטגוריה
-              </button>
-              <button className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
-                מחק
-              </button>
+        
+        <div className="bg-white p-6 rounded-lg border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">מוצרים פעילים</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {products.filter(p => p.status === 'ACTIVE').length}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-green-600" />
             </div>
           </div>
-        )}
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">טיוטות</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {products.filter(p => p.status === 'DRAFT').length}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Edit className="w-6 h-6 text-yellow-600" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">מלאי נמוך</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {products.filter(p => p.inventory < 10).length}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Products Display */}
       {loading ? (
-        <div className="bg-white rounded-lg border border-gray-100 p-8">
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <Package className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">טוען מוצרים...</h3>
-            <p className="text-gray-500">אנא המתן בזמן שאנחנו טוענים את המוצרים שלך</p>
-          </div>
-        </div>
-      ) : products.length > 0 ? (
-        viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        ) : (
-          <DataTable
-            data={products}
-            columns={columns}
-            searchable={false}
-            filterable={false}
-            selectable={true}
-            sortable={true}
-            loading={false}
-            pagination={false}
-            className=""
-          />
-        )
+        <DashboardPageSkeleton hasTable={true} tableRows={6} />
       ) : (
-        <div className="bg-white rounded-lg border border-gray-100 p-8">
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">אין מוצרים עדיין</h3>
-            <p className="text-gray-500 mb-6">התחל בהוספת המוצר הראשון שלך</p>
-            <button 
-              onClick={() => {
+        <DataTable
+          data={products}
+          columns={columns}
+          title="רשימת מוצרים"
+          subtitle={`${products.length} מוצרים בסך הכל`}
+          searchable={true}
+          filterable={true}
+          selectable={true}
+          sortable={true}
+          loading={loading}
+          actions={[
+            {
+              label: 'ייבא מוצרים',
+              icon: Upload,
+              onClick: () => console.log('Import products')
+            },
+            {
+              label: 'ייצא מוצרים',
+              icon: Download,
+              onClick: () => console.log('Export products')
+            },
+            {
+              label: 'הוסף מוצר',
+              icon: Plus,
+              variant: 'primary',
+              onClick: () => {
                 window.history.pushState({}, '', '/dashboard/products/new');
                 window.dispatchEvent(new PopStateEvent('popstate'));
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto"
-            >
-              <Plus className="w-4 h-4" />
-              הוסף מוצר ראשון
-            </button>
-          </div>
-        </div>
+              }
+            }
+          ]}
+          bulkActions={[
+            {
+              label: 'עדכן סטטוס',
+              icon: Edit,
+              onClick: (selectedIds) => console.log('Update status for:', selectedIds)
+            },
+            {
+              label: 'מחק מוצרים',
+              icon: Trash2,
+              variant: 'danger',
+              onClick: handleBulkDelete,
+              disabled: deleting
+            }
+          ]}
+          emptyState={
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">אין מוצרים עדיין</h3>
+              <p className="text-gray-500 mb-6">התחל בהוספת המוצר הראשון שלך</p>
+              <button 
+                onClick={() => {
+                  window.history.pushState({}, '', '/dashboard/products/new');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto"
+              >
+                <Plus className="w-4 h-4" />
+                הוסף מוצר ראשון
+              </button>
+            </div>
+          }
+          onRowClick={(product) => {
+            window.history.pushState({}, '', `/dashboard/products/${product.id}/edit`);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          rowActions={[
+            {
+              label: 'צפה בחנות',
+              icon: Eye,
+              variant: 'secondary',
+              onClick: (product) => {
+                const productSlug = product.slug || product.id;
+                // Use current store slug if available, otherwise fallback to yogevstore
+                const storeSlug = currentStore?.slug || 'yogevstore';
+                const storeUrl = `https://${storeSlug}.my-quickshop.com/products/${productSlug}`;
+                window.open(storeUrl, '_blank');
+              }
+            },
+            {
+              label: 'ערוך מוצר',
+              icon: Edit,
+              variant: 'primary',
+              onClick: (product) => {
+                window.history.pushState({}, '', `/dashboard/products/${product.id}/edit`);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }
+            },
+            {
+              label: 'שכפל מוצר',
+              icon: Copy,
+              onClick: (product) => {
+                console.log('Duplicate product:', product.id);
+              }
+            },
+            {
+              label: 'מחק מוצר',
+              icon: Trash2,
+              variant: 'danger',
+              onClick: handleDeleteProduct,
+              disabled: deleting
+            }
+          ]}
+          pagination={true}
+          itemsPerPage={10}
+          className=""
+        />
       )}
-
-      {/* Pagination */}
-      {!loading && products.length > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            מציג 1-{products.length} מתוך {products.length} מוצרים
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50" disabled>
-              הקודם
-            </button>
-            <button className="px-3 py-2 bg-blue-600 text-white rounded-lg">
-              1
-            </button>
-            <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50" disabled>
-              הבא
-            </button>
-          </div>
-        </div>
-      )}
+      
+      {/* Toast */}
+      <Toast
+        message={toastMessage}
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+        type={toastType}
+      />
     </div>
   );
 };

@@ -1,227 +1,103 @@
-# 🚀 QuickShop - פלטפורמת SaaS מתקדמת לחנויות אונליין
+# 🛒 QuickShop - פלטפורמת E-Commerce
 
-QuickShop היא פלטפורמת SaaS מתקדמת ליצירת חנויות אונליין עם מערכת שותפים מובנית. הפלטפורמה כוללת מערכת תבניות מתקדמת, שירותי אימייל, מערכת הזמנות משופרת ועוד הרבה פיצ'רים מתקדמים.
+## 📋 סקירה כללית
+QuickShop היא פלטפורמת e-commerce מתקדמת המאפשרת יצירה וניהול של חנויות מקוונות עם תמיכה בתבניות מותאמות אישית, ניהול מוצרים, הזמנות ואנליטיקס.
 
-## מבנה הפרויקט
+## 🚀 התחלה מהירה
 
-```
-quickshop new/
-├── frontend/              # React + Vite + Tailwind CSS (דף נחיתה)
-├── backend/               # Node.js + Express + MySQL (API)
-├── admin-dashboard/       # דשבורד אדמין (עתידי)
-├── store-templates/       # תבניות חנויות (עתידי)
-│   └── jupiter/          # תבנית Jupiter
-├── shared/               # קומפוננטים משותפים (עתידי)
-└── README.md
-```
-
-## דרישות מערכת
-
-- Node.js 22.11+ (או 20.19+)
+### דרישות מערכת
+- Node.js 18+
 - PostgreSQL 14+
-- npm או yarn
+- AWS CLI (לפריסה)
+- Nginx (לפרודקשן)
 
-## התקנה והפעלה
-
-### התקנה מהירה
-
+### התקנה מקומית
 ```bash
-# התקנת כל התלויות (כולל תבנית Jupiter)
-npm run install:all
+# Clone הפרויקט
+git clone <repository-url>
+cd qucikshopnodejs
 
-# הפעלת שני השרתים יחד (SaaS)
-npm run dev
-
-# הפעלת כל השרתים (כולל תבנית Jupiter)
-npm run dev:all
-
-# הפעלת תבנית Jupiter בלבד
-npm run dev:jupiter
+# התקנת dependencies
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-### הפעלה נפרדת
-
-#### 1. הפעלת הבקאנד
-
+### הגדרת Database
 ```bash
 cd backend
-npm install
-npm run dev
-```
-
-השרת יפעל על פורט 3001: http://localhost:3001
-
-#### 2. הפעלת הפרונטאנד
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-האפליקציה תפעל על פורט זמין (בדרך כלל 5173+): http://localhost:5173
-
-#### 3. גישה לחנות עם תבנית Jupiter
-
-תבנית Jupiter משולבת בפרונטאנד הראשי. לאחר הפעלת הפרונטאנד, תוכל לגשת לחנות דרך:
-
-- **דשבורד ניהול**: http://localhost:5173
-- **חנות לדוגמה**: http://yogevstore.localhost:5173
-
-> **הערה**: Jupiter היא תבנית עיצוב המשולבת בחנות, לא שירות נפרד.
-
-**הגדרת דומיין מקומי (אופציונלי):**
-כדי שהדומיין `yogevstore.localhost` יעבוד, הוסף לקובץ `/etc/hosts`:
-```
-127.0.0.1 yogevstore.localhost
-```
-
-### 3. מסד נתונים
-
-הפרויקט מגיע עם מסד נתונים SQLite מוכן עם נתוני דוגמה:
-
-- **מיקום**: `backend/prisma/dev.db`
-- **כולל**: חנות לדוגמה (yogevstore), קטגוריות ומוצרים
-- **מוכן לשימוש**: לא נדרשת הגדרה נוספת
-
-#### יצירת נתונים נוספים (אופציונלי)
-
-```bash
-cd backend
-node scripts/seed-stores.js
-```
-
-#### מעבר ל-PostgreSQL (לסביבת production)
-
-הגדר את `DATABASE_URL` בקובץ `.env`:
-
-```bash
-DATABASE_URL="postgresql://username:password@localhost:5432/quickshop?schema=public"
-```
-
-והרץ:
-
-```bash
-cd backend
+cp .env.example .env
+# ערוך את .env עם פרטי ההתחברות שלך
+npx prisma migrate deploy
 npx prisma generate
-npx prisma db push
 ```
 
-## 🌟 תכונות עיקריות
+## 📖 מדריכים
 
-### 🏪 מערכת החנויות הבסיסית
-- ✅ **ניהול מוצרים מתקדם** - יצירה, עריכה, העלאת תמונות, ניהול מלאי
-- ✅ **מערכת הזמנות משופרת** - מספור לפי חנות, עיבוד אוטומטי עם אירועים
-- ✅ **ניהול לקוחות** - פרופילים מפורטים, היסטוריית רכישות
-- ✅ **מערכת תשלומים** - אינטגרציה עם שערי תשלום
+### 🔧 פיתוח ופריסה
+**לכל המידע על פיתוח, פריסה ותחזוקה - ראה:**
+👉 **[DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md)**
 
-### 🎨 מערכת תבניות מתקדמת
-- ✅ **ארכיטקטורה מודולרית** - הפרדה בין דפים קבועים לתבניות
-- ✅ **תבנית Jupiter** - תבנית מודרנית ונקייה עם תמיכה מלאה ב-RTL
-- ✅ **עורך קוד למפתחים** - Monaco Editor עם וולידציה בזמן אמת
-- ✅ **מסד נתונים לתבניות** - ניהול תבניות דרך API
+### 🎨 תכונות המערכת
+**לרשימה מלאה של תכונות וקומפוננטים - ראה:**
+👉 **[FEATURES.md](./FEATURES.md)**
 
-### 🤝 מערכת שותפים מלאה
-- ✅ **דשבורד שותפים מודרני** - ניהול חנויות פיתוח ללקוחות
-- ✅ **מערכת עמלות מתקדמת** - דרגות עמלות (ברונזה, כסף, זהב)
-- ✅ **מערכת משיכות** - בקשות משיכת כספים ומעקב תשלומים
-- ✅ **אנליטיקה לשותפים** - גרפים ודוחות ביצועים
+### 📊 אינטגרציית Pixels
+**למידע על אינטגרציית Facebook Pixel ו-Google Analytics - ראה:**
+👉 **[PIXELS_INTEGRATION.md](./PIXELS_INTEGRATION.md)**
 
-### 📧 מערכת מיילים מתקדמת
-- ✅ **אינטגרציה מלאה עם SendGrid** - שליחת מיילים אמיתיים
-- ✅ **עורך תבניות מייל HTML** - עריכה ויזואלית מתקדמת
-- ✅ **תבניות מובנות** - אישור הזמנה, עדכון סטטוס, עגלה נטושה
-- ✅ **משתנים דינמיים** - התאמה אישית לכל חנות
+### ⚙️ הגדרות Sections
+**למפרט מלא של הגדרות sections ותבניות - ראה:**
+👉 **[SECTION_SETTINGS_SPECIFICATION.md](./SECTION_SETTINGS_SPECIFICATION.md)**
 
-### 🎯 מערכת שיווק ומכירות
-- ✅ **קופונים והנחות** - הנחות BOGO, אוטומטיות, מותנות
-- ✅ **אנליטיקה ומעקב** - Google Analytics, Facebook Pixel
-- ✅ **מערכת משפיענים** - קודי הנחה אישיים ומעקב מכירות
-
-### 🏗️ ארכיטקטורה מתקדמת
-- ✅ **Service Layer Architecture** - לוגיקה עסקית מרוכזת
-- ✅ **Event-Driven Architecture** - עיבוד אוטומטי של פעולות
-- ✅ **DRY Principle** - ביטול כפילויות קוד
-
-## 🔧 טכנולוגיות
-
-### Frontend
-- **React 18** - ספריית UI מתקדמת
-- **Vite 5.4.0** - כלי build מהיר
-- **Tailwind CSS 3.4.0** - CSS framework עם תמיכה ב-RTL
-- **Monaco Editor** - עורך קוד מתקדם (כמו VS Code)
-- **Remix Icons** - ספריית אייקונים
-- **Axios** - HTTP client
-- **React Router** - ניתוב
+## 🏗️ ארכיטקטורה
 
 ### Backend
-- **Node.js 22.11+** - סביבת runtime
-- **Express 4.19.0** - web framework
-- **Prisma ORM** - מנהל מסד נתונים
-- **PostgreSQL/MySQL** - מסד נתונים
-- **JWT** - אימות
-- **SendGrid** - שירות מיילים
-- **bcryptjs** - הצפנת סיסמאות
-- **Helmet** - אבטחה
+- **Framework**: Node.js + Express
+- **Database**: PostgreSQL + Prisma ORM
+- **Authentication**: JWT
+- **File Upload**: Multer + AWS S3
+- **Email**: SendGrid
 
-### כלים נוספים
-- **Concurrently** - הפעלה משותפת של שרתים
-- **Nodemon** - פיתוח עם hot reload
-- **PostCSS & Autoprefixer** - עיבוד CSS
-- **Handlebars** - מנוע תבניות למיילים
-- **Event System** - מערכת אירועים מותאמת אישית
+### Frontend
+- **Framework**: React 18 + Vite
+- **Styling**: Tailwind CSS
+- **State Management**: React Context + Hooks
+- **Routing**: React Router v6
+- **HTTP Client**: Fetch API
 
-## 📊 סטטיסטיקות המערכת
+### Infrastructure
+- **Hosting**: AWS S3 (Frontend) + EC2 (Backend)
+- **CDN**: CloudFront
+- **SSL**: Let's Encrypt
+- **Reverse Proxy**: Nginx
+- **Process Manager**: PM2
 
-### נתונים כלליים
-- 🏪 **חנויות פעילות:** 1,200+
-- 👥 **משתמשים רשומים:** 15,000+
-- 🤝 **שותפים פעילים:** 350+
-- 💰 **עמלות שולמו:** ₪2.5M+
-- 📦 **הזמנות עובדו:** 50,000+
+## 🌐 סביבות
 
-### ביצועים
-- 🚀 **זמן טעינה:** < 2 שניות
-- 📱 **ציון מובייל:** 95/100
-- 🔒 **זמינות:** 99.9%
-- 📈 **שביעות רצון:** 4.8/5
+### פיתוח
+- **Frontend**: http://3.64.187.151:5173/
+- **Backend**: http://3.64.187.151:3001/
+- **API**: https://api.my-quickshop.com/
 
-## 🛣️ מפת דרכים עתידית
+### פרודקשן
+- **אתר ראשי**: https://my-quickshop.com/
+- **חנויות**: https://[store-slug].my-quickshop.com/
+- **API**: https://api.my-quickshop.com/
 
-### פיצ'רים מתוכננים
-- 🎨 **תבניות נוספות** - Mars, Venus, Saturn
-- 🏪 **מרקטפלייס תבניות** - חנות תבניות של מפתחים
-- 🤖 **AI לאופטימיזציה** - המלצות אוטומטיות
-- 📱 **אפליקציה מובייל** - iOS ו-Android
-- 🌍 **הרחבה בינלאומית** - תמיכה בשפות נוספות
+## 🤝 תרומה לפרויקט
 
-## 📞 תמיכה ויצירת קשר
+1. Fork את הפרויקט
+2. צור branch חדש (`git checkout -b feature/amazing-feature`)
+3. Commit השינויים (`git commit -m 'Add amazing feature'`)
+4. Push ל-branch (`git push origin feature/amazing-feature`)
+5. פתח Pull Request
 
-### ערוצי תמיכה
-- 💬 **צ'אט חי:** זמין 24/7
-- 📧 **מייל תמיכה:** support@quickshop.co.il
-- 📞 **טלפון:** 03-1234567
-- 📚 **מרכז עזרה:** help.quickshop.co.il
+## 📄 רישיון
+הפרויקט הזה מוגן תחת רישיון MIT - ראה קובץ [LICENSE](LICENSE) לפרטים.
 
-## 📝 הערות עדכון
-
-**גרסה נוכחית:** v2.2.0  
-**תאריך עדכון אחרון:** 28/08/2025  
-
-**עדכונים עיקריים:**
-- ✨ הוספת מערכת שותפים מלאה
-- 🎨 עיצוב מודרני עם גרדיאנטים
-- 📧 מערכת מיילים מלאה עם SendGrid
-- 🏗️ ארכיטקטורה מונעת אירועים
-- 🎯 Service Layer מרכזי
-- 🔢 מספור הזמנות לפי חנות
-- 🔒 בידוד נתונים מושלם
-- 💻 עורך קוד למפתחים עם Monaco Editor
+## 📞 תמיכה
+לשאלות ותמיכה, אנא פנה למדריך הפיתוח או פתח issue ב-GitHub.
 
 ---
 
-> **לפרטים מלאים על כל הפיצ'רים** ראה את קובץ [FEATURES.md](./FEATURES.md)
-
-## 📄 רישיון
-
-MIT License
+**📅 עודכן לאחרונה**: נובמבר 2024

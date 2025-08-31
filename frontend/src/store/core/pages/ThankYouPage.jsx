@@ -65,7 +65,7 @@ const ThankYouPage = ({ storeData }) => {
       } else {
         // ניסיון לקבל נתונים מהשרת (אם יש API)
         try {
-          const response = await fetch(`http://localhost:3001/api/orders/${orderId}`)
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/orders/${orderId}`)
           if (response.ok) {
             const data = await response.json()
             setOrderData(data)
