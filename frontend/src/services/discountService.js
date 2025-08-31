@@ -3,13 +3,14 @@
  * מספק ממשק אחיד לחישוב הנחות בכל רכיבי הממשק
  */
 
+import { getApiConfig, devLog, devError } from '../config/local.js';
+
 class DiscountService {
   constructor() {
-    // Use local API in development, external API in production
-    const isDevelopment = window.location.port === '5173' || window.location.port === '5174' || window.location.port === '5175' || window.location.port === '5176' || window.location.port === '5177';
-    this.apiBase = isDevelopment 
-      ? 'http://3.64.187.151:3001/api'
-      : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+    const apiConfig = getApiConfig();
+    this.apiBase = apiConfig.baseUrl;
+    this.timeout = apiConfig.timeout;
+    devLog('DiscountService initialized', { apiBase: this.apiBase });
   }
 
   /**
@@ -21,6 +22,8 @@ class DiscountService {
    * @returns {Promise<Object>} תוצאת החישוב
    */
   async calculateDiscounts(cart, storeSlug, couponCode = null, customer = null) {
+    devLog('Calculating discounts', { storeSlug, couponCode, itemCount: cart?.items?.length });
+    
     try {
       const response = await fetch(`${this.apiBase}/coupons/calculate`, {
         method: 'POST',
@@ -41,12 +44,15 @@ class DiscountService {
         throw new Error(result.error || 'שגיאה בחישוב הנחות')
       }
 
+      devLog('Discounts calculated successfully', result);
       return result
     } catch (error) {
-      console.error('שגיאה בחישוב הנחות:', error)
+      devError('שגיאה בחישוב הנחות:', error)
       
       // fallback לחישוב בסיסי
-      return this.calculateBasicTotals(cart)
+      const fallbackResult = this.calculateBasicTotals(cart);
+      devLog('Using fallback calculation', fallbackResult);
+      return fallbackResult;
     }
   }
 
