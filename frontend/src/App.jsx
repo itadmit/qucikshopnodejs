@@ -59,8 +59,8 @@ function App() {
     else if (hostname.includes('.') && !hostname.startsWith('www') && !hostname.match(/^\d+\.\d+\.\d+\.\d+/)) {
       const subdomain = hostname.split('.')[0]
 
-      // Don't treat 'admin', 'api', 'www', 'my-quickshop' as store slugs
-      if (!['admin', 'api', 'www', 'localhost', 'my-quickshop'].includes(subdomain)) {
+      // Don't treat 'admin', 'api', 'www', 'my-quickshop', 'quickshop' as store slugs
+      if (!['admin', 'api', 'www', 'localhost', 'my-quickshop', 'quickshop'].includes(subdomain)) {
         detectedStoreSlug = subdomain
 
       } else {
@@ -129,7 +129,7 @@ function App() {
     // But exclude IP addresses
     else if (hostname.includes('.') && !hostname.startsWith('www') && !hostname.match(/^\d+\.\d+\.\d+\.\d+/)) {
       const subdomain = hostname.split('.')[0]
-      if (!['admin', 'api', 'www', 'localhost', 'my-quickshop'].includes(subdomain)) {
+      if (!['admin', 'api', 'www', 'localhost', 'my-quickshop', 'quickshop'].includes(subdomain)) {
         detectedStoreSlug = subdomain
 
       }

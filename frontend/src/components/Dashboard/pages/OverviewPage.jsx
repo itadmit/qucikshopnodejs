@@ -97,6 +97,24 @@ const OverviewPage = ({ stats, recentOrders, popularProducts, userStore }) => {
         </div>
       </div>
 
+      {/* Version Update Banner */}
+      <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-100 rounded-full p-2">
+              <span className="text-blue-600 text-sm font-medium">🚀</span>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-blue-900">גרסה חדשה 2.1.0</h3>
+              <p className="text-xs text-blue-700">מערכת פריסה אוטומטית, בדיקות בריאות משופרות ועוד!</p>
+            </div>
+          </div>
+          <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+            עדכון חדש
+          </div>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="overview-stats">
         <StatCard
@@ -292,11 +310,13 @@ const OverviewPage = ({ stats, recentOrders, popularProducts, userStore }) => {
             </button>
           </div>
         </div>
-        <div className="h-64 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center">
+        <div className="h-64 bg-gradient-to-br from-blue-100 via-purple-50 to-indigo-100 rounded-lg flex items-center justify-center border border-blue-200/50">
           <div className="text-center">
-            <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 font-medium">גרף ביצועים</p>
-            <p className="text-sm text-gray-400">יתווסף בקרוב</p>
+            <div className="bg-white/80 backdrop-blur-sm rounded-full p-4 mb-4 mx-auto w-fit">
+              <TrendingUp className="w-16 h-16 text-blue-500 mx-auto" />
+            </div>
+            <p className="text-gray-700 font-medium text-lg mb-2">גרף ביצועים</p>
+            <p className="text-gray-500">יתווסף בקרוב</p>
           </div>
         </div>
       </div>

@@ -1,14 +1,14 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/unified-auth.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Get all custom fields for a store
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     
     // Get user's store
     const store = await prisma.store.findFirst({
@@ -40,9 +40,9 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Create a new custom field
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const {
       name,
       label,
@@ -91,9 +91,9 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update a custom field
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const customFieldId = parseInt(req.params.id);
     const {
       label,
@@ -151,9 +151,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete a custom field
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const customFieldId = parseInt(req.params.id);
 
     // Get user's store

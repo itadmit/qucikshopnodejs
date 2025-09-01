@@ -1,0 +1,367 @@
+---
+description: חוקי פיתוח - QuickShop SaaS
+globs:
+alwaysApply: true
+---
+# חוקי פיתוח - QuickShop SaaS
+
+## עקרונות יסוד
+
+### 1. SaaS Architecture
+- **תמיד גנרי**: אף פעם לא לכתוב קוד ספציפי לחנות או משתמש מסוים
+- **Multi-tenant**: כל פיצ'ר חייב לתמוך במספר חנויות ומשתמשים
+- **Store Context**: תמיד לזהות את החנות הנוכחית מהדומיין או מהפרמטרים
+
+### 2. Port Configuration
+```
+Backend:  localhost:3001
+Frontend: localhost:5173 (Vite default)
+```
+
+### 3. Domain Structure
+```
+Development:
+- Main App: localhost:5173
+- Store: {store-slug}.localhost:5173
+- API: localhost:3001/api
+
+Production:
+- Main App: my-quickshop.com
+- Store: {store-slug}.my-quickshop.com  
+- API: api.my-quickshop.com (NO /api prefix)
+```
+
+## Authentication Rules
+
+### 1. Always Use Unified Auth
+```javascript
+// ✅ נכון - השתמש ב-middleware המאוחד
+import { requireDashboardAccess, requireAuth, requireStoreAccess } from '../middleware/unified-auth.js';
+
+// ❌ לא נכון - לא להשתמש ב-middleware ישן
+import { authenticateToken } from '../middleware/auth.js'; // DELETED
+```
+
+### 2. Middleware Types
+```javascript
+// אימות בסיסי (רק בדיקת משתמש)
+router.get('/profile', requireAuth, handler);
+
+// דשבורד (אימות + מנוי + זיהוי חנות)
+router.get('/stats', requireDashboardAccess, handler);
+
+// חנות (אימות + זיהוי חנות)
+router.get('/products', requireStoreAccess, handler);
+
+// פרימיום (אימות + מנוי + בדיקת תוכנית)
+router.get('/advanced-analytics', requirePremium, handler);
+```
+
+### 3. Access Current Store
+```javascript
+// ✅ נכון - גישה לחנות הנוכחית
+router.get('/products', requireStoreAccess, async (req, res) => {
+  const store = req.currentStore; // זיהוי אוטומטי
+  const storeId = req.storeId;
+  
+  const products = await prisma.product.findMany({
+    where: { storeId: store.id }
+  });
+});
+
+// ❌ לא נכון - הרדקוד של חנות ספציפית
+const products = await prisma.product.findMany({
+  where: { storeId: 1 } // NEVER!
+});
+```
+
+## API Routes Structure
+
+### 1. Generic Routes
+```javascript
+// ✅ נכון - נתיבים גנריים
+/api/products          // כל המוצרים של החנות הנוכחית
+/api/orders           // כל ההזמנות של החנות הנוכחית
+/api/customers        // כל הלקוחות של החנות הנוכחית
+
+// ❌ לא נכון - נתיבים ספציפיים
+/api/stores/123/products  // NEVER!
+/api/yogevstore/orders    // NEVER!
+```
+
+### 2. Store Identification
+```javascript
+// הזיהוי נעשה אוטומטי ב-middleware:
+// 1. מהדומיין: yogevstore.localhost:5173 → storeSlug = "yogevstore"
+// 2. מפרמטרים: ?storeSlug=yogevstore
+// 3. מה-body: { storeSlug: "yogevstore" }
+// 4. ברירת מחדל: החנות הראשונה הפעילה של המשתמש
+```
+
+## Environment Configuration
+
+### 1. Frontend Environment
+```javascript
+// ✅ נכון - שימוש בפונקציות עזר
+import { getApiUrl, isStoreSubdomain, getStoreSlugFromDomain } from '../config/environment.js';
+
+const apiUrl = getApiUrl('/products'); // אוטומטי לפי סביבה
+const isStore = isStoreSubdomain(); // בדיקה אם זה חנות
+const storeSlug = getStoreSlugFromDomain(); // קבלת שם החנות
+
+// ❌ לא נכון - הרדקוד של URLs
+const apiUrl = 'http://localhost:3001/api/products'; // NEVER!
+```
+
+### 2. Environment Files
+```bash
+# Development
+frontend/.env.development:
+VITE_API_URL=/api
+VITE_NODE_ENV=development
+
+# Production  
+frontend/.env.production:
+VITE_API_URL=https://api.my-quickshop.com
+VITE_NODE_ENV=production
+```
+
+## Database Queries
+
+### 1. Always Filter by Store
+```javascript
+// ✅ נכון - תמיד לסנן לפי חנות
+const products = await prisma.product.findMany({
+  where: { 
+    storeId: req.currentStore.id,
+    status: 'PUBLISHED'
+  }
+});
+
+// ❌ לא נכון - שאילתה גלובלית
+const products = await prisma.product.findMany(); // NEVER!
+```
+
+### 2. User's Stores Only
+```javascript
+// ✅ נכון - רק חנויות של המשתמש
+const stores = await prisma.store.findMany({
+  where: { 
+    userId: req.authenticatedUser.id,
+    isActive: true
+  }
+});
+
+// ❌ לא נכון - כל החנויות
+const stores = await prisma.store.findMany(); // NEVER!
+```
+
+## Error Handling
+
+### 1. Consistent Error Format
+```javascript
+// ✅ נכון - פורמט שגיאה אחיד
+return res.status(404).json({
+  error: 'Not found',
+  message: 'המוצר לא נמצא'
+});
+
+// ❌ לא נכון - פורמטים שונים
+return res.status(404).send('Not found'); // NEVER!
+```
+
+### 2. Hebrew Messages for Users
+```javascript
+// ✅ נכון - הודעות בעברית למשתמש
+message: 'לא נמצאה חנות פעילה עבור המשתמש'
+
+// ✅ נכון - הודעות באנגלית לדבאג
+console.error('Store identification error:', error.message);
+```
+
+## File Organization
+
+### 1. Clean Architecture
+```
+backend/
+├── middleware/
+│   └── unified-auth.js     ✅ אימות מאוחד
+├── routes/
+│   ├── dashboard.js        ✅ גנרי לכל חנות
+│   ├── products.js         ✅ גנרי לכל חנות
+│   └── stores.js           ✅ ניהול חנויות
+└── models/
+    └── Store.js            ✅ מודל גנרי
+```
+
+### 2. Remove Old Files
+```bash
+# קבצים למחיקה:
+middleware/auth.js          ❌ ישן - נמחק
+*.backup                    ❌ גיבויים
+*.old                       ❌ קבצים ישנים
+*.tmp                       ❌ קבצים זמניים
+```
+
+## Development Workflow
+
+### 1. Starting Development
+```bash
+# Backend
+cd backend && npm start
+
+# Frontend (new terminal)
+cd frontend && npm run dev
+
+# Access:
+# Main app: http://localhost:5173
+# Store: http://yogevstore.localhost:5173
+```
+
+### 2. Testing Multi-Store
+```bash
+# Add to /etc/hosts (if needed):
+127.0.0.1 yogevstore.localhost
+127.0.0.1 teststore.localhost
+
+# Or use direct URLs:
+http://yogevstore.localhost:5173
+http://teststore.localhost:5173
+```
+
+## Deployment Rules
+
+### 1. Frontend Build
+```bash
+# Build for production
+npm run build
+
+# Deploy to S3
+aws s3 sync dist/ s3://my-quickshop-frontend/
+```
+
+### 2. Backend Deploy
+```bash
+# Deploy only backend folder to EC2
+scp -r backend/ user@ec2:/var/www/quickshop/
+
+# No /api prefix in production routes
+# API runs on api.my-quickshop.com directly
+```
+
+## Code Review Checklist
+
+### ✅ Before Committing
+- [ ] No hardcoded store IDs or user IDs
+- [ ] Uses unified auth middleware
+- [ ] Filters queries by current store
+- [ ] Hebrew error messages for users
+- [ ] English debug messages
+- [ ] No old middleware imports
+- [ ] Environment-aware URLs
+- [ ] Generic route patterns
+
+### ❌ Red Flags
+- Hardcoded IDs: `storeId: 1`
+- Global queries: `findMany()` without `where`
+- Old auth: `import from '../middleware/auth.js'`
+- Hardcoded URLs: `'http://localhost:3001'`
+- English user messages
+- Store-specific logic
+
+## Common Patterns
+
+### 1. New Route Template
+```javascript
+import express from 'express';
+import { requireStoreAccess } from '../middleware/unified-auth.js';
+import { PrismaClient } from '@prisma/client';
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+router.get('/', requireStoreAccess, async (req, res) => {
+  try {
+    const store = req.currentStore;
+    
+    const data = await prisma.model.findMany({
+      where: { storeId: store.id }
+    });
+    
+    res.json(data);
+  } catch (error) {
+    console.error('API error:', error.message);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'שגיאה בטעינת הנתונים'
+    });
+  }
+});
+
+export default router;
+```
+
+### 2. Frontend API Call
+```javascript
+import { getApiUrl } from '../config/environment.js';
+
+const fetchData = async () => {
+  try {
+    const response = await fetch(getApiUrl('/products'), {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Fetch error:', error);
+    throw error;
+  }
+};
+```
+
+---
+
+**זכור**: QuickShop הוא SaaS - תמיד חשוב גנרי, תמיד תמוך במספר חנויות, תמיד השתמש במערכת האימות המאוחדת!
+
+# סטטוס מסד נתונים
+./db-commands.sh status
+
+# איפוס מסד נתונים
+./db-commands.sh reset
+
+# פתיחת Prisma Studio
+./db-commands.sh studio
+
+# גיבוי מקומי
+./db-commands.sh backup
+
+
+📊 נתוני הדמו:
+Email: demo@quickshop.co.il
+Password: demo123
+חנות: "החנות שלי" עם slug my-store
+
+#עצירת שרתים
+./stop-dev.sh
+#פתיחת שרתים לסביבת פיתוח
+ ./start-dev.sh
+
+
+# פריסה מלאה
+./deploy-full.sh full
+
+# או שלב אחר שלב
+./deploy-full.sh database   # migrations דרך EC2
+./deploy-full.sh backend    # עדכון קוד בשרת
+./deploy-full.sh frontend   # build ו-upload ל-S3
+
+
+עוד פרטים ב:
+README.md

@@ -1,11 +1,11 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/unified-auth.js';
 
 const router = express.Router();
 
 // Apply authentication middleware to all routes
-router.use(authenticateToken);
+router.use(requireAuth);
 
 // GET /api/automatic-discounts - Get all automatic discounts for a store
 router.get('/', async (req, res) => {

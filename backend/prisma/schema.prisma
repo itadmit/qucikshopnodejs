@@ -600,7 +600,7 @@ model ActiveSession {
 model DailyAnalytics {
   id                 Int      @id @default(autoincrement())
   storeId            Int      @map("store_id")
-  date               DateTime @db.Date
+  date               DateTime
   uniqueVisitors     Int      @default(0) @map("unique_visitors")
   pageViews          Int      @default(0) @map("page_views")
   sessions           Int      @default(0)
@@ -764,7 +764,7 @@ model CouponUsage {
 model InfluencerStats {
   id           Int        @id @default(autoincrement())
   influencerId Int        @map("influencer_id")
-  date         DateTime   @db.Date
+  date         DateTime
   orders       Int        @default(0)
   revenue      Float      @default(0)
   commission   Float      @default(0)
@@ -823,7 +823,7 @@ model PartnerCommission {
   id              Int                   @id @default(autoincrement())
   partnerId       Int                   @map("partner_id")
   partnerStoreId  Int                   @map("partner_store_id")
-  amount          Decimal               @db.Decimal(10, 2)
+  amount          Float
   status          CommissionStatus      @default(PENDING)
   earnedAt        DateTime              @default(now()) @map("earned_at")
   approvedAt      DateTime?             @map("approved_at")
@@ -839,7 +839,7 @@ model PartnerCommission {
 model PartnerPayoutRequest {
   id            Int                 @id @default(autoincrement())
   partnerId     Int                 @map("partner_id")
-  amount        Decimal             @db.Decimal(10, 2)
+  amount        Float
   status        PayoutStatus        @default(PENDING)
   bankDetails   Json?               @map("bank_details")
   requestedAt   DateTime            @default(now()) @map("requested_at")

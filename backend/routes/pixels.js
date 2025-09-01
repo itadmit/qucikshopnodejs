@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticateToken, requireActiveSubscription } from '../middleware/auth.js';
+import { requireAuth, requireActiveSubscription } from '../middleware/unified-auth.js';
 import { Store } from '../models/Store.js';
 import prisma from '../lib/prisma.js';
 
@@ -8,10 +8,10 @@ const router = express.Router();
 /**
  * קבלת הגדרות פיקסלים לחנות
  */
-router.get('/:storeId', authenticateToken, async (req, res) => {
+router.get('/:storeId', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקה שהמשתמש הוא בעל החנות
     const store = await Store.findById(parseInt(storeId));
@@ -50,10 +50,10 @@ router.get('/:storeId', authenticateToken, async (req, res) => {
 /**
  * עדכון הגדרות פיקסלים לחנות
  */
-router.put('/:storeId', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.put('/:storeId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const {
       facebookPixelId,
       facebookAccessToken,
@@ -129,7 +129,7 @@ router.put('/:storeId', authenticateToken, requireActiveSubscription, async (req
 /**
  * בדיקת תקינות הגדרות פיקסל
  */
-router.post('/validate', authenticateToken, async (req, res) => {
+router.post('/validate', requireAuth, async (req, res) => {
   try {
     const {
       facebookPixelId,
@@ -187,10 +187,10 @@ router.post('/validate', authenticateToken, async (req, res) => {
 /**
  * בדיקת חיבור לפיקסל Facebook (אם יש access token)
  */
-router.post('/test-facebook/:storeId', authenticateToken, async (req, res) => {
+router.post('/test-facebook/:storeId', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקה שהמשתמש הוא בעל החנות
     const store = await Store.findById(parseInt(storeId));
@@ -244,10 +244,10 @@ router.post('/test-facebook/:storeId', authenticateToken, async (req, res) => {
 /**
  * קבלת דוגמאות קוד להטמעה ידנית
  */
-router.get('/code-examples/:storeId', authenticateToken, async (req, res) => {
+router.get('/code-examples/:storeId', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקה שהמשתמש הוא בעל החנות
     const store = await Store.findById(parseInt(storeId));

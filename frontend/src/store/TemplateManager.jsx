@@ -46,8 +46,8 @@ const TemplateManager = ({ templateName = 'jupiter', storeData }) => {
       
       for (const pageType of pageTypes) {
         try {
-          const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
-          const response = await fetch(`${baseUrl}/custom-pages/${storeData.slug}/${pageType}`);
+          const { getApiUrl } = await import('../config/environment.js');
+          const response = await fetch(`${getApiUrl()}/custom-pages/${storeData.slug}/${pageType}`);
           if (response.ok) {
             const pageData = await response.json();
             customPagesData[pageType] = pageData;
@@ -74,7 +74,8 @@ const TemplateManager = ({ templateName = 'jupiter', storeData }) => {
   // טעינת הגדרות גלובליות (הדר ופוטר)
   const loadGlobalSettings = async () => {
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const { getApiUrl } = await import('../config/environment.js');
+      const baseUrl = getApiUrl();
       
       // טעינת הדר ופוטר במקביל
       const [headerResponse, footerResponse, menusResponse] = await Promise.all([

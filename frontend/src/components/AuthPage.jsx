@@ -102,8 +102,9 @@ const AuthPage = ({ onClose, onSuccess, mode: initialMode = 'login' }) => {
     setLoading(true);
     
     try {
+      const { getApiUrl } = await import('../config/environment.js');
       const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}${endpoint}`, {
+      const response = await fetch(`${getApiUrl()}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

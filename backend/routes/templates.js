@@ -1,6 +1,6 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
-import { authenticateToken, requireActiveSubscription } from '../middleware/auth.js';
+import { requireAuth, requireActiveSubscription } from '../middleware/unified-auth.js';
 
 const router = express.Router();
 
@@ -69,11 +69,11 @@ router.get('/:templateName', async (req, res) => {
 /**
  * עדכון תבנית לחנות
  */
-router.put('/store/:storeId/template', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.put('/store/:storeId/template', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { storeId } = req.params;
     const { templateName, templateId, customizations } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקה שהמשתמש הוא בעל החנות
     const store = await prisma.store.findFirst({
@@ -141,7 +141,7 @@ router.put('/store/:storeId/template', authenticateToken, requireActiveSubscript
 /**
  * יצירת תבנית חדשה (למפתחים/אדמינים)
  */
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     const {
       name,
@@ -186,7 +186,7 @@ router.post('/', authenticateToken, async (req, res) => {
         isPremium,
         files,
         config,
-        author: author || req.user.firstName + ' ' + req.user.lastName,
+        author: author || req.authenticatedUser.firstName + ' ' + req.authenticatedUser.lastName,
         thumbnail,
         tags,
         category,
@@ -212,7 +212,7 @@ router.post('/', authenticateToken, async (req, res) => {
 /**
  * עדכון תבנית קיימת (למפתחים/אדמינים)
  */
-router.put('/:templateId', authenticateToken, async (req, res) => {
+router.put('/:templateId', requireAuth, async (req, res) => {
   try {
     const { templateId } = req.params;
     const updateData = req.body;
@@ -242,7 +242,7 @@ router.put('/:templateId', authenticateToken, async (req, res) => {
 /**
  * מחיקת תבנית (למפתחים/אדמינים)
  */
-router.delete('/:templateId', authenticateToken, async (req, res) => {
+router.delete('/:templateId', requireAuth, async (req, res) => {
   try {
     const { templateId } = req.params;
 

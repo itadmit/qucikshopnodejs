@@ -25,7 +25,8 @@ class TemplateLoader {
       // טעינה מהשרת (אם קיים)
       let templateFromServer = null;
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/templates/${templateName}`);
+        const { getApiUrl } = await import('../../../config/environment.js');
+        const response = await fetch(`${getApiUrl()}/templates/${templateName}`);
         if (response.ok) {
           templateFromServer = await response.json();
           console.log(`📡 Template ${templateName} loaded from server`);

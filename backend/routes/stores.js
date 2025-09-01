@@ -1,14 +1,14 @@
 import express from 'express'
 import prisma from '../lib/prisma.js'
-import { authenticateToken, requireActiveSubscription } from '../middleware/auth.js'
+import { requireAuth, requireActiveSubscription } from '../middleware/unified-auth.js'
 
 const router = express.Router()
 
 // Reset store to defaults - MUST be before /:slug route
-router.post('/:storeId/reset-to-defaults', authenticateToken, async (req, res) => {
+router.post('/:storeId/reset-to-defaults', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     console.log(`🔄 Resetting store ${storeId} to defaults for user ${userId}`);
 
@@ -756,10 +756,10 @@ router.post('/:storeSlug/design/product-page', async (req, res) => {
 });
 
 // Update store settings (template, design settings, etc.)
-router.put('/:storeId/settings', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.put('/:storeId/settings', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const { templateName, settings } = req.body;
 
     // Verify user owns the store

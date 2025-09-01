@@ -1,16 +1,16 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/unified-auth.js';
 import { EmailService } from '../services/EmailService.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Get all email templates for a store
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.query;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this store
     const storeUser = await prisma.storeUser.findFirst({
@@ -68,11 +68,11 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get single email template
-router.get('/:type', authenticateToken, async (req, res) => {
+router.get('/:type', requireAuth, async (req, res) => {
   try {
     const { type } = req.params;
     const { storeId } = req.query;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this store
     const storeUser = await prisma.storeUser.findFirst({
@@ -123,7 +123,7 @@ router.get('/:type', authenticateToken, async (req, res) => {
 });
 
 // Create or update email template
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     const {
       storeId,
@@ -134,7 +134,7 @@ router.post('/', authenticateToken, async (req, res) => {
       textContent,
       isActive = true
     } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this store
     const storeUser = await prisma.storeUser.findFirst({
@@ -197,7 +197,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Preview email template
-router.post('/preview', authenticateToken, async (req, res) => {
+router.post('/preview', requireAuth, async (req, res) => {
   try {
     const {
       storeId,
@@ -206,7 +206,7 @@ router.post('/preview', authenticateToken, async (req, res) => {
       subject,
       sampleData = {}
     } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this store
     const storeUser = await prisma.storeUser.findFirst({
@@ -253,7 +253,7 @@ router.post('/preview', authenticateToken, async (req, res) => {
 });
 
 // Send test email
-router.post('/test', authenticateToken, async (req, res) => {
+router.post('/test', requireAuth, async (req, res) => {
   try {
     const {
       storeId,
@@ -263,7 +263,7 @@ router.post('/test', authenticateToken, async (req, res) => {
       testEmail,
       sampleData = {}
     } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this store
     const storeUser = await prisma.storeUser.findFirst({
@@ -319,11 +319,11 @@ router.post('/test', authenticateToken, async (req, res) => {
 });
 
 // Delete email template (reset to default)
-router.delete('/:type', authenticateToken, async (req, res) => {
+router.delete('/:type', requireAuth, async (req, res) => {
   try {
     const { type } = req.params;
     const { storeId } = req.query;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this store
     const storeUser = await prisma.storeUser.findFirst({
@@ -357,10 +357,10 @@ router.delete('/:type', authenticateToken, async (req, res) => {
 });
 
 // Get email statistics
-router.get('/stats/overview', authenticateToken, async (req, res) => {
+router.get('/stats/overview', requireAuth, async (req, res) => {
   try {
     const { storeId, days = 30 } = req.query;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this store
     const storeUser = await prisma.storeUser.findFirst({

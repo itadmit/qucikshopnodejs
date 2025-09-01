@@ -1,12 +1,12 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/unified-auth.js';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
 // Apply authentication middleware to all routes
-router.use(authenticateToken);
+router.use(requireAuth);
 
 // GET /api/influencers - Get all influencers for a store
 router.get('/', async (req, res) => {

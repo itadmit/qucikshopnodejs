@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { Store } from '../models/Store.js';
 import prisma from '../lib/prisma.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/unified-auth.js';
 import { config } from '../config.js';
 import { setupNewStore } from '../services/storeSetup.js';
 
@@ -122,9 +122,9 @@ router.post('/login', async (req, res) => {
 });
 
 // Get current user profile
-router.get('/me', authenticateToken, async (req, res) => {
+router.get('/me', requireAuth, async (req, res) => {
   try {
-    const user = req.user;
+    const user = req.authenticatedUser;
     const store = await Store.findByUserId(user.id);
     
     // Remove sensitive data
@@ -152,10 +152,10 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // Update user profile
-router.put('/profile', authenticateToken, async (req, res) => {
+router.put('/profile', requireAuth, async (req, res) => {
   try {
     const { firstName, lastName, phone } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     await prisma.user.update({
       where: { id: userId },
@@ -173,10 +173,10 @@ router.put('/profile', authenticateToken, async (req, res) => {
 });
 
 // Change password
-router.put('/password', authenticateToken, async (req, res) => {
+router.put('/password', requireAuth, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
@@ -245,9 +245,9 @@ router.post('/demo-login', async (req, res) => {
 });
 
 // Complete onboarding
-router.post('/complete-onboarding', authenticateToken, async (req, res) => {
+router.post('/complete-onboarding', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     await prisma.user.update({
       where: { id: userId },
@@ -259,13 +259,14 @@ router.post('/complete-onboarding', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Complete onboarding error:', error);
     res.status(500).json({
-      error: 'Failed to complete onboarding'
+      error: 'Failed to complete onboarding',
+      message: 'שגיאה בסיום תהליך ההכנה'
     });
   }
 });
 
 // Logout (client-side token removal, but we can track it)
-router.post('/logout', authenticateToken, (req, res) => {
+router.post('/logout', requireAuth, (req, res) => {
   // In a more sophisticated setup, you might want to blacklist the token
   res.json({ message: 'Logged out successfully' });
 });

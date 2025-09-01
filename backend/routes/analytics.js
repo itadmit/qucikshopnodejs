@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticateToken, requireActiveSubscription } from '../middleware/auth.js';
+import { requireAuth, requireActiveSubscription } from '../middleware/unified-auth.js';
 import AnalyticsService from '../services/analyticsService.js';
 import { Store } from '../models/Store.js';
 
@@ -132,10 +132,10 @@ router.post('/track', async (req, res) => {
 /**
  * קבלת נתונים בזמן אמת
  */
-router.get('/realtime/:storeId', authenticateToken, async (req, res) => {
+router.get('/realtime/:storeId', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקה שהמשתמש הוא בעל החנות
     const store = await Store.findById(parseInt(storeId));
@@ -164,11 +164,11 @@ router.get('/realtime/:storeId', authenticateToken, async (req, res) => {
 /**
  * קבלת נתונים היסטוריים
  */
-router.get('/historical/:storeId', authenticateToken, async (req, res) => {
+router.get('/historical/:storeId', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.params;
     const { startDate, endDate, period = 'daily' } = req.query;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקה שהמשתמש הוא בעל החנות
     const store = await Store.findById(parseInt(storeId));
@@ -209,10 +209,10 @@ router.get('/historical/:storeId', authenticateToken, async (req, res) => {
 /**
  * קבלת סיכום נתונים לדאשבורד
  */
-router.get('/dashboard/:storeId', authenticateToken, async (req, res) => {
+router.get('/dashboard/:storeId', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקה שהמשתמש הוא בעל החנות
     const store = await Store.findById(parseInt(storeId));
@@ -286,11 +286,11 @@ router.get('/dashboard/:storeId', authenticateToken, async (req, res) => {
 /**
  * הפעלה ידנית של צבירת נתונים יומיים
  */
-router.post('/aggregate/:storeId', authenticateToken, async (req, res) => {
+router.post('/aggregate/:storeId', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.params;
     const { date } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקה שהמשתמש הוא בעל החנות
     const store = await Store.findById(parseInt(storeId));
@@ -320,7 +320,7 @@ router.post('/aggregate/:storeId', authenticateToken, async (req, res) => {
 /**
  * ניקוי sessions פגי תוקף
  */
-router.post('/cleanup', authenticateToken, async (req, res) => {
+router.post('/cleanup', requireAuth, async (req, res) => {
   try {
     const cleanedCount = await AnalyticsService.cleanupExpiredSessions();
 

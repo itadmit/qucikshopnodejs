@@ -1,14 +1,14 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken, requireActiveSubscription } from '../middleware/auth.js';
+import { requireAuth, requireActiveSubscription } from '../middleware/unified-auth.js';
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
 // Get user notifications
-router.get('/', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.get('/', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const { limit = 10, unreadOnly = false } = req.query;
     
     const where = { userId };
@@ -33,9 +33,9 @@ router.get('/', authenticateToken, requireActiveSubscription, async (req, res) =
 });
 
 // Get unread notifications count
-router.get('/unread-count', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.get('/unread-count', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     
     const count = await prisma.notification.count({
       where: {
@@ -55,9 +55,9 @@ router.get('/unread-count', authenticateToken, requireActiveSubscription, async 
 });
 
 // Mark notification as read
-router.patch('/:id/read', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.patch('/:id/read', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const notificationId = parseInt(req.params.id);
     
     const notification = await prisma.notification.update({
@@ -82,9 +82,9 @@ router.patch('/:id/read', authenticateToken, requireActiveSubscription, async (r
 });
 
 // Mark all notifications as read
-router.patch('/mark-all-read', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.patch('/mark-all-read', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     
     const result = await prisma.notification.updateMany({
       where: {
@@ -108,9 +108,9 @@ router.patch('/mark-all-read', authenticateToken, requireActiveSubscription, asy
 });
 
 // Create notification (for testing)
-router.post('/', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.post('/', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const { type, title, message, actionUrl, priority = 'NORMAL', metadata } = req.body;
     
     const notification = await prisma.notification.create({

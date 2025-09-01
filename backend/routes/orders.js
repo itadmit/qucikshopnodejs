@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/unified-auth.js';
 import { OrderService } from '../services/OrderService.js';
 import { InventoryService } from '../services/InventoryService.js';
 
@@ -8,10 +8,10 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 // Get all orders for a store
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.query;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this store (either as owner or store user)
     const store = await prisma.store.findFirst({
@@ -69,10 +69,10 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get single order
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     const order = await prisma.order.findUnique({
       where: { id: parseInt(id) },
@@ -129,11 +129,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Update order status
-router.put('/:id/status', authenticateToken, async (req, res) => {
+router.put('/:id/status', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Get order first to verify access
     const order = await prisma.order.findUnique({
@@ -186,11 +186,11 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
 });
 
 // Update payment status
-router.put('/:id/payment-status', authenticateToken, async (req, res) => {
+router.put('/:id/payment-status', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { paymentStatus } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Get order first to verify access
     const order = await prisma.order.findUnique({
@@ -281,11 +281,11 @@ router.post('/', async (req, res) => {
 });
 
 // Update order status using OrderService
-router.put('/:id/status', authenticateToken, async (req, res) => {
+router.put('/:id/status', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Get order first to verify access
     const existingOrder = await prisma.order.findUnique({
@@ -324,11 +324,11 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
 });
 
 // Update payment status using OrderService  
-router.put('/:id/payment-status', authenticateToken, async (req, res) => {
+router.put('/:id/payment-status', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { paymentStatus, paymentReference } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Get order first to verify access
     const existingOrder = await prisma.order.findUnique({

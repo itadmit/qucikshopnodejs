@@ -1,16 +1,16 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
-import { authenticateToken, requireActiveSubscription } from '../middleware/auth.js';
+import { requireAuth, requireActiveSubscription } from '../middleware/unified-auth.js';
 
 const router = express.Router();
 
 /**
  * קבלת כל העמודים של חנות
  */
-router.get('/store/:storeId', authenticateToken, async (req, res) => {
+router.get('/store/:storeId', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקת הרשאות
     const store = await prisma.store.findFirst({
@@ -91,10 +91,10 @@ router.get('/store/:storeId', authenticateToken, async (req, res) => {
 /**
  * קבלת עמוד ספציפי
  */
-router.get('/:pageId', authenticateToken, async (req, res) => {
+router.get('/:pageId', requireAuth, async (req, res) => {
   try {
     const { pageId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     const page = await prisma.page.findFirst({
       where: {
@@ -125,11 +125,11 @@ router.get('/:pageId', authenticateToken, async (req, res) => {
 /**
  * יצירת עמוד חדש
  */
-router.post('/store/:storeId', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.post('/store/:storeId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { storeId } = req.params;
     const { title, slug, content, type = 'CONTENT', seoTitle, seoDescription, isPublished = false } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקת הרשאות
     const store = await prisma.store.findFirst({
@@ -180,11 +180,11 @@ router.post('/store/:storeId', authenticateToken, requireActiveSubscription, asy
 /**
  * עדכון עמוד
  */
-router.put('/:pageId', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.put('/:pageId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { pageId } = req.params;
     const { title, slug, content, type, seoTitle, seoDescription, isPublished } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקת הרשאות
     const existingPage = await prisma.page.findFirst({
@@ -240,10 +240,10 @@ router.put('/:pageId', authenticateToken, requireActiveSubscription, async (req,
 /**
  * שכפול עמוד
  */
-router.post('/:pageId/duplicate', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.post('/:pageId/duplicate', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { pageId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // קבלת העמוד המקורי
     const originalPage = await prisma.page.findFirst({
@@ -295,10 +295,10 @@ router.post('/:pageId/duplicate', authenticateToken, requireActiveSubscription, 
 /**
  * מחיקת עמוד
  */
-router.delete('/:pageId', authenticateToken, async (req, res) => {
+router.delete('/:pageId', requireAuth, async (req, res) => {
   try {
     const { pageId } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // בדיקת הרשאות וקבלת מידע על העמוד
     const page = await prisma.page.findFirst({

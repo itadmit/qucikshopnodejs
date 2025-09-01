@@ -2,16 +2,16 @@ import express from 'express';
 import multer from 'multer';
 import s3Service from '../services/aws/s3.js';
 import prisma from '../lib/prisma.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/unified-auth.js';
 
 const router = express.Router();
 
 // Get all media for a store
-router.get('/store/:storeId', authenticateToken, async (req, res) => {
+router.get('/store/:storeId', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.params;
     const { folder, page = 1, limit = 20, search } = req.query;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify store ownership
     const store = await prisma.store.findFirst({
@@ -100,14 +100,14 @@ const upload = multer({
 });
 
 // Upload single file for store
-router.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
+router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const { storeId, folder = 'media' } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify store ownership
     const store = await prisma.store.findFirst({
@@ -158,14 +158,14 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
 });
 
 // Upload multiple files for store
-router.post('/upload-multiple', authenticateToken, upload.array('files', 10), async (req, res) => {
+router.post('/upload-multiple', requireAuth, upload.array('files', 10), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
     const { storeId, folder = 'media' } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify store ownership
     const store = await prisma.store.findFirst({
@@ -244,10 +244,10 @@ router.post('/upload-multiple', authenticateToken, upload.array('files', 10), as
 });
 
 // Delete media by ID
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Get media record
     const mediaRecord = await prisma.media.findUnique({
@@ -300,7 +300,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete file by key (legacy)
-router.delete('/delete/:key', authenticateToken, async (req, res) => {
+router.delete('/delete/:key', requireAuth, async (req, res) => {
   try {
     const { key } = req.params;
     await s3Service.deleteFile(key);
@@ -316,7 +316,7 @@ router.delete('/delete/:key', authenticateToken, async (req, res) => {
 });
 
 // Delete multiple files
-router.delete('/delete-multiple', authenticateToken, async (req, res) => {
+router.delete('/delete-multiple', requireAuth, async (req, res) => {
   try {
     const { keys } = req.body;
     
@@ -337,7 +337,7 @@ router.delete('/delete-multiple', authenticateToken, async (req, res) => {
 });
 
 // Get presigned URL for direct upload
-router.post('/presigned-url', authenticateToken, async (req, res) => {
+router.post('/presigned-url', requireAuth, async (req, res) => {
   try {
     const { fileName, folder = 'products' } = req.body;
     
@@ -363,9 +363,9 @@ router.post('/presigned-url', authenticateToken, async (req, res) => {
 });
 
 // Fix Hebrew filenames in database
-router.post('/fix-hebrew-filenames', authenticateToken, async (req, res) => {
+router.post('/fix-hebrew-filenames', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     
     // Get all media for user's stores
     const userStores = await prisma.store.findMany({
@@ -413,7 +413,7 @@ router.post('/fix-hebrew-filenames', authenticateToken, async (req, res) => {
 });
 
 // Get file info
-router.get('/info/:key', authenticateToken, async (req, res) => {
+router.get('/info/:key', requireAuth, async (req, res) => {
   try {
     const { key } = req.params;
     const fileInfo = await s3Service.getFileInfo(key);

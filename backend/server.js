@@ -59,34 +59,50 @@ app.use(helmet({
   contentSecurityPolicy: false,
   hsts: false
 }));
+// Build CORS origins from environment variables
+const buildCorsOrigins = () => {
+  const origins = [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+  ];
+
+  // Add development domains if in development
+  if (process.env.NODE_ENV === 'development') {
+    origins.push(
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://api.localhost:3001',
+      // Support for subdomain stores in development
+      /^http:\/\/.*\.localhost:5173$/,
+      // Legacy support
+      'http://localhost:3000',
+      'http://localhost:3001'
+    );
+  } else {
+    // Production domains
+    const mainDomain = 'my-quickshop.com';
+    
+    origins.push(
+      `https://${mainDomain}`,
+      `https://www.${mainDomain}`,
+      // Support for subdomain stores in production
+      new RegExp(`^https:\\/\\/.*\\.${mainDomain.replace('.', '\\.')}$`)
+    );
+  }
+
+  return origins;
+};
+
 app.use(cors({
   origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
+    ...buildCorsOrigins(),
+    // Legacy localhost patterns (for backward compatibility)
     'http://yogevstore.localhost:5173',
     'http://yogevstore.localhost:5174',
     'http://yogevstore.localhost:5175',
     /^http:\/\/.*\.localhost:5173$/,
     /^http:\/\/.*\.localhost:5174$/,
     /^http:\/\/.*\.localhost:5175$/,
-    // Development server IP access
-    'http://3.64.187.151:5173',
-    'http://3.64.187.151:5174',
-    'http://3.64.187.151:5175',
-    'http://172.31.43.52:5173',
-    'http://172.31.43.52:5174',
-    'http://172.31.43.52:5175',
-    // Production domains
-    'https://my-quickshop.com',
-    'http://my-quickshop.com',
-    'https://www.my-quickshop.com',
-    'http://www.my-quickshop.com',
-    /^https?:\/\/.*\.my-quickshop\.com$/,
-    // API subdomain
-    'https://api.my-quickshop.com',
-    'http://api.my-quickshop.com',
-    // S3 static website hosting
+    // S3 static website hosting (if used)
     'http://quickshop-frontend-bucket.s3-website-us-east-1.amazonaws.com',
     'https://quickshop-frontend-bucket.s3-website-us-east-1.amazonaws.com'
   ],
@@ -119,13 +135,46 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'QuickShop API is running',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    // בדיקת חיבור למסד נתונים
+    const dbCheck = await prisma.$queryRaw`SELECT 1 as test`;
+    
+    // מידע על המערכת
+    const systemInfo = {
+      status: 'OK',
+      message: 'QuickShop API is running',
+      timestamp: new Date().toISOString(),
+      version: '2.1.0',
+      environment: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      database: {
+        status: dbCheck ? 'connected' : 'disconnected',
+        type: 'PostgreSQL'
+      },
+      features: {
+        multiTenant: true,
+        storeBuilder: true,
+        analytics: true,
+        deployment: 'production-ready'
+      },
+      deployment: {
+        lastUpdated: new Date().toISOString(),
+        server: 'EC2',
+        region: 'eu-central-1'
+      }
+    };
+    
+    res.json(systemInfo);
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'System health check failed',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
 });
 
 // API Routes

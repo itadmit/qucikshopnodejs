@@ -41,7 +41,8 @@ const StoreApp = ({ storeSlug }) => {
       if (!userData) {
         console.log('🔄 Token found but no user data, fetching from server...')
         try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/dashboard/user-store`, {
+          const { getApiUrl } = await import('../config/environment.js');
+          const response = await fetch(`${getApiUrl()}/dashboard/user-store`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -106,7 +107,15 @@ const StoreApp = ({ storeSlug }) => {
       setError(null)
       
       // Fetch store data from API
-      const apiUrl = `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeSlug}`
+      const isDevelopment = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' || 
+                           window.location.hostname.endsWith('.quickshop.local') ||
+                           window.location.hostname === 'quickshop.local';
+      
+      const apiUrl = isDevelopment 
+        ? `/api/stores/${storeSlug}`
+        : `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeSlug}`;
+      
       console.log('📡 Fetching store data from:', apiUrl)
       const response = await fetch(apiUrl)
       

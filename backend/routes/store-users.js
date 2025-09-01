@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken, requireActiveSubscription } from '../middleware/auth.js';
+import { requireAuth, requireActiveSubscription } from '../middleware/unified-auth.js';
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -43,9 +43,9 @@ const checkStorePermission = async (userId, storeId, requiredRole = null) => {
 };
 
 // Get store team members
-router.get('/:storeId/team', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.get('/:storeId/team', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const storeId = parseInt(req.params.storeId);
     
     // Check if user has access to this store
@@ -129,9 +129,9 @@ router.get('/:storeId/team', authenticateToken, requireActiveSubscription, async
 });
 
 // Invite user to store
-router.post('/:storeId/invite', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.post('/:storeId/invite', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const storeId = parseInt(req.params.storeId);
     const { email, role = 'STAFF' } = req.body;
     
@@ -196,9 +196,9 @@ router.post('/:storeId/invite', authenticateToken, requireActiveSubscription, as
 });
 
 // Update user role
-router.patch('/:storeId/team/:teamUserId/role', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.patch('/:storeId/team/:teamUserId/role', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const storeId = parseInt(req.params.storeId);
     const teamUserId = parseInt(req.params.teamUserId);
     const { role } = req.body;
@@ -241,9 +241,9 @@ router.patch('/:storeId/team/:teamUserId/role', authenticateToken, requireActive
 });
 
 // Remove user from store
-router.delete('/:storeId/team/:teamUserId', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.delete('/:storeId/team/:teamUserId', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const storeId = parseInt(req.params.storeId);
     const teamUserId = parseInt(req.params.teamUserId);
     

@@ -1,6 +1,6 @@
 import express from 'express';
 import { Store } from '../models/Store.js';
-import { authenticateToken, requireActiveSubscription } from '../middleware/auth.js';
+import { requireDashboardAccess, requireAuth, requireActiveSubscription } from '../middleware/unified-auth.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -8,23 +8,52 @@ const prisma = new PrismaClient();
 const router = express.Router();
 
 // Get dashboard statistics
-router.get('/stats', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.get('/stats', requireDashboardAccess, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const store = req.currentStore;
     
-    // For new users, return empty stats
-    const stats = {
-      totalRevenue: 0,
-      totalOrders: 0,
-      totalProducts: 0,
-      totalCustomers: 0,
-      revenueGrowth: 0,
-      ordersGrowth: 0,
-      productsGrowth: 0,
-      customersGrowth: 0
+    // חישוב סטטיסטיקות לחנות הנוכחית
+    const stats = await Promise.all([
+      // סה"כ הכנסות מהזמנות שהושלמו
+      prisma.order.aggregate({
+        where: { 
+          storeId: store.id,
+          OR: [
+            { status: 'DELIVERED' },
+            { fulfillmentStatus: 'FULFILLED' }
+          ]
+        },
+        _sum: { totalAmount: true }
+      }),
+      // סה"כ הזמנות
+      prisma.order.count({
+        where: { storeId: store.id }
+      }),
+      // סה"כ מוצרים פעילים
+      prisma.product.count({
+        where: { 
+          storeId: store.id,
+          status: 'ACTIVE'
+        }
+      }),
+      // סה"כ לקוחות
+      prisma.customer.count({
+        where: { storeId: store.id }
+      })
+    ]);
+
+    const result = {
+      totalRevenue: stats[0]._sum.totalAmount || 0,
+      totalOrders: stats[1] || 0,
+      totalProducts: stats[2] || 0,
+      totalCustomers: stats[3] || 0,
+      revenueGrowth: 0, // TODO: חישוב גידול
+      ordersGrowth: 0,  // TODO: חישוב גידול
+      productsGrowth: 0, // TODO: חישוב גידול
+      customersGrowth: 0 // TODO: חישוב גידול
     };
     
-    res.json(stats);
+    res.json(result);
   } catch (error) {
     console.error('Dashboard stats error:', error);
     res.status(500).json({ 
@@ -35,9 +64,9 @@ router.get('/stats', authenticateToken, requireActiveSubscription, async (req, r
 });
 
 // Get recent orders
-router.get('/recent-orders', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.get('/recent-orders', requireDashboardAccess, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     
     // For new users, return empty orders
     const recentOrders = [];
@@ -53,9 +82,9 @@ router.get('/recent-orders', authenticateToken, requireActiveSubscription, async
 });
 
 // Get popular products
-router.get('/popular-products', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.get('/popular-products', requireDashboardAccess, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     
     // For new users, return empty products
     const popularProducts = [];
@@ -71,9 +100,9 @@ router.get('/popular-products', authenticateToken, requireActiveSubscription, as
 });
 
 // Get user stores
-router.get('/user-stores', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.get('/user-stores', requireDashboardAccess, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     
     // Find all stores the user owns or has access to
     const ownedStores = await prisma.store.findMany({
@@ -133,9 +162,9 @@ router.get('/user-stores', authenticateToken, requireActiveSubscription, async (
 });
 
 // Get specific store by ID
-router.get('/user-store/:storeId', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.get('/user-store/:storeId', requireDashboardAccess, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const { storeId } = req.params;
     
     // Check if user has access to this store (either as owner or team member)
@@ -208,9 +237,9 @@ router.get('/user-store/:storeId', authenticateToken, requireActiveSubscription,
 });
 
 // Get primary/default store (for backward compatibility)
-router.get('/user-store', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.get('/user-store', requireDashboardAccess, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     
     // Find the user's first active store
     const store = await prisma.store.findFirst({
@@ -250,33 +279,10 @@ router.get('/user-store', authenticateToken, requireActiveSubscription, async (r
 });
 
 // Get store setup progress
-router.get('/setup-progress/:storeId', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.get('/setup-progress/:storeId', requireDashboardAccess, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const storeId = parseInt(req.params.storeId);
-    
-    // Check if user has access to this store
-    const store = await prisma.store.findFirst({
-      where: {
-        id: storeId,
-        OR: [
-          { userId: userId },
-          {
-            storeUsers: {
-              some: {
-                userId: userId,
-                isActive: true,
-                acceptedAt: { not: null }
-              }
-            }
-          }
-        ]
-      }
-    });
-    
-    if (!store) {
-      return res.status(404).json({ error: 'Store not found or access denied' });
-    }
+    const store = req.currentStore;
+    const storeId = store.id;
     
     // Check various completion criteria
     const [

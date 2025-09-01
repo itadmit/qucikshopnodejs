@@ -1,6 +1,6 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
-import { authenticateToken, requireActiveSubscription } from '../middleware/auth.js';
+import { requireAuth, requireActiveSubscription } from '../middleware/unified-auth.js';
 
 const router = express.Router();
 
@@ -79,7 +79,7 @@ router.get('/:storeSlug/:pageType', async (req, res) => {
 /**
  * שמירת עמוד מותאם אישית
  */
-router.post('/:storeSlug/:pageType', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.post('/:storeSlug/:pageType', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { storeSlug, pageType } = req.params;
     const { structure, settings, isPublished = false } = req.body;
@@ -122,7 +122,7 @@ router.post('/:storeSlug/:pageType', authenticateToken, requireActiveSubscriptio
     const store = await prisma.store.findFirst({
       where: { 
         slug: storeSlug,
-        userId: req.user.id
+        userId: req.authenticatedUser.id
       }
     });
     
@@ -176,7 +176,7 @@ router.post('/:storeSlug/:pageType', authenticateToken, requireActiveSubscriptio
 /**
  * מחיקת עמוד מותאם אישית (חזרה לברירת מחדל)
  */
-router.delete('/:storeSlug/:pageType', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.delete('/:storeSlug/:pageType', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { storeSlug, pageType } = req.params;
     
@@ -186,7 +186,7 @@ router.delete('/:storeSlug/:pageType', authenticateToken, requireActiveSubscript
     const store = await prisma.store.findFirst({
       where: { 
         slug: storeSlug,
-        userId: req.user.id
+        userId: req.authenticatedUser.id
       }
     });
     
@@ -237,7 +237,7 @@ router.delete('/:storeSlug/:pageType', authenticateToken, requireActiveSubscript
 /**
  * קבלת רשימת כל העמודים המותאמים של חנות
  */
-router.get('/:storeSlug', authenticateToken, async (req, res) => {
+router.get('/:storeSlug', requireAuth, async (req, res) => {
   try {
     const { storeSlug } = req.params;
     
@@ -245,7 +245,7 @@ router.get('/:storeSlug', authenticateToken, async (req, res) => {
     const store = await prisma.store.findFirst({
       where: { 
         slug: storeSlug,
-        userId: req.user.id
+        userId: req.authenticatedUser.id
       }
     });
     
@@ -277,7 +277,7 @@ router.get('/:storeSlug', authenticateToken, async (req, res) => {
 /**
  * פרסום/ביטול פרסום עמוד מותאם
  */
-router.patch('/:storeSlug/:pageType/publish', authenticateToken, requireActiveSubscription, async (req, res) => {
+router.patch('/:storeSlug/:pageType/publish', requireAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { storeSlug, pageType } = req.params;
     const { isPublished } = req.body;
@@ -286,7 +286,7 @@ router.patch('/:storeSlug/:pageType/publish', authenticateToken, requireActiveSu
     const store = await prisma.store.findFirst({
       where: { 
         slug: storeSlug,
-        userId: req.user.id
+        userId: req.authenticatedUser.id
       }
     });
     

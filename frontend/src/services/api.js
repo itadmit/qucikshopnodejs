@@ -1,9 +1,7 @@
 // API Service for QuickShop Frontend
-// Detect development environment and use appropriate API URL
-const isDevelopment = window.location.port === '5173';
-const API_BASE_URL = isDevelopment 
-  ? 'http://3.64.187.151:3001/api'
-  : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+import { getApiUrl, API_CONFIG } from '../config/environment.js';
+
+const API_BASE_URL = getApiUrl();
 
 class ApiService {
   constructor() {

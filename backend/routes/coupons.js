@@ -1,6 +1,6 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/unified-auth.js';
 import discountService from '../services/discountService.js';
 
 const router = express.Router();
@@ -28,7 +28,7 @@ router.post('/calculate', async (req, res) => {
 });
 
 // Apply authentication middleware to all other routes
-router.use(authenticateToken);
+router.use(requireAuth);
 
 // GET /api/coupons - Get all coupons for a store
 router.get('/', async (req, res) => {

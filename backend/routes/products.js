@@ -1,15 +1,15 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/unified-auth.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Get all products for a store
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.query;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this store (either as owner or store user)
     const store = await prisma.store.findFirst({
@@ -89,11 +89,11 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get single product
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
   console.log('🔍 GET /products/:id route hit!', { id: req.params.id });
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     const product = await prisma.product.findFirst({
       where: {
@@ -167,9 +167,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create new product
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     
     // אימות שדות חובה
     if (!req.body.name || req.body.name.trim() === '') {
@@ -456,11 +456,11 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update product
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
   console.log('🚀 PUT /products/:id route hit!', { id: req.params.id });
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
     const updateData = req.body;
     
     console.log('📝 Update data received:', JSON.stringify(updateData, null, 2));
@@ -654,10 +654,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete product
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // First get the product
     const product = await prisma.product.findFirst({
@@ -745,10 +745,10 @@ async function calculateBundleAvailability(bundleId) {
 }
 
 // API endpoint to get bundle availability
-router.get('/:id/bundle-availability', authenticateToken, async (req, res) => {
+router.get('/:id/bundle-availability', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this product's store
     const product = await prisma.product.findFirst({
@@ -849,11 +849,11 @@ async function reduceBundleInventory(bundleId, quantity = 1) {
 }
 
 // API endpoint to reduce bundle inventory (for order processing)
-router.post('/:id/reduce-inventory', authenticateToken, async (req, res) => {
+router.post('/:id/reduce-inventory', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { quantity = 1 } = req.body;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this product's store
     const product = await prisma.product.findFirst({
@@ -916,10 +916,10 @@ router.post('/:id/reduce-inventory', authenticateToken, async (req, res) => {
 });
 
 // Get all categories for a store
-router.get('/categories', authenticateToken, async (req, res) => {
+router.get('/categories', requireAuth, async (req, res) => {
   try {
     const { storeId } = req.query;
-    const userId = req.user.id;
+    const userId = req.authenticatedUser.id;
 
     // Verify user has access to this store (either as owner or store user)
     const store = await prisma.store.findFirst({
