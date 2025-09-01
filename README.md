@@ -185,38 +185,39 @@ where: { storeId: 1 } // NEVER!
 
 ## 🚀 פריסה לפרודקשן
 
-### Frontend Build & Deploy
-```bash
-# בנייה לפרודקשן
-cd frontend
-npm run build
+### פקודה אחת לפריסה מלאה! 🎯
 
-# העלאה ל-S3
-aws s3 sync dist/ s3://quickshop-frontend-bucket --delete
+```bash
+# פריסה מלאה - Git + Frontend S3 + Backend EC2 + DB Migrations
+./deploy-all.sh "הודעת העדכון שלך"
+
+# או פריסה מלאה עם הודעה אוטומטית
+./deploy-all.sh
 ```
 
-### Backend Deploy to EC2
+**מה הסקריפט עושה:**
+1. ✅ **Git**: commit + push לרפוזיטורי
+2. ✅ **Frontend**: build + העלאה ל-S3 
+3. ✅ **Backend**: פריסה ל-EC2 עם גיבוי אוטומטי
+4. ✅ **Database**: הרצת migrations
+5. ✅ **Health Check**: בדיקת תקינות השירות
+
+### סקריפטים נוספים
 ```bash
-# העלאת קבצי Backend בלבד
-scp -r backend/ user@ec2:/var/www/quickshop/
+# פיתוח
+./start-dev.sh    # הפעלת backend + frontend
+./stop-dev.sh     # עצירת כל השרתים
 
-# הגדרת משתני סביבה בשרת
-export NODE_ENV=production
-export DATABASE_URL="postgresql://user:pass@localhost:5432/quickshop_prod"
-export JWT_SECRET="your-super-secure-production-secret"
-
-# התקנה והפעלה
-cd /var/www/quickshop/backend
-npm install --production
-npx prisma migrate deploy
-npx prisma generate
-pm2 start server.js --name quickshop-backend
+# מסד נתונים
+./db-commands.sh reset    # איפוס מסד נתונים
+./db-commands.sh studio   # פתיחת Prisma Studio
+./db-commands.sh backup   # גיבוי מקומי
 ```
 
-### Production Domains
+### Production URLs
 - **Main**: https://my-quickshop.com
-- **API**: https://api.my-quickshop.com (ללא /api prefix)
-- **Stores**: https://{store-slug}.my-quickshop.com
+- **API**: http://3.64.187.151:3001/api/health
+- **S3 Direct**: https://quickshop3.s3.eu-central-1.amazonaws.com/
 
 ---
 
@@ -305,126 +306,10 @@ npx prisma db push
 - פרודקשן: my-quickshop.com + api.my-quickshop.com
 - תמיכה בסאב-דומיינים: *.localhost:5173 / *.my-quickshop.com
 
-## 🚀 פריסה לפרודקשן
+## 📚 מדריכים נוספים
 
-QuickShop כולל מערכת פריסה אוטומטית מלאה לכל הסביבות:
-
-### 📦 סקריפטי פריסה זמינים:
-
-#### `deploy-full.sh` - פריסה מלאה 🎯
-```bash
-# פריסה מלאה אינטראקטיבית
-./deploy-full.sh
-
-# פריסה מלאה ישירה
-./deploy-full.sh full
-
-# פריסה חלקית
-./deploy-full.sh database   # רק מסד נתונים
-./deploy-full.sh backend    # רק בקאנד ל-EC2
-./deploy-full.sh frontend   # רק פרונטאנד ל-S3
-./deploy-full.sh status     # בדיקת סטטוס
-```
-
-#### `deploy-database.sh` - מסד נתונים PostgreSQL RDS 🗄️
-- יוצר גיבוי אוטומטי דרך שרת EC2
-- מריץ Prisma migrations בשרת
-- בודק תקינות מסד הנתונים
-- **הערה**: RDS נגיש רק מ-EC2 (נורמלי ובטוח)
-
-#### `deploy-backend.sh` - שרת EC2 ⚙️
-- יוצר ארכיון ומעלה לשרת
-- מתקין dependencies ומריץ migrations
-- מגדיר systemd service
-- מפעיל את השירות
-
-#### `deploy-frontend.sh` - S3 + CloudFront 🌐
-- בונה את הפרויקט (npm run build)
-- מעלה ל-S3 עם cache headers נכונים
-- תמיכה ב-CloudFront invalidation
-- יוצר גיבוי של הגרסה הקודמת
-
-#### `check-deployment-ready.sh` - בדיקת מוכנות 🔍
-בודק שכל הדרישות לפריסה מתקיימות
-
-### 🏗️ ארכיטקטורת פריסה:
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │    Backend      │    │   Database      │
-│   (S3 Bucket)   │    │   (EC2 Server)  │    │ (PostgreSQL RDS)│
-│                 │    │                 │    │                 │
-│ quickshop3      │◄──►│ 3.64.187.151    │◄──►│ RDS Instance    │
-│ eu-central-1    │    │ Ubuntu Server   │    │ eu-central-1    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-### 🔧 הגדרות פרודקשן:
-
-#### Backend (EC2):
-- **שרת**: 3.64.187.151
-- **משתמש**: ubuntu
-- **נתיב**: /var/www/quickshop
-- **שירות**: quickshop (systemd)
-- **פורט**: 3001
-
-#### Frontend (S3):
-- **Bucket**: quickshop3
-- **Region**: eu-central-1
-- **URL**: http://quickshop3.s3-website-eu-central-1.amazonaws.com
-- **Domain**: my-quickshop.com
-
-#### Database (RDS):
-- **Host**: database-1.cpqqoas4m9o6.eu-central-1.rds.amazonaws.com
-- **Database**: postgres
-- **Port**: 5432
-- **אבטחה**: נגיש רק מ-EC2 instances
-
-### 📋 דרישות לפריסה:
-
-```bash
-# כלים נדרשים
-node --version  # v18+
-aws --version   # v2.0+
-psql --version  # v12+
-
-# הגדרת AWS
-aws configure
-```
-
-### 🎯 פריסה מהירה:
-
-1. **בדיקת מוכנות**:
-   ```bash
-   ./check-deployment-ready.sh
-   ```
-
-2. **פריסה מלאה**:
-   ```bash
-   ./deploy-full.sh full
-   ```
-
-3. **בדיקת תוצאות**:
-   ```bash
-   ./deploy-full.sh status
-   ```
-
-### 📚 מדריכים מפורטים:
-- `DEPLOYMENT_README.md` - מדריך פריסה מלא
+- `DEPLOYMENT_README.md` - מדריך פריסה מפורט
 - `READY_TO_DEPLOY.md` - סטטוס מוכנות נוכחי
-
-### 🔍 מעקב ובקרה:
-
-```bash
-# לוגי פריסה
-ls -la deployment_*.log
-
-# סטטוס שירותים
-ssh -i ~/.ssh/quickshop3key.pem ubuntu@3.64.187.151 'sudo systemctl status quickshop'
-
-# לוגי אפליקציה
-ssh -i ~/.ssh/quickshop3key.pem ubuntu@3.64.187.151 'sudo journalctl -u quickshop -f'
-```
 
 ---
 
