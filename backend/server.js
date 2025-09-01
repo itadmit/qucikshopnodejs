@@ -143,9 +143,9 @@ app.get('/api/health', async (req, res) => {
     // מידע על המערכת
     const systemInfo = {
       status: 'OK',
-      message: 'QuickShop API is running',
+      message: 'QuickShop API is running - Deploy-All System Active! 🚀',
       timestamp: new Date().toISOString(),
-      version: '2.1.0',
+      version: '2.1.1',
       environment: process.env.NODE_ENV || 'development',
       uptime: process.uptime(),
       database: {
@@ -156,12 +156,14 @@ app.get('/api/health', async (req, res) => {
         multiTenant: true,
         storeBuilder: true,
         analytics: true,
-        deployment: 'production-ready'
+        deployment: 'production-ready',
+        oneCommandDeploy: true
       },
       deployment: {
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: '2025-09-01T13:00:00Z',
         server: 'EC2',
-        region: 'eu-central-1'
+        region: 'eu-central-1',
+        deploymentMethod: 'deploy-all.sh'
       }
     };
     

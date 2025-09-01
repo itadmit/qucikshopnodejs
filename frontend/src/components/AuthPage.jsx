@@ -252,7 +252,7 @@ const AuthPage = ({ onClose, onSuccess, mode: initialMode = 'login' }) => {
               <img src={logo} alt="QuickShop Logo" className="w-44 h-auto object-contain mx-auto" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {mode === 'login' ? 'ברוכים השבים' : 'הצטרפו אלינו'}
+              {mode === 'login' ? 'ברוכים השבים 🚀' : 'הצטרפו אלינו 🎯'}
             </h2>
             <p className="text-gray-600">
               {mode === 'login' 
