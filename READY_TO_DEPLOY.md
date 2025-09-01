@@ -18,26 +18,32 @@
 
 ## 🚀 איך לפרוס עכשיו:
 
-### 1. פריסה מלאה (מומלץ):
+### פקודה אחת לפריסה מלאה! 🎯
 ```bash
-./deploy-full.sh full
+# פריסה מלאה עם הודעת commit מותאמת
+./deploy-all.sh "הודעת העדכון שלך"
+
+# או פריסה מלאה עם הודעה אוטומטית
+./deploy-all.sh
 ```
 
-### 2. פריסה שלב אחר שלב:
+**מה הסקריפט עושה אוטומטית:**
+1. ✅ **Git**: commit + push לרפוזיטורי
+2. ✅ **Frontend**: build + העלאה ל-S3 
+3. ✅ **Backend**: פריסה ל-EC2 עם גיבוי אוטומטי
+4. ✅ **Database**: הרצת migrations דרך EC2
+5. ✅ **Health Check**: בדיקת תקינות השירות
+
+### סקריפטים נוספים:
 ```bash
-# שלב 1: מסד נתונים (יעבוד מהשרת)
-./deploy-full.sh database
+# פיתוח
+./start-dev.sh    # הפעלת backend + frontend
+./stop-dev.sh     # עצירת כל השרתים
 
-# שלב 2: בקאנד לשרת EC2
-./deploy-full.sh backend
-
-# שלב 3: פרונטאנד ל-S3
-./deploy-full.sh frontend
-```
-
-### 3. בדיקת סטטוס:
-```bash
-./deploy-full.sh status
+# מסד נתונים
+./db-commands.sh reset    # איפוס מסד נתונים
+./db-commands.sh studio   # פתיחת Prisma Studio
+./db-commands.sh backup   # גיבוי מקומי
 ```
 
 ## 🔧 פרטי הפריסה:
@@ -115,9 +121,9 @@ ssh -i /Users/tadmitinteractive/Downloads/quickshop3key.pem ubuntu@3.64.187.151 
 ## 🚨 במקרה של בעיות:
 
 ### אם הפריסה נכשלת:
-1. בדוק את הלוגים: `deployment_YYYYMMDD_HHMMSS.log`
-2. הרץ: `./deploy-full.sh status`
-3. בדוק חיבור לשרת: `ssh -i /Users/tadmitinteractive/Downloads/quickshop3key.pem ubuntu@3.64.187.151`
+1. בדוק את הלוגים בטרמינל (הסקריפט מציג הכל)
+2. בדוק חיבור לשרת: `ssh -i /Users/tadmitinteractive/Downloads/quickshop3key.pem ubuntu@3.64.187.151`
+3. בדוק סטטוס השירות: `sudo systemctl status quickshop`
 
 ### שחזור מגיבוי:
 ```bash
@@ -135,7 +141,7 @@ aws s3 sync s3://quickshop3-backup-YYYYMMDD_HHMMSS/ s3://quickshop3/
 הכל מוגדר ומוכן. פשוט הרץ:
 
 ```bash
-./deploy-full.sh full
+./deploy-all.sh "עדכון חדש"
 ```
 
 והמערכת תטפל בכל השאר! 🚀
