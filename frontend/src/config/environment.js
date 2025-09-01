@@ -31,7 +31,7 @@ export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_URL || (
     isDevelopment() 
       ? `http://${DOMAIN_CONFIG.DEV_API}/api`  // Development - with /api prefix
-      : `https://${DOMAIN_CONFIG.PROD_API}/api`    // Production - with /api prefix (Nginx will handle routing)
+      : `https://${DOMAIN_CONFIG.PROD_API}`    // Production - NO /api prefix (api.my-quickshop.com handles routing)
   ),
   
   TIMEOUT: 30000, // 30 שניות
