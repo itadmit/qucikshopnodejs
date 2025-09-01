@@ -145,6 +145,10 @@ cd ..
 echo -e "${YELLOW}⬆️ מעלה ארכיון לשרת...${NC}"
 scp -i "$EC2_KEY_PATH" -o StrictHostKeyChecking=no "$ARCHIVE_NAME" "$EC2_USER@$EC2_HOST:/tmp/"
 
+# העלאת קובץ deploy.env לשרת
+echo -e "${YELLOW}📄 מעלה קובץ סביבה לשרת...${NC}"
+scp -i "$EC2_KEY_PATH" -o StrictHostKeyChecking=no "deploy.env" "$EC2_USER@$EC2_HOST:/tmp/deploy.env"
+
 # פריסה בשרת
 echo -e "${YELLOW}🚀 מפריס בשרת...${NC}"
 ssh -i "$EC2_KEY_PATH" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "
@@ -169,9 +173,13 @@ ssh -i "$EC2_KEY_PATH" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "
     # התקנת dependencies
     npm ci --only=production
     
-    # העתקת קובץ .env
-    if [ -f '/home/ubuntu/.env' ]; then
-        cp '/home/ubuntu/.env' '$REMOTE_PATH/.env'
+    # יצירת קובץ .env מ-deploy.env
+    if [ -f '/tmp/deploy.env' ]; then
+        cp '/tmp/deploy.env' '$REMOTE_PATH/.env'
+        echo '.env file created from deploy.env'
+    else
+        echo 'Error: deploy.env not found in /tmp/'
+        exit 1
     fi
     
     # הגדרת הרשאות
