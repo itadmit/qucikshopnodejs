@@ -102,9 +102,11 @@ app.use(cors({
     /^http:\/\/.*\.localhost:5173$/,
     /^http:\/\/.*\.localhost:5174$/,
     /^http:\/\/.*\.localhost:5175$/,
-    // S3 static website hosting (if used)
-    'http://quickshop-frontend-bucket.s3-website-us-east-1.amazonaws.com',
-    'https://quickshop-frontend-bucket.s3-website-us-east-1.amazonaws.com'
+    // S3 static website hosting
+    'https://quickshop3.s3.eu-central-1.amazonaws.com',
+    'http://quickshop3.s3.eu-central-1.amazonaws.com',
+    'https://quickshop3.s3-website-eu-central-1.amazonaws.com',
+    'http://quickshop3.s3-website-eu-central-1.amazonaws.com'
   ],
   credentials: true
 }));
