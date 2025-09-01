@@ -105,8 +105,8 @@ const OverviewPage = ({ stats, recentOrders, popularProducts, userStore }) => {
               <span className="text-blue-600 text-sm font-medium">🚀</span>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-blue-900">גרסה חדשה 2.1.0</h3>
-              <p className="text-xs text-blue-700">מערכת פריסה אוטומטית, בדיקות בריאות משופרות ועוד!</p>
+              <h3 className="text-sm font-medium text-blue-900">גרסה חדשה 2.1.1</h3>
+              <p className="text-xs text-blue-700">תיקון בעיות CORS, פריסה משופרת לפרודקשן ועוד!</p>
             </div>
           </div>
           <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">

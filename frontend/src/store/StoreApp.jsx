@@ -107,7 +107,7 @@ const StoreApp = ({ storeSlug }) => {
       setError(null)
       
       // Fetch store data from API
-      const isDevelopment = window.location.hostname === 'localhost' || 
+      const isDevelopment = false || 
                            window.location.hostname === '127.0.0.1' || 
                            window.location.hostname.endsWith('.quickshop.local') ||
                            window.location.hostname === 'quickshop.local';

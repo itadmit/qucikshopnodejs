@@ -116,10 +116,7 @@ const MediaModal = ({ isOpen, onClose, onSelect, storeId, allowMultiple = false,
         });
       }, 200);
 
-      const isDevelopment = window.location.port === '5173';
-      const baseUrl = isDevelopment 
-        ? 'http://3.64.187.151:3001/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = 'https://api.my-quickshop.com/api';
       
       const response = await fetch(`${baseUrl}/media/upload-multiple`, {
         method: 'POST',
@@ -189,10 +186,7 @@ const MediaModal = ({ isOpen, onClose, onSelect, storeId, allowMultiple = false,
     setFixingFilenames(true);
     try {
       const token = localStorage.getItem('authToken');
-      const isDevelopment = window.location.port === '5173';
-      const baseUrl = isDevelopment 
-        ? 'http://3.64.187.151:3001/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = 'https://api.my-quickshop.com/api';
       
       const response = await fetch(`${baseUrl}/media/fix-hebrew-filenames`, {
         method: 'POST',
@@ -227,10 +221,7 @@ const MediaModal = ({ isOpen, onClose, onSelect, storeId, allowMultiple = false,
 
     try {
       const token = localStorage.getItem('authToken');
-      const isDevelopment = window.location.port === '5173';
-      const baseUrl = isDevelopment 
-        ? 'http://3.64.187.151:3001/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = 'https://api.my-quickshop.com/api';
       
       const response = await fetch(`${baseUrl}/media/${mediaItem.id}`, {
         method: 'DELETE',

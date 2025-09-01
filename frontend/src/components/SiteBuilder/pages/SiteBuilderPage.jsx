@@ -137,9 +137,9 @@ const SiteBuilderPage = ({ user, onBack }) => {
 
     try {
       const token = localStorage.getItem('authToken');
-      const isDevelopment = window.location.port === '5173';
+      const isDevelopment = false;
       const baseUrl = isDevelopment 
-        ? 'http://3.64.187.151:3001/api'
+        ? 'https://api.my-quickshop.com/api'
         : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
       
       // First, get the page data to know its slug
@@ -200,9 +200,9 @@ const SiteBuilderPage = ({ user, onBack }) => {
       
       if (!storeId) return;
       
-      const isDevelopment = window.location.port === '5173';
+      const isDevelopment = false;
       const baseUrl = isDevelopment 
-        ? 'http://3.64.187.151:3001/api'
+        ? 'https://api.my-quickshop.com/api'
         : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
       
       const response = await fetch(`${baseUrl}/pages/store/${storeId}`, {

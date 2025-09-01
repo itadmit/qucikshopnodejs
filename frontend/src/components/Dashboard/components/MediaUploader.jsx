@@ -177,10 +177,7 @@ const MediaUploader = ({ onUpload, onDelete, media = [], maxFiles = 10, storeId,
       }
       
       // Use direct fetch for better control over the upload
-      const isDevelopment = window.location.port === '5173';
-      const baseUrl = isDevelopment 
-        ? 'http://3.64.187.151:3001/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = 'https://api.my-quickshop.com/api';
       
       const response = await fetch(`${baseUrl}/media/upload-multiple`, {
         method: 'POST',
@@ -249,9 +246,9 @@ const MediaUploader = ({ onUpload, onDelete, media = [], maxFiles = 10, storeId,
         }
         
         // Use direct fetch for better control
-        const isDevelopment = window.location.port === '5173';
+        const isDevelopment = false;
         const baseUrl = isDevelopment 
-          ? 'http://3.64.187.151:3001/api'
+          ? 'https://api.my-quickshop.com/api'
           : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
         
         const response = await fetch(`${baseUrl}/media/delete/${encodeURIComponent(mediaItem.key)}`, {

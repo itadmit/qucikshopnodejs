@@ -100,8 +100,7 @@ npm run build
 check_success "Frontend Build"
 
 echo -e "${YELLOW}⬆️ מעלה ל-S3...${NC}"
-aws s3 sync dist/ s3://quickshop3/ --delete --cache-control "public, max-age=31536000" --exclude "*.html" --exclude "*.json"
-aws s3 sync dist/ s3://quickshop3/ --delete --cache-control "public, max-age=0, must-revalidate" --include "*.html" --include "*.json"
+aws s3 sync dist/ s3://quickshop3/ --delete
 check_success "S3 Upload"
 
 # אם יש CloudFront - נקה cache
@@ -170,6 +169,11 @@ ssh -i "$EC2_KEY_PATH" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "
     # התקנת dependencies
     npm ci --only=production
     
+    # העתקת קובץ .env
+    if [ -f '/home/ubuntu/.env' ]; then
+        cp '/home/ubuntu/.env' '$REMOTE_PATH/.env'
+    fi
+    
     # הגדרת הרשאות
     sudo chown -R \$USER:\$USER '$REMOTE_PATH'
 "
@@ -197,7 +201,7 @@ ssh -i "$EC2_KEY_PATH" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "
 # בדיקת בריאות
 echo -e "${YELLOW}🏥 בודק בריאות השירות...${NC}"
 sleep 10
-if ssh -i "$EC2_KEY_PATH" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "curl -f http://localhost:3001/health 2>/dev/null" > /dev/null; then
+if ssh -i "$EC2_KEY_PATH" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "curl -f http://localhost:3001/api/health 2>/dev/null" > /dev/null; then
     echo -e "${GREEN}✅ השירות פועל בהצלחה!${NC}"
 else
     echo -e "${YELLOW}⚠️ השירות אולי עדיין מתחיל...${NC}"
@@ -219,6 +223,6 @@ echo ""
 echo -e "${BLUE}🌐 כתובות חשובות:${NC}"
 echo -e "${YELLOW}• אתר ראשי:${NC} https://my-quickshop.com"
 echo -e "${YELLOW}• S3 ישיר:${NC} http://quickshop3.s3-website-eu-central-1.amazonaws.com"
-echo -e "${YELLOW}• API:${NC} http://$EC2_HOST:3001"
+echo -e "${YELLOW}• API:${NC} https://api.my-quickshop.com"
 echo ""
 echo -e "${PURPLE}🚀 הפרויקט שלך עודכן ופועל!${NC}"

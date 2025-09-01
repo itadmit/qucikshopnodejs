@@ -316,9 +316,9 @@ const GeneralSettings = ({ userStore }) => {
     try {
       const token = localStorage.getItem('authToken');
       // Use local development server if running on port 5173 (Vite dev server)
-      const isDevelopment = window.location.port === '5173';
+      const isDevelopment = false;
       const baseUrl = isDevelopment 
-        ? 'http://3.64.187.151:3001/api'
+        ? 'https://api.my-quickshop.com/api'
         : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
       
 

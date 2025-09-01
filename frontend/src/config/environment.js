@@ -3,13 +3,17 @@
 
 // בדיקת סביבת פיתוח
 const isDevelopment = () => {
+  // בזמן build, אין window object, אז נסתמך על environment variables
+  if (typeof window === 'undefined') {
+    return import.meta.env.DEV || import.meta.env.MODE === 'development';
+  }
+  
   return (
     import.meta.env.DEV ||
     import.meta.env.MODE === 'development' ||
     window.location.hostname === 'localhost' || 
     window.location.hostname === '127.0.0.1' ||
-    window.location.hostname.endsWith('.localhost') ||
-    window.location.port === '5173'
+    window.location.hostname.endsWith('.localhost')
   );
 };
 
@@ -17,7 +21,7 @@ const isDevelopment = () => {
 export const DOMAIN_CONFIG = {
   // Development domains
   DEV_MAIN: 'localhost:5173',
-  DEV_API: '127.0.0.1:3001',
+  DEV_API: 'api.my-quickshop.com',
   DEV_STORE_PATTERN: '*.localhost:5173',
 
   // Production domains
@@ -28,11 +32,8 @@ export const DOMAIN_CONFIG = {
 
 // הגדרות API
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || (
-    isDevelopment() 
-      ? `http://${DOMAIN_CONFIG.DEV_API}/api`  // Development - with /api prefix
-      : `https://${DOMAIN_CONFIG.PROD_API}`    // Production - NO /api prefix (api.my-quickshop.com handles routing)
-  ),
+  BASE_URL: import.meta.env.VITE_API_URL || 
+    `https://${DOMAIN_CONFIG.PROD_API}/api`,  // Always use production API
   
   TIMEOUT: 30000, // 30 שניות
 };

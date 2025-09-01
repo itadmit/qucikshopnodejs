@@ -19,17 +19,9 @@ export const isLocalDevelopment = () => {
 
 // הגדרות API לפיתוח לוקאלי
 export const getApiConfig = () => {
-  if (isLocalDevelopment()) {
-    return {
-      baseUrl: 'http://localhost:3001/api',
-      timeout: 10000,
-      retries: 3
-    };
-  }
-  
-  // הגדרות פרודקשן
+  // תמיד השתמש בפרודקשן API
   return {
-    baseUrl: import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api',
+    baseUrl: 'https://api.my-quickshop.com/api',
     timeout: 15000,
     retries: 2
   };

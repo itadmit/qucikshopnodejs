@@ -1,5 +1,8 @@
 # QuickShop SaaS - E-Commerce Platform
 
+## גרסה חדשה 2.1.1 🚀
+תיקון בעיות CORS, פריסה משופרת לפרודקשן ועוד!
+
 ## 📋 סקירה כללית
 
 QuickShop הוא פלטפורמת SaaS לבניית חנויות אונליין עם תמיכה מלאה ב-multi-tenant architecture.
