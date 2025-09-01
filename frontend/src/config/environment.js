@@ -22,7 +22,7 @@ export const DOMAIN_CONFIG = {
 
   // Production domains
   PROD_MAIN: 'my-quickshop.com',
-  PROD_API: '3.64.187.151:3001',
+  PROD_API: 'api.my-quickshop.com',
   PROD_STORE_PATTERN: '*.my-quickshop.com',
 };
 
@@ -31,7 +31,7 @@ export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_URL || (
     isDevelopment() 
       ? `http://${DOMAIN_CONFIG.DEV_API}/api`  // Development - direct to api.localhost:3001
-      : `http://${DOMAIN_CONFIG.PROD_API}/api`    // Production - direct to EC2 server with /api prefix
+      : `https://${DOMAIN_CONFIG.PROD_API}`    // Production - direct to api.my-quickshop.com (no /api prefix)
   ),
   
   TIMEOUT: 30000, // 30 שניות
