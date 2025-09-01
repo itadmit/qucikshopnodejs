@@ -30,8 +30,8 @@ export const DOMAIN_CONFIG = {
 export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_URL || (
     isDevelopment() 
-      ? `http://${DOMAIN_CONFIG.DEV_API}/api`  // Development - direct to api.localhost:3001
-      : `https://${DOMAIN_CONFIG.PROD_API}`    // Production - direct to api.my-quickshop.com (no /api prefix)
+      ? `http://${DOMAIN_CONFIG.DEV_API}/api`  // Development - with /api prefix
+      : `https://${DOMAIN_CONFIG.PROD_API}/api`    // Production - with /api prefix (Nginx will handle routing)
   ),
   
   TIMEOUT: 30000, // 30 שניות
@@ -48,13 +48,8 @@ export const APP_CONFIG = {
 export const getApiUrl = (endpoint = '') => {
   const baseUrl = API_CONFIG.BASE_URL;
   
-  if (isDevelopment()) {
-    // Development: http://api.localhost:3001/api + endpoint
-    return `${baseUrl}${endpoint}`;
-  } else {
-    // Production: https://api.my-quickshop.com + endpoint (no /api prefix)
-    return `${baseUrl}${endpoint}`;
-  }
+  // Both development and production use the same pattern now
+  return `${baseUrl}${endpoint}`;
 };
 
 // בדיקה אם זה חנות (סאב-דומיין)
