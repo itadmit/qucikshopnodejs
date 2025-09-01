@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import { getApiUrl } from '../../config/environment.js';
 import {
   LayoutDashboard,
   Store,
@@ -25,13 +26,13 @@ import api from '../../services/api';
 import logo from '../../assets/logo.png';
 
 // Import pages
-import PartnerOverview from './pages/PartnerOverview';
-import PartnerStores from './pages/PartnerStores';
-import PartnerCommissions from './pages/PartnerCommissions';
-import PayoutRequests from './pages/PayoutRequests';
-import PartnerAnalytics from './pages/PartnerAnalytics';
-import PartnerSettings from './pages/PartnerSettings';
-import PartnerResources from './pages/PartnerResources';
+import PartnerOverview from './pages/PartnerOverview.jsx';
+import PartnerStores from './pages/PartnerStores.jsx';
+import PartnerCommissions from './pages/PartnerCommissions.jsx';
+import PayoutRequests from './pages/PayoutRequests.jsx';
+import PartnerAnalytics from './pages/PartnerAnalytics.jsx';
+import PartnerSettings from './pages/PartnerSettings.jsx';
+import PartnerResources from './pages/PartnerResources.jsx';
 
 const PartnersDashboard = () => {
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ const PartnersDashboard = () => {
   const fetchPartnerData = async () => {
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/me`, {
+      const response = await fetch(getApiUrl('/partners/me'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

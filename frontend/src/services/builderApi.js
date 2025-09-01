@@ -3,7 +3,9 @@
  * שירותי API לבילדר האתרים עם חיבור לבקאנד
  */
 
-const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+import { getApiUrl } from '../config/environment.js';
+
+const baseUrl = getApiUrl();
 
 // Helper function for API calls
 const apiCall = async (endpoint, options = {}) => {

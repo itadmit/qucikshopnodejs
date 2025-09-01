@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Layout, 
+import { getApiUrl } from '../../../config/environment.js';
+import { Layout,
   Type, 
   Image as ImageIcon, 
   Star, 
@@ -53,7 +53,11 @@ const SectionRenderer = ({
       console.log('🔄 Setting isLoadingMenus to true');
       setIsLoadingMenus(true);
       const storeSlug = localStorage.getItem('currentStoreSlug') || 'yogevstore';
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       
       // Load menus that are referenced in settings
       const menuPromises = [];

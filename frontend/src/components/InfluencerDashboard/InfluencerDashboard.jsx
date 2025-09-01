@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../../config/environment.js';
 import { 
   LogOut, 
   TrendingUp, 
@@ -43,7 +44,7 @@ const InfluencerDashboard = () => {
       const token = localStorage.getItem('influencerToken');
       
       // Load stats
-      const statsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencer-dashboard/stats`, {
+      const statsResponse = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/influencer-dashboard/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -55,7 +56,7 @@ const InfluencerDashboard = () => {
       }
       
       // Load coupons
-      const couponsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencer-dashboard/coupons`, {
+      const couponsResponse = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/influencer-dashboard/coupons`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -67,7 +68,7 @@ const InfluencerDashboard = () => {
       }
       
       // Load recent orders
-      const ordersResponse = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencer-dashboard/recent-orders`, {
+      const ordersResponse = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/influencer-dashboard/recent-orders`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

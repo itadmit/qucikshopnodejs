@@ -8,7 +8,7 @@ async function createYogevShirt() {
   try {
     // Get the store
     const store = await prisma.store.findFirst({
-      where: { slug: 'yogevstore' }
+      where: { slug: 'my-store' }
     });
 
     if (!store) {
@@ -36,81 +36,13 @@ async function createYogevShirt() {
       });
     }
 
-    // Create or get size option
-    let sizeOption = await prisma.productOption.findFirst({
-      where: {
-        storeId: store.id,
-        name: 'Size'
-      }
-    });
-
-    if (!sizeOption) {
-      sizeOption = await prisma.productOption.create({
-        data: {
-          storeId: store.id,
-          name: 'Size',
-          type: 'TEXT',
-          displayType: 'DROPDOWN'
-        }
-      });
-
-      // Create size values
-      const sizes = ['S', 'M', 'L'];
-      for (let i = 0; i < sizes.length; i++) {
-        await prisma.productOptionValue.create({
-          data: {
-            optionId: sizeOption.id,
-            value: sizes[i],
-            sortOrder: i
-          }
-        });
-      }
-    }
-
-    // Create or get color option
-    let colorOption = await prisma.productOption.findFirst({
-      where: {
-        storeId: store.id,
-        name: 'Color'
-      }
-    });
-
-    if (!colorOption) {
-      colorOption = await prisma.productOption.create({
-        data: {
-          storeId: store.id,
-          name: 'Color',
-          type: 'COLOR',
-          displayType: 'SWATCH'
-        }
-      });
-
-      // Create color values
-      const colors = [
-        { value: 'לבן', colorCode: '#FFFFFF' },
-        { value: 'שחור', colorCode: '#000000' },
-        { value: 'אדום', colorCode: '#FF0000' }
-      ];
-      
-      for (let i = 0; i < colors.length; i++) {
-        await prisma.productOptionValue.create({
-          data: {
-            optionId: colorOption.id,
-            value: colors[i].value,
-            colorCode: colors[i].colorCode,
-            sortOrder: i
-          }
-        });
-      }
-    }
-
-    // Create the product
+    // Create the product first
     const product = await prisma.product.create({
       data: {
         storeId: store.id,
         categoryId: category.id,
         name: 'חולצת יוגב',
-        slug: 'yogev-shirt',
+        slug: 'חולצת-יוגב',
         description: 'חולצה איכותית ונוחה לכל יום. עשויה מכותנה 100% ברמת איכות גבוהה.',
         shortDescription: 'חולצה איכותית מכותנה 100%',
         sku: 'YOGEV-SHIRT',
@@ -136,16 +68,63 @@ async function createYogevShirt() {
 
     console.log('✅ Created product:', product.name);
 
-    // Get option values for variants
-    const sizeValues = await prisma.productOptionValue.findMany({
-      where: { optionId: sizeOption.id },
-      orderBy: { sortOrder: 'asc' }
+    // Create size option for this product
+    const sizeOption = await prisma.productOption.create({
+      data: {
+        productId: product.id,
+        name: 'מידה',
+        type: 'TEXT',
+        displayType: 'DROPDOWN',
+        position: 1
+      }
     });
 
-    const colorValues = await prisma.productOptionValue.findMany({
-      where: { optionId: colorOption.id },
-      orderBy: { sortOrder: 'asc' }
+    // Create size values
+    const sizes = ['S', 'M', 'L'];
+    const sizeValues = [];
+    for (let i = 0; i < sizes.length; i++) {
+      const sizeValue = await prisma.productOptionValue.create({
+        data: {
+          optionId: sizeOption.id,
+          value: sizes[i],
+          sortOrder: i
+        }
+      });
+      sizeValues.push(sizeValue);
+    }
+
+    // Create color option for this product
+    const colorOption = await prisma.productOption.create({
+      data: {
+        productId: product.id,
+        name: 'צבע',
+        type: 'COLOR',
+        displayType: 'SWATCH',
+        position: 2
+      }
     });
+
+    // Create color values
+    const colors = [
+      { value: 'לבן', colorCode: '#FFFFFF' },
+      { value: 'שחור', colorCode: '#000000' },
+      { value: 'אדום', colorCode: '#FF0000' }
+    ];
+    
+    const colorValues = [];
+    for (let i = 0; i < colors.length; i++) {
+      const colorValue = await prisma.productOptionValue.create({
+        data: {
+          optionId: colorOption.id,
+          value: colors[i].value,
+          colorCode: colors[i].colorCode,
+          sortOrder: i
+        }
+      });
+      colorValues.push(colorValue);
+    }
+
+
 
     // Create all possible variants (3 sizes × 3 colors = 9 variants)
     let variantCount = 0;

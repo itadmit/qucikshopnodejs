@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Upload, Image as ImageIcon, Video, FileText, Search, Grid, List, Trash2, Eye, Download, Check } from 'lucide-react';
 import apiService from '../../../services/api.js';
+import { getApiUrl } from '../../../config/environment.js';
 
 const MediaModal = ({ isOpen, onClose, onSelect, storeId, allowMultiple = false, selectedMedia = [] }) => {
   const [media, setMedia] = useState([]);
@@ -116,7 +117,7 @@ const MediaModal = ({ isOpen, onClose, onSelect, storeId, allowMultiple = false,
         });
       }, 200);
 
-      const baseUrl = 'https://api.my-quickshop.com/api';
+      const baseUrl = getApiUrl('');
       
       const response = await fetch(`${baseUrl}/media/upload-multiple`, {
         method: 'POST',

@@ -1,13 +1,13 @@
 // Jupiter Template Export
-import JupiterHomePage from './pages/JupiterHomePage';
-import JupiterCategoryPage from './pages/JupiterCategoryPage';
-import JupiterProductPage from './pages/JupiterProductPage';
-import JupiterCollectionsPage from './pages/JupiterCollectionsPage';
-import JupiterProductsPage from './pages/JupiterProductsPage';
-import JupiterHeader from './components/JupiterHeader';
-import JupiterFooter from './components/JupiterFooter';
-import JupiterCategoryCard from './components/JupiterCategoryCard';
-import JupiterProductCard from './components/JupiterProductCard';
+import JupiterHomePage from './pages/JupiterHomePage.jsx';
+import JupiterCategoryPage from './pages/JupiterCategoryPage.jsx';
+import JupiterProductPage from './pages/JupiterProductPage.jsx';
+import JupiterCollectionsPage from './pages/JupiterCollectionsPage.jsx';
+import JupiterProductsPage from './pages/JupiterProductsPage.jsx';
+import JupiterHeader from './components/JupiterHeader.jsx';
+import JupiterFooter from './components/JupiterFooter.jsx';
+import JupiterCategoryCard from './components/JupiterCategoryCard.jsx';
+import JupiterProductCard from './components/JupiterProductCard.jsx';
 
 // Import styles
 import './styles/jupiter.css';

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import {
+import { getApiUrl } from '../../../config/environment.js';
+import { 
   X,
   Send,
   User,
@@ -35,7 +36,7 @@ const TransferStore = ({ store, onClose, onSuccess }) => {
 
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/stores/${store.id}/transfer`, {
+      const response = await fetch(getApiUrl(`/partners/stores/${store.id}/transfer`), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

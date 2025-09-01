@@ -275,14 +275,19 @@ router.post('/', requireAuth, async (req, res) => {
       }
     }
 
-    // Generate slug from name
-    let slug = name.toLowerCase()
-      .replace(/[^a-z0-9\u0590-\u05FF\s-]/g, '') // Include Hebrew characters
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim('-');
+    // Use provided slug or generate from name
+    let slug = req.body.slug;
     
-    // If slug is empty or invalid, use product ID
+    // If no slug provided, generate from name
+    if (!slug) {
+      slug = name.toLowerCase()
+        .replace(/[^a-z0-9\u0590-\u05FF\s-]/g, '') // Include Hebrew characters
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim('-');
+    }
+    
+    // If slug is still empty or invalid, use product ID
     if (!slug || slug.length < 2) {
       slug = `product-${Date.now()}`;
     }
@@ -321,11 +326,11 @@ router.post('/', requireAuth, async (req, res) => {
         for (const option of productOptions) {
           const createdOption = await tx.productOption.create({
             data: {
-              storeId: parseInt(storeId),
+              productId: product.id,
               name: option.name,
               type: option.type,
               displayType: option.displayType,
-              sortOrder: option.sortOrder || 0
+              position: option.sortOrder || 0
             }
           });
 
@@ -409,13 +414,21 @@ router.post('/', requireAuth, async (req, res) => {
           // Create variant option values
           if (variant.optionValues && Array.isArray(variant.optionValues)) {
             for (const optionValue of variant.optionValues) {
-              await tx.productVariantOptionValue.create({
-                data: {
-                  variantId: createdVariant.id,
-                  optionValueId: optionValue.valueId,
-                  value: optionValue.value
-                }
+              // Find the option ID for this option value
+              const dbOptionValue = await tx.productOptionValue.findUnique({
+                where: { id: optionValue.valueId }
               });
+              
+              if (dbOptionValue) {
+                await tx.productVariantOptionValue.create({
+                  data: {
+                    variantId: createdVariant.id,
+                    optionId: dbOptionValue.optionId,
+                    optionValueId: optionValue.valueId,
+                    value: optionValue.value
+                  }
+                });
+              }
             }
           }
         }
@@ -529,9 +542,13 @@ router.put('/:id', requireAuth, async (req, res) => {
 
     console.log('✅ Access granted - proceeding with update');
 
-    // Generate new slug if name is being updated
+    // Handle slug update
     let newSlug = undefined;
-    if (updateData.name) {
+    if (updateData.slug !== undefined) {
+      // Use provided slug
+      newSlug = updateData.slug;
+    } else if (updateData.name) {
+      // Generate new slug from name if no slug provided
       newSlug = updateData.name.toLowerCase()
         .replace(/[^a-z0-9\u0590-\u05FF\s-]/g, '') // Include Hebrew characters
         .replace(/\s+/g, '-')
@@ -544,7 +561,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       }
     }
 
-    // Update product using transaction to handle media
+    // Update product using transaction to handle media, options, and variants
     const updatedProduct = await prisma.$transaction(async (tx) => {
       // Update basic product data
       const product = await tx.product.update({
@@ -557,6 +574,7 @@ router.put('/:id', requireAuth, async (req, res) => {
           description: updateData.description,
           shortDescription: updateData.shortDescription,
           sku: updateData.sku,
+          type: updateData.type || 'SIMPLE', // עדכון סוג המוצר
           price: updateData.price ? parseFloat(updateData.price) : null,
           comparePrice: updateData.comparePrice ? parseFloat(updateData.comparePrice) : null,
           costPrice: updateData.costPrice ? parseFloat(updateData.costPrice) : null,
@@ -574,6 +592,154 @@ router.put('/:id', requireAuth, async (req, res) => {
           customFields: updateData.customFields ? JSON.stringify(updateData.customFields) : null
         }
       });
+
+      // Handle options and variants updates for VARIABLE products
+      if (updateData.type === 'VARIABLE') {
+        console.log('🔧 Updating options and variants for VARIABLE product');
+        
+        // Delete existing variants first (we'll recreate them)
+        await tx.productVariant.deleteMany({
+          where: { productId: parseInt(id) }
+        });
+        
+        console.log('🗑️ Deleted existing variants');
+
+        // Handle options - update existing or create new ones
+        const optionValueMapping = new Map(); // Map frontend IDs to database IDs
+        
+        if (updateData.options && Array.isArray(updateData.options)) {
+          console.log('📝 Processing options:', updateData.options.length);
+          console.log('📋 Options data:', JSON.stringify(updateData.options, null, 2));
+          
+          for (const option of updateData.options) {
+            let targetOption;
+            
+            console.log('🔍 Processing option:', JSON.stringify(option, null, 2));
+            console.log('🔍 Checking condition: productId =', option.productId, 'target id =', parseInt(id));
+            
+            // Check if this is an existing option (has productId field from DB)
+            if (option.productId && option.productId === parseInt(id)) {
+              console.log('🔄 Updating existing option:', option.id, option.name);
+              
+              // Update existing option
+              targetOption = await tx.productOption.update({
+                where: { id: option.id },
+                data: {
+                  name: option.name,
+                  type: option.type,
+                  displayType: option.displayType,
+                  position: option.position || 0
+                }
+              });
+              
+              // Delete existing option values for this option
+              await tx.productOptionValue.deleteMany({
+                where: { optionId: option.id }
+              });
+            } else {
+              console.log('➕ Creating new option:', option.name);
+              
+              // Create new option
+              targetOption = await tx.productOption.create({
+                data: {
+                  productId: parseInt(id),
+                  name: option.name,
+                  type: option.type,
+                  displayType: option.displayType,
+                  position: option.sortOrder || option.position || 0
+                }
+              });
+            }
+
+            console.log('✅ Option ready:', targetOption.id, targetOption.name);
+
+            // Create/recreate option values and store mapping
+            if (option.values && Array.isArray(option.values)) {
+              for (const value of option.values) {
+                if (value.value && value.value.trim() !== '') {
+                  const createdValue = await tx.productOptionValue.create({
+                    data: {
+                      optionId: targetOption.id,
+                      value: value.value,
+                      colorCode: value.colorCode,
+                      imageUrl: value.imageUrl,
+                      patternData: value.pattern ? JSON.stringify(value.pattern) : null,
+                      mixedColorData: value.mixedColor ? JSON.stringify(value.mixedColor) : null,
+                      sortOrder: value.sortOrder || 0
+                    }
+                  });
+                  console.log('✅ Created option value:', createdValue.id, createdValue.value);
+                  
+                  // Store mapping: frontend value ID -> database value info
+                  optionValueMapping.set(value.id, {
+                    dbId: createdValue.id,
+                    optionId: targetOption.id,
+                    value: createdValue.value
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        // Create new variants if provided
+        if (updateData.variants && Array.isArray(updateData.variants)) {
+          console.log('📝 Creating new variants:', updateData.variants.length);
+          console.log('📋 Variants data:', JSON.stringify(updateData.variants, null, 2));
+          
+          for (const variant of updateData.variants) {
+            const createdVariant = await tx.productVariant.create({
+              data: {
+                productId: parseInt(id),
+                sku: variant.sku,
+                price: variant.price ? parseFloat(variant.price) : null,
+                comparePrice: variant.comparePrice ? parseFloat(variant.comparePrice) : null,
+                costPrice: variant.costPrice ? parseFloat(variant.costPrice) : null,
+                inventoryQuantity: variant.inventoryQuantity ? parseInt(variant.inventoryQuantity) : 0,
+                weight: variant.weight ? parseFloat(variant.weight) : null,
+                isActive: variant.isActive ?? true
+              }
+            });
+
+            console.log('✅ Created variant:', createdVariant.id, createdVariant.sku);
+
+            // Create variant option values using the mapping
+            if (variant.optionValues && Array.isArray(variant.optionValues)) {
+              console.log('🔗 Creating variant option values:', variant.optionValues.length);
+              
+              for (const optionValue of variant.optionValues) {
+                console.log('🔍 Looking for option value:', optionValue);
+                
+                // Use the mapping to find the database IDs
+                const mappedValue = optionValueMapping.get(optionValue.valueId);
+                
+                console.log('🔍 Found mapped value:', mappedValue);
+
+                if (mappedValue) {
+                  await tx.productVariantOptionValue.create({
+                    data: {
+                      variantId: createdVariant.id,
+                      optionId: mappedValue.optionId,
+                      optionValueId: mappedValue.dbId,
+                      value: optionValue.value
+                    }
+                  });
+                  console.log('✅ Created variant option value link');
+                } else {
+                  console.log('❌ Could not find mapped value for:', optionValue);
+                }
+              }
+            }
+          }
+        }
+      } else {
+        // If changing from VARIABLE to SIMPLE, clean up variants only
+        console.log('🧹 Cleaning up variants for SIMPLE product');
+        
+        await tx.productVariant.deleteMany({
+          where: { productId: parseInt(id) }
+        });
+      }
 
       // Handle media updates if provided
       if (updateData.images && Array.isArray(updateData.images)) {

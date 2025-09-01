@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getApiUrl } from '../../../config/environment.js';
 import { useLocation } from 'react-router-dom';
 import '../SiteBuilder.css';
 
@@ -96,6 +97,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
+  const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef(null);
 
   // Load page from URL parameters on mount
@@ -137,10 +139,11 @@ const SiteBuilderPage = ({ user, onBack }) => {
 
     try {
       const token = localStorage.getItem('authToken');
-      const isDevelopment = false;
-      const baseUrl = isDevelopment 
-        ? 'https://api.my-quickshop.com/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       
       // First, get the page data to know its slug
       const pageResponse = await fetch(`${baseUrl}/pages/${pageId}`, {
@@ -200,10 +203,11 @@ const SiteBuilderPage = ({ user, onBack }) => {
       
       if (!storeId) return;
       
-      const isDevelopment = false;
-      const baseUrl = isDevelopment 
-        ? 'https://api.my-quickshop.com/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       
       const response = await fetch(`${baseUrl}/pages/store/${storeId}`, {
         headers: {
@@ -230,7 +234,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
     let pageLoaded = false;
     try {
       const storeSlug = user?.stores?.[0]?.slug || localStorage.getItem('currentStoreSlug');
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const baseUrl = import.meta.env.VITE_API_URL || getApiUrl('');
       const response = await fetch(`${baseUrl}/custom-pages/${storeSlug}/${selectedPage}`);
       
           if (response.ok) {
@@ -318,7 +322,11 @@ const SiteBuilderPage = ({ user, onBack }) => {
     }
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       const [headerResponse, footerResponse] = await Promise.all([
         fetch(`${baseUrl}/global-settings/${storeSlug}/header`),
         fetch(`${baseUrl}/global-settings/${storeSlug}/footer`)
@@ -356,7 +364,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
     }
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const baseUrl = import.meta.env.VITE_API_URL || getApiUrl('');
       const response = await fetch(`${baseUrl}/global-settings/${storeSlug}/${type}`, {
         method: 'POST',
         headers: {
@@ -599,7 +607,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
     // Delete the page from server first
     try {
       const storeSlug = user?.stores?.[0]?.slug || localStorage.getItem('currentStoreSlug');
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const baseUrl = import.meta.env.VITE_API_URL || getApiUrl('');
       const token = localStorage.getItem('authToken');
       
       const response = await fetch(`${baseUrl}/custom-pages/${storeSlug}/${selectedPage}`, {
@@ -707,9 +715,10 @@ const SiteBuilderPage = ({ user, onBack }) => {
 
   // Save page structure to server
   const savePageStructure = async (structureToSave = pageStructure) => {
+    setIsSaving(true);
     try {
       const storeSlug = user?.stores?.[0]?.slug || localStorage.getItem('currentStoreSlug');
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const baseUrl = import.meta.env.VITE_API_URL || getApiUrl('');
       const token = localStorage.getItem('authToken');
       
       const dataToSend = {
@@ -748,6 +757,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
         } else {
           throw new Error('Failed to delete empty page');
         }
+        setIsSaving(false);
         return;
       }
       
@@ -773,6 +783,8 @@ const SiteBuilderPage = ({ user, onBack }) => {
       setToastMessage('שגיאה בשמירת הדף');
       setToastType('error');
       setShowToast(true);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -786,6 +798,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
         previewMode={previewMode}
         canUndo={historyIndex > 0}
         canRedo={historyIndex < history.length - 1}
+        isSaving={isSaving}
         onClose={onBack}
         onPageChange={({ editingGlobal: newEditingGlobal, selectedPage: newSelectedPage }) => {
           console.log('🔄 Page change requested:', { newEditingGlobal, newSelectedPage, currentPage: selectedPage });

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import { getApiUrl } from '../../../config/environment.js';
 import {
   Store,
   Plus,
@@ -38,7 +39,7 @@ const PartnerStores = ({ partner }) => {
   const fetchStores = async () => {
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/stores`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/partners/stores`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

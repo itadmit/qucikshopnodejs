@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  BarChart3,
+import { getApiUrl } from '../../../config/environment.js';
+import { BarChart3,
   TrendingUp,
   TrendingDown,
   Calendar,
@@ -30,7 +30,7 @@ const PartnerAnalytics = ({ partner }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/analytics?range=${timeRange}`, {
+      const response = await fetch(`${getApiUrl('/partners/analytics')}?range=${timeRange}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

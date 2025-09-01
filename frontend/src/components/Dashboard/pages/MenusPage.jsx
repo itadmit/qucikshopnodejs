@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getApiUrl } from '../../../config/environment.js';
 import {
   DndContext,
   closestCenter,
@@ -225,10 +226,11 @@ const MenusPage = () => {
       setLoading(true);
       
       // Use local development server if running on port 5173 (Vite dev server)
-      const isDevelopment = false;
-      const baseUrl = isDevelopment 
-        ? 'https://api.my-quickshop.com/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       
       // Get store slug from localStorage or use default
       const storeSlug = localStorage.getItem('currentStoreSlug') || 'yogevstore';

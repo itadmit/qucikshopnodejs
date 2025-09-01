@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getApiUrl } from '../config/environment.js';
 import TemplateManager from './TemplateManager'
 import analyticsTracker from '../utils/analyticsTracker'
 
@@ -107,14 +108,9 @@ const StoreApp = ({ storeSlug }) => {
       setError(null)
       
       // Fetch store data from API
-      const isDevelopment = false || 
-                           window.location.hostname === '127.0.0.1' || 
-                           window.location.hostname.endsWith('.quickshop.local') ||
-                           window.location.hostname === 'quickshop.local';
-      
-      const apiUrl = isDevelopment 
-        ? `/api/stores/${storeSlug}`
-        : `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeSlug}`;
+      const apiUrl = import.meta.env.DEV 
+        ? `http://localhost:3001/api/stores/${storeSlug}`
+        : `${import.meta.env.VITE_API_URL || getApiUrl('')}/stores/${storeSlug}`;
       
       console.log('📡 Fetching store data from:', apiUrl)
       const response = await fetch(apiUrl)

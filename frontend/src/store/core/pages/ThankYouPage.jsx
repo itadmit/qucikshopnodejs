@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
+import { getApiUrl } from '../../../config/environment.js';
 import { useTranslation } from 'react-i18next'
 import analyticsTracker from '../../../utils/analyticsTracker'
 
@@ -65,7 +66,7 @@ const ThankYouPage = ({ storeData }) => {
       } else {
         // ניסיון לקבל נתונים מהשרת (אם יש API)
         try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/orders/${orderId}`)
+          const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/orders/${orderId}`)
           if (response.ok) {
             const data = await response.json()
             setOrderData(data)

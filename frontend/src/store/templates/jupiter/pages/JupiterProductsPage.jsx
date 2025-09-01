@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { getApiUrl } from '../../../../config/environment.js';
 import { useTranslation } from 'react-i18next'
 import { Search, Filter, SlidersHorizontal, Grid, List, ArrowUpDown, ShoppingBag, Star, Heart, Eye } from 'lucide-react'
 import JupiterProductCard from '../components/JupiterProductCard'
@@ -46,10 +47,10 @@ const JupiterProductsPage = ({ storeData }) => {
       if (sortBy) productParams.set('sortBy', sortBy)
       
       // Fetch products and categories
-      const productsUrl = `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/products${productParams.toString() ? `?${productParams.toString()}` : ''}`
+      const productsUrl = `${import.meta.env.VITE_API_URL || getApiUrl('')}/stores/${storeData.slug}/products${productParams.toString() ? `?${productParams.toString()}` : ''}`
       const [productsResponse, categoriesResponse] = await Promise.all([
         fetch(productsUrl),
-        fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/categories`)
+        fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/stores/${storeData.slug}/categories`)
       ])
       
       if (productsResponse.ok) {

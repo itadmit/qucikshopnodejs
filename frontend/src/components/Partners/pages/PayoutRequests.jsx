@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Wallet,
+import { getApiUrl } from '../../../config/environment.js';
+import { Wallet,
   Plus,
   Calendar,
   Download,
@@ -35,7 +35,7 @@ const PayoutRequests = ({ partner }) => {
       const params = new URLSearchParams();
       if (filterStatus !== 'all') params.append('status', filterStatus);
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/payouts?${params}`, {
+      const response = await fetch(`${getApiUrl('/partners/payouts')}?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -79,7 +79,7 @@ const PayoutRequests = ({ partner }) => {
   const fetchAvailableBalance = async () => {
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/commissions/balance`, {
+      const response = await fetch(getApiUrl('/partners/commissions/balance'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -351,7 +351,7 @@ const PayoutRequestModal = ({ availableBalance, onClose, onSuccess }) => {
 
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/payouts/request`, {
+      const response = await fetch(getApiUrl('/partners/payouts/request'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

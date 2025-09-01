@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../../../config/environment.js';
 import { 
   FileText, 
   Plus, 
@@ -131,10 +132,11 @@ const PagesPage = ({ userStore }) => {
       const token = localStorage.getItem('authToken');
       
       // Use local development server if running on port 5173 (Vite dev server)
-      const isDevelopment = false;
-      const baseUrl = isDevelopment 
-        ? 'https://api.my-quickshop.com/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       
       const response = await fetch(`${baseUrl}/pages/store/${userStore.id}`, {
         headers: {
@@ -161,10 +163,11 @@ const PagesPage = ({ userStore }) => {
       const token = localStorage.getItem('authToken');
       
       // Use local development server if running on port 5173 (Vite dev server)
-      const isDevelopment = false;
-      const baseUrl = isDevelopment 
-        ? 'https://api.my-quickshop.com/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       
       const response = await fetch(`${baseUrl}/pages/${pageId}/duplicate`, {
         method: 'POST',
@@ -194,10 +197,11 @@ const PagesPage = ({ userStore }) => {
       const token = localStorage.getItem('authToken');
       
       // Use local development server if running on port 5173 (Vite dev server)
-      const isDevelopment = false;
-      const baseUrl = isDevelopment 
-        ? 'https://api.my-quickshop.com/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       
       const response = await fetch(`${baseUrl}/pages/${pageToDelete.id}`, {
         method: 'DELETE',
@@ -240,10 +244,11 @@ const PagesPage = ({ userStore }) => {
       const token = localStorage.getItem('authToken');
       
       // Use local development server if running on port 5173 (Vite dev server)
-      const isDevelopment = false;
-      const baseUrl = isDevelopment 
-        ? 'https://api.my-quickshop.com/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       
       const response = await fetch(`${baseUrl}/pages/store/${userStore.id}`, {
         method: 'POST',
@@ -286,10 +291,11 @@ const PagesPage = ({ userStore }) => {
       const token = localStorage.getItem('authToken');
       
       // Use local development server if running on port 5173 (Vite dev server)
-      const isDevelopment = false;
-      const baseUrl = isDevelopment 
-        ? 'https://api.my-quickshop.com/api'
-        : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       
       const response = await fetch(`${baseUrl}/pages/${page.id}`, {
         method: 'PUT',

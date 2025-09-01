@@ -1,4 +1,5 @@
 /**
+import { getApiUrl } from '../../../config/environment.js';
  * Template Loader - מנהל טעינת תבניות דינמי
  */
 
@@ -119,7 +120,12 @@ class TemplateLoader {
    */
   async getAvailableTemplates() {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/templates`);
+      const apiUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
+      const response = await fetch(`${apiUrl}/templates`);
       if (response.ok) {
         const templates = await response.json();
         console.log(`📡 Loaded ${templates.length} templates from server`);

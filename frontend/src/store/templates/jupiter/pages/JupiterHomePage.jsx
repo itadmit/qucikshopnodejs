@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { getApiUrl } from '../../../../config/environment.js';
 import { 
   Truck, 
   RefreshCw, 
@@ -54,8 +55,8 @@ const JupiterHomePage = ({ storeData }) => {
       
       // Fetch categories and products for this store
       const [categoriesResponse, productsResponse] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/categories`),
-        fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/products/featured`)
+        fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/stores/${storeData.slug}/categories`),
+        fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/stores/${storeData.slug}/products/featured`)
       ])
       
       if (categoriesResponse.ok) {

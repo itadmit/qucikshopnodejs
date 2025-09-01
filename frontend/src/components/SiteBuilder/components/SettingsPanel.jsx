@@ -4,8 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { 
-  X, 
+import {   X, 
   ChevronDown, 
   ChevronUp,
   Image as ImageIcon,
@@ -27,6 +26,7 @@ import RichTextEditor from '../../ui/RichTextEditor';
 import ColorPicker from './ui/ColorPicker';
 import RangeSlider from './ui/RangeSlider';
 import { SETTING_TYPES } from '../types/settingTypes';
+import { getApiUrl } from '../../../config/environment.js';
 
 // Custom Toggle Component like Shopify - RTL Compatible
 const Toggle = ({ checked, onChange, label }) => {
@@ -83,7 +83,11 @@ const SettingsPanel = ({
     setLoadingMenus(true);
     try {
       const storeSlug = localStorage.getItem('currentStoreSlug') || 'yogevstore';
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const baseUrl = import.meta.env.VITE_API_URL || (
+        import.meta.env.DEV 
+          ? 'http://localhost:3001/api'
+          : getApiUrl('')
+      );
       const response = await fetch(`${baseUrl}/menus/${storeSlug}`);
       
       if (response.ok) {

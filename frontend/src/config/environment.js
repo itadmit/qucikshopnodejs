@@ -21,7 +21,7 @@ const isDevelopment = () => {
 export const DOMAIN_CONFIG = {
   // Development domains
   DEV_MAIN: 'localhost:5173',
-  DEV_API: 'api.my-quickshop.com',
+  DEV_API: 'localhost:3001',
   DEV_STORE_PATTERN: '*.localhost:5173',
 
   // Production domains
@@ -32,8 +32,11 @@ export const DOMAIN_CONFIG = {
 
 // הגדרות API
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || 
-    `https://${DOMAIN_CONFIG.PROD_API}/api`,  // Always use production API
+  BASE_URL: import.meta.env.VITE_API_URL || (
+    isDevelopment()
+      ? `http://${DOMAIN_CONFIG.DEV_API}/api`  // Development - local server
+      : `https://${DOMAIN_CONFIG.PROD_API}/api`    // Production - remote server
+  ),
   
   TIMEOUT: 30000, // 30 שניות
 };
@@ -51,6 +54,15 @@ export const getApiUrl = (endpoint = '') => {
   
   // Both development and production use the same pattern now
   return `${baseUrl}${endpoint}`;
+};
+
+// פונקציה מרכזית לקבלת API URL - להחלפת כל ההגדרות הקשיחות
+export const getApiBaseUrl = () => {
+  return import.meta.env.VITE_API_URL || (
+    isDevelopment()
+      ? `http://${DOMAIN_CONFIG.DEV_API}/api`
+      : `https://${DOMAIN_CONFIG.PROD_API}/api`
+  );
 };
 
 // בדיקה אם זה חנות (סאב-דומיין)
@@ -87,6 +99,7 @@ export default {
   DOMAIN_CONFIG,
   APP_CONFIG,
   getApiUrl,
+  getApiBaseUrl,
   isDevelopment,
   isStoreSubdomain,
   getStoreSlugFromDomain,

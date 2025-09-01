@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { getApiUrl } from '../../../../config/environment.js';
 import { useTranslation } from 'react-i18next'
 import { Search, Filter, Grid, List, ArrowRight, ShoppingBag, Star, TrendingUp } from 'lucide-react'
 
@@ -22,7 +23,7 @@ const JupiterCollectionsPage = ({ storeData }) => {
       setLoading(true)
       
       // Fetch categories from API
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/categories`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/stores/${storeData.slug}/categories`)
       
       if (response.ok) {
         const categoriesData = await response.json()

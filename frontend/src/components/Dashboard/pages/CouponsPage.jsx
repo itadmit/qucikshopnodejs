@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getApiUrl } from '../../../config/environment.js';
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Plus, Edit, Trash2, Eye, EyeOff, Copy, Download } from 'lucide-react'
 import DataTable from '../components/DataTable.jsx'
@@ -148,7 +149,7 @@ const CouponsPage = ({ storeId }) => {
 
   const loadCoupons = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/coupons?storeId=${storeId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/coupons?storeId=${storeId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -165,7 +166,7 @@ const CouponsPage = ({ storeId }) => {
 
   const loadAutomaticDiscounts = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/automatic-discounts?storeId=${storeId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/automatic-discounts?storeId=${storeId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -182,7 +183,7 @@ const CouponsPage = ({ storeId }) => {
 
   const loadInfluencers = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencers?storeId=${storeId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/influencers?storeId=${storeId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -214,7 +215,7 @@ const CouponsPage = ({ storeId }) => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencers/${influencerId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/influencers/${influencerId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -240,7 +241,7 @@ const CouponsPage = ({ storeId }) => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/coupons/${couponId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/coupons/${couponId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -266,7 +267,7 @@ const CouponsPage = ({ storeId }) => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/automatic-discounts/${discountId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/automatic-discounts/${discountId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -783,7 +784,7 @@ const CreateInfluencerModal = ({ isOpen, onClose, storeId, onSuccess }) => {
     
     setLoading(true)
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencers`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/influencers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

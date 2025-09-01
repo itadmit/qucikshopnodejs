@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { getApiUrl } from '../../../config/environment.js';
 import { ArrowRight, Save } from 'lucide-react'
 import apiService from '../../../services/api.js'
 
@@ -46,7 +47,7 @@ const AutomaticDiscountFormPage = () => {
     const fetchStoreData = async () => {
       try {
         const token = localStorage.getItem('authToken')
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/dashboard/user-store`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/dashboard/user-store`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         
@@ -73,7 +74,7 @@ const AutomaticDiscountFormPage = () => {
     setLoading(true)
     try {
       const token = localStorage.getItem('authToken')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/automatic-discounts/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/automatic-discounts/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -144,8 +145,8 @@ const AutomaticDiscountFormPage = () => {
     try {
       const token = localStorage.getItem('authToken')
       const url = isEditMode 
-        ? `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/automatic-discounts/${id}`
-        : `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/automatic-discounts`
+        ? `${import.meta.env.VITE_API_URL || getApiUrl('')}/automatic-discounts/${id}`
+        : `${import.meta.env.VITE_API_URL || getApiUrl('')}/automatic-discounts`
       
       const method = isEditMode ? 'PUT' : 'POST'
       
@@ -674,7 +675,7 @@ const CategorySelector = ({ selected = [], onChange, label }) => {
       
       if (!currentStore) return;
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/products/categories?storeId=${currentStore.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/products/categories?storeId=${currentStore.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -750,7 +751,7 @@ const ProductSelector = ({ selected = [], onChange, label }) => {
       
       if (!currentStore) return;
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/products?storeId=${currentStore.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/products?storeId=${currentStore.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

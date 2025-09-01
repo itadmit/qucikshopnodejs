@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../../../config/environment.js';
 import { useTranslation } from 'react-i18next';
 import Editor from '@monaco-editor/react';
 import * as Babel from '@babel/standalone';
@@ -56,7 +57,7 @@ const AdvancedTemplateEditor = () => {
       const currentTemplateName = templateName || 'jupiter';
       
       // Load template from server
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/templates/${currentTemplateName}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/templates/${currentTemplateName}`);
       if (!response.ok) {
         throw new Error('Template not found');
       }
@@ -258,7 +259,7 @@ const AdvancedTemplateEditor = () => {
       updatedFiles[selectedFile.category][selectedFile.name] = code;
 
       // Save to server
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/templates/${template.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/templates/${template.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

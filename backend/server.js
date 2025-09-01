@@ -32,6 +32,7 @@ import customPagesRoutes from './routes/custom-pages.js';
 import globalSettingsRoutes from './routes/global-settings.js';
 import menusRoutes from './routes/menus.js';
 import pagesRoutes from './routes/pages.js';
+import cartRoutes from './routes/cart.js';
 
 // Load environment variables
 dotenv.config();
@@ -205,6 +206,7 @@ app.use('/api/custom-pages', customPagesRoutes);
 app.use('/api/global-settings', globalSettingsRoutes);
 app.use('/api/menus', menusRoutes);
 app.use('/api/pages', pagesRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Serve static files from frontend build
 if (process.env.NODE_ENV === 'production') {

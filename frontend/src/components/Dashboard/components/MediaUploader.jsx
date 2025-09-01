@@ -2,6 +2,7 @@ import { useState, useRef, memo } from 'react';
 import { Upload, X, Image as ImageIcon, Video, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import apiService from '../../../services/api.js';
 import MediaModal from './MediaModal.jsx';
+import { getApiUrl } from '../../../config/environment.js';
 import {
   DndContext,
   closestCenter,
@@ -177,7 +178,7 @@ const MediaUploader = ({ onUpload, onDelete, media = [], maxFiles = 10, storeId,
       }
       
       // Use direct fetch for better control over the upload
-      const baseUrl = 'https://api.my-quickshop.com/api';
+      const baseUrl = getApiUrl('');
       
       const response = await fetch(`${baseUrl}/media/upload-multiple`, {
         method: 'POST',
@@ -246,10 +247,7 @@ const MediaUploader = ({ onUpload, onDelete, media = [], maxFiles = 10, storeId,
         }
         
         // Use direct fetch for better control
-        const isDevelopment = false;
-        const baseUrl = isDevelopment 
-          ? 'https://api.my-quickshop.com/api'
-          : (import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api');
+              const baseUrl = getApiUrl('');
         
         const response = await fetch(`${baseUrl}/media/delete/${encodeURIComponent(mediaItem.key)}`, {
           method: 'DELETE',

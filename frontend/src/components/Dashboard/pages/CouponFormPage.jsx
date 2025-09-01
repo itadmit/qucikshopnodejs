@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { getApiUrl } from '../../../config/environment.js';
 import { ArrowRight, Save } from 'lucide-react'
 
 const CouponFormPage = () => {
@@ -37,7 +38,7 @@ const CouponFormPage = () => {
     const fetchStoreData = async () => {
       try {
         const token = localStorage.getItem('authToken')
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/dashboard/user-store`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/dashboard/user-store`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         
@@ -64,7 +65,7 @@ const CouponFormPage = () => {
   const loadInfluencers = async (storeId) => {
     try {
       const token = localStorage.getItem('authToken')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencers?storeId=${storeId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/influencers?storeId=${storeId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -81,7 +82,7 @@ const CouponFormPage = () => {
     setLoading(true)
     try {
       const token = localStorage.getItem('authToken')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/coupons/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/coupons/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -149,8 +150,8 @@ const CouponFormPage = () => {
     try {
       const token = localStorage.getItem('authToken')
       const url = isEditMode 
-        ? `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/coupons/${id}`
-        : `${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/coupons`
+        ? `${import.meta.env.VITE_API_URL || getApiUrl('')}/coupons/${id}`
+        : `${import.meta.env.VITE_API_URL || getApiUrl('')}/coupons`
       
       const method = isEditMode ? 'PUT' : 'POST'
       

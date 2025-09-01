@@ -2,7 +2,8 @@
 // כל הגדרות ה-API צריכות להיות כאן כדי להבטיח עקביות
 
 // הגדרת URL בסיס
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+import { getApiUrl } from './environment.js';
+export const API_BASE_URL = getApiUrl();
 
 // נתיבי API - כל הנתיבים מתחילים ללא /api כי זה כבר כלול ב-BASE_URL
 export const API_ENDPOINTS = {

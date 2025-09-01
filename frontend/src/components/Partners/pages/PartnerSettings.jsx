@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getApiUrl } from '../../../config/environment.js';
 import {
   Settings,
   User,
@@ -43,7 +44,7 @@ const PartnerSettings = ({ partner, onUpdate }) => {
 
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/me`, {
+      const response = await fetch(getApiUrl('/partners/me'), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -84,7 +85,7 @@ const PartnerSettings = ({ partner, onUpdate }) => {
 
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/change-password`, {
+      const response = await fetch(getApiUrl('/partners/change-password'), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

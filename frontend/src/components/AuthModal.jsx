@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getApiUrl } from '../config/environment.js';
 import { 
   RiCloseLine, 
   RiEyeLine, 
@@ -84,7 +85,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, mode: initialMode = 'login' }) 
     
     try {
       const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}${endpoint}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

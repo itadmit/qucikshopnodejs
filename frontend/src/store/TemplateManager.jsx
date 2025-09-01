@@ -3,9 +3,9 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { useTemplate } from './shared/hooks/useTemplate';
 
 // Import core pages (שלא משתנים)
-import CartPage from './core/pages/CartPage';
-import CheckoutPage from './core/pages/CheckoutPage';
-import ThankYouPage from './core/pages/ThankYouPage';
+import CartPage from './core/pages/CartPage.jsx';
+import CheckoutPage from './core/pages/CheckoutPage.jsx';
+import ThankYouPage from './core/pages/ThankYouPage.jsx';
 
 // Import shared components
 import ProductRenderer from './shared/components/ProductRenderer';

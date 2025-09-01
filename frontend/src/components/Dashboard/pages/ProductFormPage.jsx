@@ -21,6 +21,7 @@ const ProductFormPage = ({ productId = null }) => {
   // Product basic info
   const [productData, setProductData] = useState({
     name: '',
+    slug: '',
     description: '',
     shortDescription: '',
     sku: '',
@@ -123,6 +124,7 @@ const ProductFormPage = ({ productId = null }) => {
             const product = response.data;
             setProductData({
               name: product.name || '',
+              slug: product.slug || '',
               description: product.description || '',
               shortDescription: product.shortDescription || '',
               sku: product.sku || '',
@@ -614,6 +616,7 @@ const ProductFormPage = ({ productId = null }) => {
       const saveData = {
         storeId: currentStore.id,
         name: productData.name,
+        slug: productData.slug,
         description: productData.description,
         shortDescription: productData.shortDescription,
         sku: productData.sku,
@@ -641,6 +644,14 @@ const ProductFormPage = ({ productId = null }) => {
         bundleItems: bundleItems,
         customFields: JSON.stringify(customFieldValues)
       };
+
+      console.log('🚀 Frontend - Saving product with data:', {
+        type: productType,
+        optionsCount: productOptions.length,
+        variantsCount: variants.length,
+        options: productOptions,
+        variants: variants
+      });
 
       let result;
       if (productId) {

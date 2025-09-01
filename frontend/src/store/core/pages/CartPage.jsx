@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import CouponInput from '../components/CouponInput'
+import BundleCartItem from '../components/BundleCartItem'
 import discountService from '../../../services/discountService'
 
 const CartPage = ({ storeData }) => {
@@ -103,6 +104,32 @@ const CartPage = ({ storeData }) => {
     }).format(price)
   }
 
+  // Group cart items by bundles and regular items
+  const groupedItems = () => {
+    const bundles = {}
+    const regularItems = []
+    
+    cartItems.forEach(item => {
+      if (item.bundleId) {
+        if (!bundles[item.bundleId]) {
+          bundles[item.bundleId] = {
+            bundleId: item.bundleId,
+            bundleName: item.bundleName,
+            items: []
+          }
+        }
+        bundles[item.bundleId].items.push(item)
+      } else {
+        regularItems.push(item)
+      }
+    })
+    
+    return {
+      bundles: Object.values(bundles),
+      regularItems
+    }
+  }
+
   const calculateSubtotal = () => {
     return cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   }
@@ -185,76 +212,105 @@ const CartPage = ({ storeData }) => {
 
               {/* Cart Items List */}
               <div className="space-y-4">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="bg-white rounded-lg shadow-sm p-6">
-                    <div className="flex items-start space-x-4 rtl:space-x-reverse">
-                      {/* Product Image */}
-                      <div className="flex-shrink-0">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.name}
-                          className="w-20 h-20 object-cover rounded-lg"
+                {(() => {
+                  const { bundles, regularItems } = groupedItems()
+                  
+                  return (
+                    <>
+                      {/* Bundle Items */}
+                      {bundles.map((bundle) => (
+                        <BundleCartItem
+                          key={bundle.bundleId}
+                          bundleItems={bundle.items}
+                          bundleId={bundle.bundleId}
+                          bundleName={bundle.bundleName}
+                          onUpdateQuantity={updateQuantity}
+                          onRemoveBundle={removeItem}
+                          formatPrice={formatPrice}
                         />
-                      </div>
-
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-medium text-gray-900 mb-1">
-                          {item.name}
-                        </h3>
-                        
-                        {/* Options */}
-                        {item.options && Object.entries(item.options).length > 0 && (
-                          <div className="text-sm text-gray-500 mb-2">
-                            {Object.entries(item.options).map(([key, value]) => (
-                              <span key={key} className="ml-4 rtl:ml-0 rtl:mr-4 first:mr-0 rtl:first:mr-0 rtl:first:ml-0">
-                                {key}: {value}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                          {/* Quantity Controls */}
-                          <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50"
-                            >
-                              <i className="ri-subtract-line text-sm"></i>
-                            </button>
-                            <span className="w-12 text-center font-medium">{item.quantity}</span>
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50"
-                            >
-                              <i className="ri-add-line text-sm"></i>
-                            </button>
-                          </div>
-
-                          {/* Price */}
-                          <div className="text-left rtl:text-right">
-                            <div className="text-lg font-semibold text-gray-900">
-                              {formatPrice(item.price * item.quantity)}
+                      ))}
+                      
+                      {/* Regular Items */}
+                      {regularItems.map((item) => (
+                        <div key={item.id} className="bg-white rounded-lg shadow-sm p-6">
+                          <div className="flex items-start space-x-4 rtl:space-x-reverse">
+                            {/* Product Image */}
+                            <div className="flex-shrink-0">
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="w-20 h-20 object-cover rounded-lg"
+                              />
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {formatPrice(item.price)} × {item.quantity}
+
+                            {/* Product Info */}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-medium text-gray-900 mb-1">
+                                {item.name}
+                              </h3>
+                              
+                              {/* Options/Variants */}
+                              {item.options && Object.entries(item.options).length > 0 && (
+                                <div className="text-sm text-gray-500 mb-2">
+                                  {Object.entries(item.options).map(([key, value]) => (
+                                    <span key={key} className="ml-4 rtl:ml-0 rtl:mr-4 first:mr-0 rtl:first:mr-0 rtl:first:ml-0">
+                                      {key}: {value}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Variant SKU */}
+                              {item.sku && (
+                                <div className="text-sm text-gray-400 mb-2">
+                                  מק״ט: {item.sku}
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-between">
+                                {/* Quantity Controls */}
+                                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                                  <button
+                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                    className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50"
+                                  >
+                                    <i className="ri-subtract-line text-sm"></i>
+                                  </button>
+                                  <span className="w-12 text-center font-medium">{item.quantity}</span>
+                                  <button
+                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                    className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50"
+                                  >
+                                    <i className="ri-add-line text-sm"></i>
+                                  </button>
+                                </div>
+
+                                {/* Price */}
+                                <div className="text-left rtl:text-right">
+                                  <div className="text-lg font-semibold text-gray-900">
+                                    {formatPrice(item.price * item.quantity)}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {formatPrice(item.price)} × {item.quantity}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
+
+                            {/* Remove Button */}
+                            <button
+                              onClick={() => removeItem(item.id)}
+                              className="flex-shrink-0 p-2 text-gray-400 hover:text-red-600 transition-colors"
+                              aria-label="הסר מוצר"
+                            >
+                              <i className="ri-close-line text-xl"></i>
+                            </button>
                           </div>
                         </div>
-                      </div>
-
-                      {/* Remove Button */}
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className="flex-shrink-0 p-2 text-gray-400 hover:text-red-600 transition-colors"
-                        aria-label="הסר מוצר"
-                      >
-                        <i className="ri-close-line text-xl"></i>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                      ))}
+                    </>
+                  )
+                })()}
               </div>
             </div>
 

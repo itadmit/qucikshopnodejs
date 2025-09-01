@@ -14,7 +14,8 @@ import {
   Undo, 
   Redo, 
   Save,
-  RotateCcw
+  RotateCcw,
+  Loader2
 } from 'lucide-react';
 import { Select } from '../../ui';
 
@@ -25,6 +26,7 @@ const BuilderHeader = ({
   previewMode,
   canUndo,
   canRedo,
+  isSaving,
   onClose,
   onPageChange,
   onPreviewToggle,
@@ -166,10 +168,15 @@ const BuilderHeader = ({
             )}
             <button
               onClick={onSave}
-              className="flex items-center space-x-2 space-x-reverse px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              disabled={isSaving}
+              className="flex items-center space-x-2 space-x-reverse px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
             >
-              <Save className="w-4 h-4" />
-              <span className="text-sm">שמור</span>
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span className="text-sm">{isSaving ? 'שומר...' : 'שמור'}</span>
             </button>
           </div>
         </div>

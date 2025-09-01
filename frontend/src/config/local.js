@@ -1,4 +1,5 @@
 /**
+import { getApiUrl } from './/environment.js';
  * הגדרות לפיתוח לוקאלי
  * קובץ זה מכיל הגדרות ספציפיות לפיתוח לוקאלי
  */
@@ -19,9 +20,17 @@ export const isLocalDevelopment = () => {
 
 // הגדרות API לפיתוח לוקאלי
 export const getApiConfig = () => {
-  // תמיד השתמש בפרודקשן API
+  if (isLocalDevelopment()) {
+    return {
+      baseUrl: 'http://localhost:3001/api',
+      timeout: 10000,
+      retries: 3
+    };
+  }
+  
+  // פרודקשן
   return {
-    baseUrl: 'https://api.my-quickshop.com/api',
+    baseUrl: getApiUrl(''),
     timeout: 15000,
     retries: 2
   };

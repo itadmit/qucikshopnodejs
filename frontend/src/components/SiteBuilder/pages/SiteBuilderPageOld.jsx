@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getApiUrl } from '../../../config/environment.js';
 
 // Import our new sections system
 import { ALL_SECTIONS, getSectionById, getSectionsByCategory } from '../sections/index.js';
@@ -62,7 +63,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
       
       if (storeSlug) {
         try {
-          const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+          const baseUrl = import.meta.env.VITE_API_URL || getApiUrl('');
           const response = await fetch(`${baseUrl}/api/custom-pages/${storeSlug}/${selectedPage}`);
           if (response.ok) {
             const pageData = await response.json();
@@ -311,7 +312,7 @@ const SiteBuilderPage = ({ user, onBack }) => {
         return;
       }
 
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api';
+      const baseUrl = import.meta.env.VITE_API_URL || getApiUrl('');
       const response = await fetch(`${baseUrl}/api/custom-pages/${storeSlug}/${selectedPage}`, {
         method: 'POST',
         headers: {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../config/environment.js';
 import { Eye, EyeOff, LogIn, TrendingUp } from 'lucide-react';
 
 const InfluencerLogin = () => {
@@ -18,7 +19,7 @@ const InfluencerLogin = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/influencer-auth/login`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/influencer-auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

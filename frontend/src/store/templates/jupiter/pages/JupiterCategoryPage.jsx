@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { getApiUrl } from '../../../../config/environment.js';
 import { useTranslation } from 'react-i18next'
 import JupiterProductCard from '../components/JupiterProductCard'
 
@@ -24,8 +25,8 @@ const JupiterCategoryPage = ({ storeData }) => {
       
       // Fetch category and its products
       const [categoryResponse, productsResponse] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/categories/${slug}`),
-        fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/stores/${storeData.slug}/categories/${slug}/products`)
+        fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/stores/${storeData.slug}/categories/${slug}`),
+        fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/stores/${storeData.slug}/categories/${slug}/products`)
       ])
       
       if (categoryResponse.ok) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../../../config/environment.js';
 import { useTranslation } from 'react-i18next';
 import {
   Palette,
@@ -84,7 +85,7 @@ const DesignAndCustomizationPage = () => {
 
       // Save template selection to backend using new API
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/templates/store/${userStore.id}/template`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/templates/store/${userStore.id}/template`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

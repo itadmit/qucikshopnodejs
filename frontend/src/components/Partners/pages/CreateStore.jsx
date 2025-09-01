@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../../../config/environment.js';
 import {
   Store,
   ArrowRight,
@@ -62,7 +63,7 @@ const CreateStore = ({ onSuccess }) => {
 
     try {
       const token = localStorage.getItem('partnerToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.my-quickshop.com/api'}/partners/stores/create`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || getApiUrl('')}/partners/stores/create`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
